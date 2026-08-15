@@ -1,0 +1,63 @@
+{
+    "error": false,
+    "message": [
+        {
+            "type": "Attelé",
+            "montant": 32000,
+            "distance": 2650,
+            "prix": "PRIX DES SABLES D'OLONNE AGGLOMERATION",
+            "lieu": "Les Sables D'olonne",
+            "heure_depart": "18:30:00",
+            "details": "Pour 7 à 10 ans inclus, n'ayant pas gagné 151.000",
+            "partants": 13,
+            "non_partants": 0,
+            "arrivee": [7, 4, 2, 8, 3, 13, 12],
+            "r/c": "R1/C8",
+            "arrivee_details": {
+                "2": {
+                    "nom_cheval": "JIM D'ALOUETTE",
+                    "sexe": "H",
+                    "annee_de_naissance": "2019",
+                    "nom_jockey": "RAFFIN E.",
+                    "nom_entraineur": "CHAVATTE A.",
+                    "poid_du_cheval": 2650,
+                    "musique": "1a 2a 7a 4a 0a (25) 4a 2a 1a 1a 1a 9a 2a ",
+                    "cotes": ["4.3", "3.3", "3.2"],
+                    "gains": "144895",
+                    "corde": "",
+                    "discipline": "Attelé",
+                    "distance": 2650
+                },
+                "4": {
+                    "nom_cheval": "RUGER",
+                    "sexe": "H",
+                    "annee_de_naissance": "2018",
+                    "nom_jockey": "PACHA N.",
+                    "nom_entraineur": "LINDEGREN E.",
+                    "poid_du_cheval": 2650,
+                    "musique": "Da 0a 9a 0a (25) 2a Da 1a 2a 8a 2a 0a 1a ",
+                    "cotes": ["26.0", "28.0", "19.0"],
+                    "gains": "133672",
+                    "corde": "",
+                    "discipline": "Attelé",
+                    "distance": 2650
+                },
+                "7": {
+                    "nom_cheval": "JACKPOT MEARAS",
+                    "sexe": "H",
+                    "annee_de_naissance": "2019",
+                    "nom_jockey": "PIETERS DWI.",
+                    "nom_entraineur": "TORNQVIST MME M.",
+                    "poid_du_cheval": 2650,
+                    "musique": "8a 1a 1a 1a (25) 0a 1a 1a 6a 2a 1a 1a 2a ",
+                    "cotes": ["4.0", "4.2", "3.8"],
+                    "gains": "149542",
+                    "corde": "",
+                    "discipline": "Attelé",
+                    "distance": 2650
+                }
+            },
+            "date": "06/07/2026"
+        }
+    ]
+}

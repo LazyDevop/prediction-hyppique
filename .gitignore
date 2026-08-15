@@ -1,0 +1,37 @@
+# Python
+.venv/
+venv/
+__pycache__/
+**/__pycache__/
+*.pyc
+.pytest_cache/
+
+# Databases
+*.db
+*.sqlite
+*.sqlite3
+
+# Env / secrets
+.env
+.env.*
+*.pem
+*.key
+
+# Flutter / Dart
+mobile/.dart_tool/
+mobile/build/
+mobile/.pub-cache/
+mobile/.pub/
+mobile/.idea/
+mobile/*.iml
+
+# IDE
+.idea/
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Claude
+.claude/

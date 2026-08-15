@@ -1,0 +1,23 @@
+services:
+  api:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=sqlite:////app/data/hippique.db
+    volumes:
+      - hippique_data:/app/data
+    restart: unless-stopped
+
+  ingestion:
+    build: ./backend
+    command: ["python", "-m", "app.jobs.scheduler"]
+    environment:
+      - DATABASE_URL=sqlite:////app/data/hippique.db
+      - INGEST_HOUR=6
+    volumes:
+      - hippique_data:/app/data
+    restart: unless-stopped
+
+volumes:
+  hippique_data:

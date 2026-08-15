@@ -1,0 +1,150 @@
+{
+  "info": {
+    "name": "Prediction Hippique",
+    "_postman_id": "b6a9f4e0-3a7a-4b1a-9e2a-6a1f1a2c9e10",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_url", "value": "http://localhost:8000" }
+  ],
+  "item": [
+    {
+      "name": "Courses",
+      "item": [
+        {
+          "name": "Lister les courses d'une date",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/courses?date=2026-07-29",
+              "host": ["{{base_url}}"],
+              "path": ["courses"],
+              "query": [{ "key": "date", "value": "2026-07-29" }]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": ["pm.test('Status 200', () => pm.response.to.have.status(200));"]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Partants d'une course",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/courses/1/partants",
+              "host": ["{{base_url}}"],
+              "path": ["courses", "1", "partants"]
+            }
+          }
+        },
+        {
+          "name": "Importer une course (stub)",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{base_url}}/courses/1/importer",
+              "host": ["{{base_url}}"],
+              "path": ["courses", "1", "importer"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Analyse",
+      "item": [
+        {
+          "name": "Analyse - saisie manuelle (sans historique)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{base_url}}/analyse",
+              "host": ["{{base_url}}"],
+              "path": ["analyse"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"chevaux\": [\n    {\"nom\": \"Cheval A\", \"num_pmu\": 1, \"age\": 5, \"poids\": 60, \"cote\": 2.4, \"inedit\": false, \"performances\": []},\n    {\"nom\": \"Cheval B\", \"num_pmu\": 2, \"age\": 6, \"poids\": 61, \"cote\": 3.6, \"inedit\": false, \"performances\": []},\n    {\"nom\": \"Cheval C\", \"num_pmu\": 3, \"age\": 4, \"poids\": 59, \"cote\": 5.0, \"inedit\": false, \"performances\": []},\n    {\"nom\": \"Cheval D\", \"num_pmu\": 4, \"age\": 7, \"poids\": 62, \"cote\": 7.0, \"inedit\": false, \"performances\": []},\n    {\"nom\": \"Cheval E\", \"num_pmu\": 5, \"age\": 5, \"poids\": 60, \"cote\": 11.0, \"inedit\": false, \"performances\": []}\n  ],\n  \"distance\": 1600,\n  \"terrain\": 1.0,\n  \"niveau\": 3.0,\n  \"nb_partants_course\": 5\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('5 resultats', () => pm.response.json().resultats.length === 5);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Analyse - saisie manuelle (avec historique + incident)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{base_url}}/analyse",
+              "host": ["{{base_url}}"],
+              "path": ["analyse"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"chevaux\": [\n    {\n      \"nom\": \"Cheval A\", \"num_pmu\": 1, \"age\": 5, \"poids\": 60, \"cote\": 2.4, \"inedit\": false,\n      \"performances\": [\n        {\"partants\": 10, \"rang\": 1, \"distance\": 1600, \"terrain\": 1.0, \"niveau\": 3.0, \"incident\": null},\n        {\"partants\": 12, \"rang\": 3, \"distance\": 1600, \"terrain\": 1.0, \"niveau\": 3.0, \"incident\": null}\n      ]\n    },\n    {\n      \"nom\": \"Cheval B\", \"num_pmu\": 2, \"age\": 6, \"poids\": 61, \"cote\": 3.6, \"inedit\": false,\n      \"performances\": [\n        {\"partants\": 10, \"rang\": 1, \"distance\": 1600, \"terrain\": 1.0, \"niveau\": 3.0, \"incident\": \"D\"}\n      ]\n    }\n  ],\n  \"distance\": 1600,\n  \"terrain\": 1.0,\n  \"niveau\": 3.0,\n  \"nb_partants_course\": 2\n}"
+            }
+          }
+        },
+        {
+          "name": "Analyse - via course en base (course_id)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{base_url}}/analyse",
+              "host": ["{{base_url}}"],
+              "path": ["analyse"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"course_id\": 1\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Extraction vision (repli)",
+      "item": [
+        {
+          "name": "Fiche cheval (non implémenté - 501 attendu)",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{base_url}}/extraction/fiche",
+              "host": ["{{base_url}}"],
+              "path": ["extraction", "fiche"]
+            }
+          }
+        },
+        {
+          "name": "Programme (non implémenté - 501 attendu)",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{base_url}}/extraction/programme",
+              "host": ["{{base_url}}"],
+              "path": ["extraction", "programme"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
