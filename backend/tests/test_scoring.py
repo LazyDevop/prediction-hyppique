@@ -1,7 +1,14 @@
 import pytest
 
-from app.engine.constants import RECENCE_FORME, RECENCE_STD
-from app.engine.scoring import CourseTarget, HorseAnalysis, Performance, analyse_course, compute_forme
+from app.engine.constants import DEFAULT_PARAMETERS, RECENCE_FORME, RECENCE_STD
+from app.engine.scoring import (
+    CourseTarget,
+    HorseAnalysis,
+    Performance,
+    analyse_course,
+    compute_forme,
+    compute_note,
+)
 
 
 def test_mode_recence_std_vs_forme_utilisent_des_courbes_distinctes():
@@ -124,3 +131,146 @@ def test_value_and_kelly():
     target = CourseTarget(distance=1600, terrain=1.0, niveau=3.0, nb_partants_course=5)
     results = analyse_course(horses, target)
     assert any(h.value is not None and h.mise is not None for h in results)
+
+
+def test_terrain_inconnu_traite_comme_neutre():
+    # perf_connu a un terrain volontairement DIFFERENT de la cible (0.7 vs
+    # 1.0, dt=0.3 -> bucket 0.9, cf compute_note) : sa note n'est donc pas
+    # neutre par coïncidence, contrairement à la version précédente de ce
+    # test où terrain=1.0=target.terrain rendait dt=0 impossible à
+    # distinguer d'un vrai None-traité-comme-neutre. perf_neutre_control a
+    # un terrain qui correspond exactement à la cible (dt=0 par le chemin
+    # "connu" normal, PAS par le branchement None) et sert de référence pour
+    # ce que "neutre" doit vraiment donner.
+    perf_connu_different = Performance(partants=10, rang=1, distance=1600, terrain=0.7, niveau=3.0, incident=None)
+    perf_inconnu = Performance(partants=10, rang=1, distance=1600, terrain=None, niveau=3.0, incident=None)
+    perf_neutre_control = Performance(partants=10, rang=1, distance=1600, terrain=1.0, niveau=3.0, incident=None)
+    target = CourseTarget(distance=1600, terrain=1.0, niveau=3.0, nb_partants_course=1)
+
+    note_connu_different = compute_note(perf_connu_different, target)
+    note_inconnu = compute_note(perf_inconnu, target)
+    note_neutre_control = compute_note(perf_neutre_control, target)
+
+    # terrain=None doit produire EXACTEMENT le même résultat que le cas
+    # "connu et neutre par construction" (c_terr=1.0 via dt=0) ...
+    assert note_inconnu == note_neutre_control
+    # ... et être strictement différent du cas "connu mais différent"
+    # (c_terr=0.9), ce qui prouve que le traitement neutre du None n'est pas
+    # une coïncidence.
+    assert note_inconnu != note_connu_different
+    assert note_connu_different < note_neutre_control
+
+
+def test_niveau_inconnu_traite_comme_neutre():
+    perf = Performance(partants=10, rang=1, distance=1600, terrain=1.0, niveau=None, incident=None)
+    target_niveau_connu = CourseTarget(distance=1600, terrain=1.0, niveau=3.0, nb_partants_course=1)
+    target_niveau_inconnu = CourseTarget(distance=1600, terrain=1.0, niveau=None, nb_partants_course=1)
+    assert compute_note(perf, target_niveau_connu) == compute_note(perf, target_niveau_inconnu)
+
+
+def test_analyse_course_sans_params_egale_defauts_explicites():
+    horses = [
+        HorseAnalysis(nom=f"H{i}", num_pmu=i, age=5, poids=60, cote=2.0, inedit=False,
+                      performances=[Performance(partants=10, rang=1, distance=1600, terrain=1.0, niveau=3.0, incident=None)])
+        for i in range(5)
+    ]
+    target = CourseTarget(distance=1600, terrain=1.0, niveau=3.0, nb_partants_course=5)
+    sans_params = analyse_course(horses, target)
+    # Passe directement les VRAIS défauts (import depuis constants.py) plutôt
+    # qu'une copie retapée à la main : si DEFAULT_PARAMETERS est un jour
+    # retuné, ce test continue de vérifier ce qu'il prétend vérifier au lieu
+    # de comparer contre une copie figée et périmée.
+    avec_defauts_explicites = analyse_course(horses, target, params=DEFAULT_PARAMETERS, mode_recence="std")
+    assert [round(h.score, 9) for h in sans_params] == [round(h.score, 9) for h in avec_defauts_explicites]
+
+
+def test_analyse_course_params_partiel_ne_touche_pas_les_autres_defauts():
+    horses = [
+        HorseAnalysis(nom="A", num_pmu=1, age=5, poids=60, cote=2.0, inedit=False,
+                      performances=[Performance(partants=10, rang=1, distance=1600, terrain=1.0, niveau=3.0, incident=None)]),
+        HorseAnalysis(nom="B", num_pmu=2, age=5, poids=60, cote=3.0, inedit=False,
+                      performances=[Performance(partants=10, rang=5, distance=1600, terrain=1.0, niveau=3.0, incident=None)]),
+    ]
+    target = CourseTarget(distance=1600, terrain=1.0, niveau=3.0, nb_partants_course=2)
+    defauts = analyse_course(horses, target)
+    shrink_modifie = analyse_course(horses, target, params={"shrink": 10})
+
+    # shrink plus fort rapproche les scores de la moyenne du lot -> ecart reduit
+    ecart_defaut = abs(defauts[0].score - defauts[1].score)
+    ecart_shrink_fort = abs(shrink_modifie[0].score - shrink_modifie[1].score)
+    assert ecart_shrink_fort < ecart_defaut
+
+    # bankroll/fraction_kelly non surcharges restent aux defauts (100, 0.25).
+    # Assertion de prémisse explicite d'abord : sans elle, si aucun cheval ne
+    # satisfaisait jamais "kelly is not None and kelly > 0", la boucle
+    # ci-dessous passerait silencieusement sans rien vérifier.
+    assert any(h.kelly is not None and h.kelly > 0 for h in shrink_modifie)
+    for horse in shrink_modifie:
+        if horse.kelly is not None and horse.kelly > 0:
+            assert horse.mise == pytest.approx(100.0 * horse.kelly * 0.25)
+
+
+def test_compute_note_distance_buckets():
+    # dd<=200 -> 1.0, dd<=500 -> 0.9, sinon 0.8 (cahier des charges 7.5).
+    # sb=1.0 (rang=1/partants=10) et c_terr=c_niv=1.0 (terrain/niveau
+    # identiques à la cible) isolent donc c_dist tel quel dans la note.
+    target = CourseTarget(distance=1600, terrain=1.0, niveau=3.0, nb_partants_course=1)
+    perf_proche = Performance(partants=10, rang=1, distance=1750, terrain=1.0, niveau=3.0, incident=None)  # dd=150
+    perf_moyen = Performance(partants=10, rang=1, distance=2000, terrain=1.0, niveau=3.0, incident=None)   # dd=400
+    perf_loin = Performance(partants=10, rang=1, distance=2300, terrain=1.0, niveau=3.0, incident=None)    # dd=700
+
+    assert compute_note(perf_proche, target) == pytest.approx(1.0)
+    assert compute_note(perf_moyen, target) == pytest.approx(0.9)
+    assert compute_note(perf_loin, target) == pytest.approx(0.8)
+
+
+def test_compute_note_terrain_buckets():
+    # dt<0.05 -> 1.0, dt<=0.10 -> 0.95, sinon 0.9 (cahier des charges 7.5).
+    # sb=1.0 et c_dist=c_niv=1.0 isolent c_terr tel quel dans la note.
+    target = CourseTarget(distance=1600, terrain=1.0, niveau=3.0, nb_partants_course=1)
+    perf_proche = Performance(partants=10, rang=1, distance=1600, terrain=1.02, niveau=3.0, incident=None)  # dt=0.02
+    perf_moyen = Performance(partants=10, rang=1, distance=1600, terrain=0.93, niveau=3.0, incident=None)   # dt=0.07
+    perf_loin = Performance(partants=10, rang=1, distance=1600, terrain=0.83, niveau=3.0, incident=None)    # dt=0.17
+
+    assert compute_note(perf_proche, target) == pytest.approx(1.0)
+    assert compute_note(perf_moyen, target) == pytest.approx(0.95)
+    assert compute_note(perf_loin, target) == pytest.approx(0.9)
+
+
+def test_compute_note_niveau_ratio_eloigne_de_un():
+    # c_niv = clamp(sqrt(niveau/cible), 0.55, 1.5) (cahier des charges 7.5).
+    # sb=1.0 et c_dist=c_terr=1.0 isolent c_niv tel quel dans la note.
+    target = CourseTarget(distance=1600, terrain=1.0, niveau=2.0, nb_partants_course=1)
+    perf_tres_superieur = Performance(partants=10, rang=1, distance=1600, terrain=1.0, niveau=5.0, incident=None)
+    # ratio=5/2=2.5, sqrt=1.581... -> clampé au plafond 1.5
+    perf_legerement_inferieur = Performance(partants=10, rang=1, distance=1600, terrain=1.0, niveau=1.0, incident=None)
+    # ratio=1/2=0.5, sqrt=0.707... -> pas de clamp
+    perf_tres_inferieur = Performance(partants=10, rang=1, distance=1600, terrain=1.0, niveau=0.2, incident=None)
+    # ratio=0.2/2=0.1, sqrt=0.316... -> clampé au plancher 0.55
+
+    assert compute_note(perf_tres_superieur, target) == pytest.approx(1.5)
+    assert compute_note(perf_legerement_inferieur, target) == pytest.approx(0.5 ** 0.5)
+    assert compute_note(perf_tres_inferieur, target) == pytest.approx(0.55)
+
+
+def test_analyse_course_cheval_inedit_utilise_coef_inedit():
+    # Cahier des charges 7.7 : un cheval inédit (fait connu, pas une donnée
+    # manquante) reçoit score = base * coef_inedit * c_poids * c_age, avec
+    # base = moyenne_forme du lot (calculée sur les chevaux ayant des perfs).
+    horses = [
+        HorseAnalysis(nom="Veteran", num_pmu=1, age=5, poids=60, cote=3.0, inedit=False,
+                      performances=[Performance(partants=10, rang=2, distance=1600, terrain=1.0, niveau=3.0, incident=None)]),
+        HorseAnalysis(nom="Debutant", num_pmu=2, age=5, poids=60, cote=5.0, inedit=True, performances=[]),
+    ]
+    target = CourseTarget(distance=1600, terrain=1.0, niveau=3.0, nb_partants_course=2)
+    results = analyse_course(horses, target)
+
+    debutant = next(h for h in results if h.nom == "Debutant")
+    assert debutant.nb_perfs == 0
+
+    with_data = [h for h in results if h.nb_perfs > 0]
+    moyenne_forme = sum(h.forme for h in with_data) / len(with_data)
+    base = moyenne_forme if moyenne_forme > 0 else 1.0
+    expected_score = base * DEFAULT_PARAMETERS["coef_inedit"] * debutant.c_poids * debutant.c_age
+
+    assert debutant.score == pytest.approx(expected_score)
