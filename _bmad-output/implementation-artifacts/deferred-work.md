@@ -5,6 +5,7 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-restore-backend-scoring-engine.md`
   summary: HIGH IMPACT — backend/app/api/routes_analyse.py line 49 (`resultats=[horse.__dict__ for horse in results]`) leaks virtual-outsider placeholders (`num_pmu=None`, `nom="Outsider virtuel"`) into the `/analyse` API response whenever `nb_partants_course` exceeds the number of horses submitted — the common case for that feature. It should filter to real horses only (e.g. `results[:len(horses)]` or `num_pmu is not None`), mirroring how the same file already slices correctly for `build_combinaisons` on the line just above.
   evidence: Verification-gap review of the scoring-engine restoration surfaced this. routes_analyse.py is intact/untouched by this story (pre-existing bug, not introduced by the reconstruction) but was unreachable while scoring.py was corrupted — now that scoring.py works, the bug is live and would show fabricated horses to real bettors via the mobile app.
+  resolved: Fixed directly on user request (commit following spec-restore-backend-scoring-engine.md's completion) — routes_analyse.py now filters `resultats` to `horse.num_pmu is not None`, with a regression test in backend/tests/test_routes_analyse.py.
 
 - source_spec: `_bmad-output/implementation-artifacts/spec-restore-backend-scoring-engine.md`
   summary: backend/app/engine/combinatoire.py has zero test coverage (no test file imports or calls it, directly or via the route).

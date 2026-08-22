@@ -46,7 +46,13 @@ def analyse(request: AnalyseIn):
         )
     results = analyse_course(horses, target, request.params, mode_recence=request.mode_recence)
     combinaisons = build_combinaisons(results, len(horses))
-    return AnalyseOut(resultats=[horse.__dict__ for horse in results], combinaisons=combinaisons)
+    # analyse_course renvoie les chevaux reels PUIS des outsiders virtuels
+    # (num_pmu=None) qui ne comptent que pour le calcul de probabilites/
+    # Harville, jamais pour l'affichage (cahier des charges 7.8) : ne pas les
+    # exposer dans la reponse API, sous peine de faire apparaitre de faux
+    # chevaux dans le client.
+    resultats = [horse.__dict__ for horse in results if horse.num_pmu is not None]
+    return AnalyseOut(resultats=resultats, combinaisons=combinaisons)
 
 @router.post("/extraction/fiche")
 def extraction_fiche(image: bytes):
