@@ -3,7 +3,7 @@ from fastapi import APIRouter, HTTPException
 from app.engine.combinatoire import build_combinaisons
 from app.engine.scoring import CourseTarget, HorseAnalysis, Performance, analyse_course
 from app.data.repository import Repository
-from app.schemas.analyse import AnalyseIn, AnalyseOut, HorseIn
+from app.schemas.analyse import AnalyseIn, AnalyseOut, HorseIn, HorseOut
 
 router = APIRouter()
 repository = Repository()
@@ -51,7 +51,11 @@ def analyse(request: AnalyseIn):
     # Harville, jamais pour l'affichage (cahier des charges 7.8) : ne pas les
     # exposer dans la reponse API, sous peine de faire apparaitre de faux
     # chevaux dans le client.
-    resultats = [horse.__dict__ for horse in results if horse.num_pmu is not None]
+    resultats = [
+        HorseOut.model_validate(horse)
+        for horse in results
+        if horse.num_pmu is not None
+    ]
     return AnalyseOut(resultats=resultats, combinaisons=combinaisons)
 
 @router.post("/extraction/fiche")

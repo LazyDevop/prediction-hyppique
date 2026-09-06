@@ -19,6 +19,7 @@
 - source_spec: `_bmad-output/planning-artifacts/architecture/architecture-prediction-hyppique-2026-09-04/ARCHITECTURE-SPINE.md`
   summary: HIGH IMPACT — backend/app/api/routes_analyse.py's `/analyse` endpoint ships `resultats=[horse.__dict__ for horse in results]` typed as a bare `List[Dict]`, bypassing the already-defined `HorseOut` Pydantic schema entirely (AnalyseOut.resultats never validates against it). Should construct `HorseOut(...)` (or `.model_validate()`) per horse instead of dumping the dataclass `__dict__` raw.
   evidence: Adversarial review of the architecture spine (AD-4) surfaced this as a live inconsistency, not hypothetical — two future spine-compliant stories could each "fix" this differently (one extends via `__dict__`, one enforces `HorseOut` strictly) and ship incompatible payloads. routes_analyse.py is intact/pre-existing, not touched by the scoring-engine restoration story.
+  resolved: Fixed via spec-1-3-typed-analyse-response.md — AnalyseOut.resultats is now List[HorseOut], built via HorseOut.model_validate(horse) (from_attributes on the model itself per code review). Regression tests assert the exact field set, correct per-horse value mapping, the all-filtered-out edge case, and Optional-field-None propagation. 60/60 backend tests pass.
 
 - source_spec: `_bmad-output/planning-artifacts/architecture/architecture-prediction-hyppique-2026-09-04/ARCHITECTURE-SPINE.md`
   summary: Mobile side is missing a `niveauCoefficient()`-equivalent lookup (it has `terrainCoefficient()` but nothing for niveau labels), and both backend and mobile currently collapse "genuinely missing" and "unrecognized label" into the same neutral coefficient with no distinguishing log/signal (AD-5).
@@ -43,3 +44,15 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-2-engine-constants-fixture.md`
   summary: `constants.py`'s `terrain_coefficient(label)` function (the actual runtime consumer of `TERRAIN_COEFFICIENTS_GRASS`/`_PSF`) has no direct unit test anywhere in the backend suite — Story 1.2 only validates the raw tables match the fixture, never that the lookup function built on top of them still resolves a label correctly.
   evidence: Blind-hunter review of Story 1.2. Pre-existing gap (the function predates this story), not introduced by it — worth a small dedicated test once someone is next in this file.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-1-3-typed-analyse-response.md`
+  summary: `/analyse`'s `course_id` branch (the `repository.get_horses_for_course` path) is untested — all of test_routes_analyse.py's tests post a manual `chevaux` list, so the `HorseOut.model_validate(horse)` fix (and the response typing generally) is unverified for the DB-backed code path, which shares the exact same construction line.
+  evidence: Blind-hunter review of Story 1.3. Requires standing up a course + participations in the temp-db (pattern already established in test_main.py) — more setup than this bugfix story's scope; worth a dedicated test once a story next touches the course_id path.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-1-3-typed-analyse-response.md`
+  summary: No mechanical test ties `HorseOut`'s field set to `HorseAnalysis`'s field set (e.g. `dataclasses.fields(HorseAnalysis)` minus known-internal names vs. `HorseOut.model_fields`) — the exact class of bug just fixed (a schema silently drifting from the dataclass it mirrors) could recur with nothing catching it mechanically, only another manual code review.
+  evidence: Blind-hunter review of Story 1.3. A real hardening opportunity but adds meaningful complexity (deciding which HorseAnalysis fields are "intentionally internal" vs. "forgot to expose") — worth it once HorseAnalysis gains a field for the first time post-fix, as a concrete trigger to build the check against.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-1-3-typed-analyse-response.md`
+  summary: `/analyse` has no error handling around `HorseOut.model_validate(horse)` — if a `HorseAnalysis` ever violated `HorseOut`'s types (a bug elsewhere), the route would now surface a raw, unhandled `pydantic.ValidationError` as a 500 rather than a controlled error response.
+  evidence: Edge-case-hunter review of Story 1.3. A behavior change introduced by fixing AD-4 (the old `.__dict__` dump could never fail this way) — low likelihood since it requires an upstream engine bug, but worth a `try/except` -> clean `HTTPException(500, ...)` wrapper if `/analyse` ever gets broader hardening attention.

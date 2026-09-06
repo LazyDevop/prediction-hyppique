@@ -1,6 +1,6 @@
 from typing import Dict, List, Literal, Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class PerformanceIn(BaseModel):
@@ -34,6 +34,12 @@ class AnalyseIn(BaseModel):
 
 
 class HorseOut(BaseModel):
+    # from_attributes on the model itself, not just at one call site — a
+    # future second caller building a HorseOut from an object (rather than a
+    # dict) shouldn't have to remember to repeat the flag (code review,
+    # Story 1.3).
+    model_config = ConfigDict(from_attributes=True)
+
     nom: str
     num_pmu: Optional[int] = None
     age: Optional[int] = None
@@ -72,5 +78,5 @@ class Combinaisons(BaseModel):
 
 
 class AnalyseOut(BaseModel):
-    resultats: List[Dict]
+    resultats: List[HorseOut]
     combinaisons: Combinaisons
