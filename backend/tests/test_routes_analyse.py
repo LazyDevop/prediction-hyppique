@@ -188,19 +188,23 @@ def test_analyse_params_age_min_egal_age_max_accepte_200():
     assert response.status_code == 200
 
 
-def test_analyse_params_age_min_seul_reste_accepte_200():
-    # Spec 1.4 (frozen intent) : "either one alone, or neither, is fine - no
-    # cross-field requirement when only one is set". Un override partiel qui
-    # ne fournit que age_min (jamais age_max) ne doit jamais etre rejete pour
-    # incoherence avec la valeur par defaut de age_max - ce n'est pas une
-    # borne prevue par cette story.
+def test_analyse_params_age_min_seul_incoherent_avec_defaut_rejete_422():
+    # Code review : un override PARTIEL (seul age_min, jamais age_max) doit
+    # aussi etre rejete s'il devient incoherent une fois fusionne avec
+    # DEFAULT_PARAMETERS["age_max"]=7 en aval - sinon la meme classe de bug
+    # que cette story ferme (une plage d'age inversee) reste atteignable
+    # via un override partiel plutot qu'un override complet. Amende la
+    # formulation initiale du spec ("either one alone... is fine"), qui ne
+    # comparait qu'aux valeurs soumises, jamais aux valeurs effectives
+    # post-fusion.
     response = client.post("/analyse", json=_payload_deux_chevaux(params={"age_min": 10}))
-    assert response.status_code == 200
+    assert response.status_code == 422
 
 
 @pytest.mark.parametrize("champ,valeur", [
     ("contraste", 0),
     ("contraste", -1),
+    ("contraste", 51),
     ("fraction_kelly", -0.01),
     ("fraction_kelly", 1.01),
     ("bankroll", -1),
@@ -208,9 +212,13 @@ def test_analyse_params_age_min_seul_reste_accepte_200():
     ("sensibilite_poids", -1),
     ("coef_inedit", -1),
     ("shrink", -1),
+    ("age_min", -1),
+    ("age_max", -1),
 ])
 def test_analyse_params_hors_bornes_rejete_422(champ, valeur):
-    # Chacune des bornes du modele (spec 1.4) a sa propre preuve de rejet.
+    # Chacune des 9 bornes du modele doit avoir sa propre preuve de rejet -
+    # avant cette liste, 6 des 9 champs n'avaient aucun test qui aurait
+    # echoue si leur borne etait accidentellement retiree (code review).
     response = client.post("/analyse", json=_payload_deux_chevaux(params={champ: valeur}))
     assert response.status_code == 422, f"{champ}={valeur} aurait du etre rejete"
 
