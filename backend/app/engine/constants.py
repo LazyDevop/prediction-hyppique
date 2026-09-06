@@ -1,3 +1,7 @@
+"""Coefficient tables mirrored in fixtures/engine_constants.json (Architecture
+Spine AD-2) — a hand-edit here that isn't also applied there fails
+backend/tests/test_scoring.py::test_fixture_constants_matches_constants_py."""
+
 from dataclasses import dataclass
 from typing import Dict, Optional
 

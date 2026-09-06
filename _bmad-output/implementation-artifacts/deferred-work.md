@@ -31,3 +31,15 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-1-1-engine-cases-fixture.md`
   summary: The assertion DSL's `params`/`mode_recence` override plumbing in `_run_fixture_case` is unexercised — none of the 6 current fixture cases sets a non-default `params` or `mode_recence`, even though the schema supports both.
   evidence: Blind-hunter + edge-case-hunter review of Story 1.1. Not a bug (nothing currently relies on the untested path producing a specific result), just unused optional capability — worth a case exercising it once a future story's test actually needs a non-default parameter or récence mode.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-1-2-engine-constants-fixture.md`
+  summary: `fixtures/engine_cases.json`'s loader (Story 1.1) still raises a bare `KeyError`/crashes the whole test module on a missing/invalid fixture file or a fixture case missing a required key — the same class of fragility Story 1.2's review caught and fixed for `engine_constants.json`'s loader, but fixing it in `engine_cases.json`/its consuming tests would have meant touching Story 1.1's already-frozen code, out of bounds for this story.
+  evidence: Blind-hunter + edge-case-hunter review of Story 1.2, generalized to the sibling fixture. Low real risk (a malformed fixture file is a local dev-time mistake, not a production path), but worth a small consistency pass once both fixtures are touched by the same future story.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-1-2-engine-constants-fixture.md`
+  summary: The "mobile engine is corrupted/blocked" fact is now duplicated independently across 3 files (`fixtures/engine_cases.json`'s `$comment`, `fixtures/engine_constants.json`'s `$comment`, and this file) — each will need separate updating once the mobile engine is actually reconstructed, which is itself a drift risk despite AD-2 existing specifically to prevent drift elsewhere.
+  evidence: Blind-hunter review of Story 1.2. Minor documentation hygiene, not a functional gap — worth centralizing (e.g. both fixture `$comment`s referencing this file by path instead of repeating the claim) whenever either fixture is next touched.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-1-2-engine-constants-fixture.md`
+  summary: `constants.py`'s `terrain_coefficient(label)` function (the actual runtime consumer of `TERRAIN_COEFFICIENTS_GRASS`/`_PSF`) has no direct unit test anywhere in the backend suite — Story 1.2 only validates the raw tables match the fixture, never that the lookup function built on top of them still resolves a label correctly.
+  evidence: Blind-hunter review of Story 1.2. Pre-existing gap (the function predates this story), not introduced by it — worth a small dedicated test once someone is next in this file.

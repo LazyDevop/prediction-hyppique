@@ -3,7 +3,16 @@ from pathlib import Path
 
 import pytest
 
-from app.engine.constants import DEFAULT_PARAMETERS, RECENCE_FORME, RECENCE_STD
+from app.engine.constants import (
+    DEFAULT_PARAMETERS,
+    INCIDENTS,
+    NIVEAU_COEFFICIENTS,
+    RECENCE_FLAT,
+    RECENCE_FORME,
+    RECENCE_STD,
+    TERRAIN_COEFFICIENTS_GRASS,
+    TERRAIN_COEFFICIENTS_PSF,
+)
 from app.engine.scoring import (
     CourseTarget,
     HorseAnalysis,
@@ -38,6 +47,28 @@ for _case in _FIXTURE["cases"]:
     if _case_id in _CASES_BY_ID:
         raise ValueError(f"duplicate fixture case id: {_case_id!r}")
     _CASES_BY_ID[_case_id] = _case
+
+# Story 1.2 (AD-2): fixtures/engine_constants.json mirrors constants.py's four
+# coefficient tables (terrain, niveau, incidents, recence). Loaded here too so
+# test_fixture_constants_matches_constants_py below can validate it against
+# the real constants.py tables mechanically.
+_CONSTANTS_FIXTURE_PATH = Path(__file__).resolve().parents[2] / "fixtures" / "engine_constants.json"
+
+
+def _reject_duplicate_keys(pairs: list) -> dict:
+    # A duplicated JSON key (e.g. two "T" entries under "incidents") would
+    # otherwise be silently resolved last-key-wins by json.load, hiding a
+    # hand-edit mistake in a fixture meant to be edited across two languages.
+    seen: dict = {}
+    for key, value in pairs:
+        if key in seen:
+            raise ValueError(f"duplicate key in engine_constants.json: {key!r}")
+        seen[key] = value
+    return seen
+
+
+with open(_CONSTANTS_FIXTURE_PATH, encoding="utf-8") as _cf:
+    _CONSTANTS_FIXTURE = json.load(_cf, object_pairs_hook=_reject_duplicate_keys)
 
 
 def _build_performance(data: dict) -> Performance:
@@ -258,6 +289,40 @@ def test_fixture_default_parameters_matches_constants():
     # constants.DEFAULT_PARAMETERS mechanically, not just visually kept in
     # sync — a deliberate hand-edit to either side must fail this test.
     assert _FIXTURE["default_parameters"] == DEFAULT_PARAMETERS
+
+
+def test_fixture_constants_matches_constants_py():
+    # Story 1.2 / AD-2: fixtures/engine_constants.json mirrors constants.py's
+    # four coefficient tables exactly, mechanically — not just visually kept
+    # in sync. A deliberate hand-edit to either side (including a single
+    # INCIDENTS chute/ignore boolean, not just malus) must fail this test.
+    # `.get(...)` + a named assertion message throughout: a fixture missing a
+    # top-level table or an incident's malus/chute/ignore key should fail as
+    # a readable diff, not a bare KeyError deep in a dict comprehension.
+    for table_key, expected in (
+        ("terrain_coefficients_grass", TERRAIN_COEFFICIENTS_GRASS),
+        ("terrain_coefficients_psf", TERRAIN_COEFFICIENTS_PSF),
+        ("niveau_coefficients", NIVEAU_COEFFICIENTS),
+        ("recence_std", RECENCE_STD),
+        ("recence_forme", RECENCE_FORME),
+        ("recence_flat", RECENCE_FLAT),
+    ):
+        actual = _CONSTANTS_FIXTURE.get(table_key)
+        assert actual is not None, f"fixture is missing top-level key: {table_key!r}"
+        assert actual == expected, f"fixture[{table_key!r}] does not match constants.py"
+
+    fixture_incidents_raw = _CONSTANTS_FIXTURE.get("incidents")
+    assert fixture_incidents_raw is not None, "fixture is missing top-level key: 'incidents'"
+    fixture_incidents = {}
+    for code, entry in fixture_incidents_raw.items():
+        for field_name in ("malus", "chute", "ignore"):
+            assert field_name in entry, f"fixture incidents[{code!r}] is missing {field_name!r}"
+        fixture_incidents[code] = (entry["malus"], entry["chute"], entry["ignore"])
+    actual_incidents = {
+        code: (defn.malus, defn.chute, defn.ignore)
+        for code, defn in INCIDENTS.items()
+    }
+    assert fixture_incidents == actual_incidents
 
 
 def test_dsl_selection_actually_filters_not_vacuous():
