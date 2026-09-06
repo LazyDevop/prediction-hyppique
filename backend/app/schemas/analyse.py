@@ -1,6 +1,51 @@
-from typing import Dict, List, Literal, Optional
+from typing import List, Literal, Optional
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field, model_validator
+
+from app.engine.constants import DEFAULT_PARAMETERS
+
+
+class EngineParamsIn(BaseModel):
+    """Mirrors DEFAULT_PARAMETERS's keys/types (backend/app/engine/constants.py)
+    so a mistyped key is rejected at the API boundary instead of being
+    silently dropped by analyse_course's dict-merge. Bounds are traced to
+    real engine failure modes in analyse_course/compute_note (Story 1.4,
+    tightened during code review) — do not add bounds beyond these without
+    a new story.
+
+    Code review note: a partial override supplying only age_min (or only
+    age_max) still gets merged over DEFAULT_PARAMETERS downstream in
+    routes_analyse.py -- so age validity must be checked against the
+    EFFECTIVE post-merge values, not just the two fields as submitted,
+    or an inverted range slips through via a single-field override (the
+    exact bug class this story exists to close)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    malus_incident: Optional[float] = Field(default=None, ge=0)
+    sensibilite_poids: Optional[float] = Field(default=None, ge=0)
+    age_min: Optional[int] = Field(default=None, ge=0)
+    age_max: Optional[int] = Field(default=None, ge=0)
+    shrink: Optional[float] = Field(default=None, ge=0)
+    coef_inedit: Optional[float] = Field(default=None, ge=0)
+    # gt=0 alone still allows an exponent large enough to overflow
+    # score**contraste in scoring.py's Plackett-Luce step -- le=50 is well
+    # above any sensible contraste (default 3) while staying far under the
+    # float overflow threshold even for an unusually high score.
+    contraste: Optional[float] = Field(default=None, gt=0, le=50)
+    bankroll: Optional[float] = Field(default=None, ge=0)
+    fraction_kelly: Optional[float] = Field(default=None, ge=0, le=1)
+
+    @model_validator(mode="after")
+    def _check_age_bounds(self) -> "EngineParamsIn":
+        age_min = self.age_min if self.age_min is not None else DEFAULT_PARAMETERS["age_min"]
+        age_max = self.age_max if self.age_max is not None else DEFAULT_PARAMETERS["age_max"]
+        if age_min > age_max:
+            raise ValueError(
+                "age_min ne peut pas etre superieur a age_max (valeurs effectives "
+                f"apres defauts : age_min={age_min}, age_max={age_max})"
+            )
+        return self
 
 
 class PerformanceIn(BaseModel):
@@ -29,7 +74,7 @@ class AnalyseIn(BaseModel):
     terrain: Optional[float] = None
     niveau: Optional[float] = None
     nb_partants_course: Optional[int] = None
-    params: Optional[Dict[str, float]] = None
+    params: Optional[EngineParamsIn] = None
     mode_recence: Literal["std", "forme", "flat"] = "std"
 
 

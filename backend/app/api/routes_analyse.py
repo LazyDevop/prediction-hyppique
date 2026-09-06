@@ -44,7 +44,8 @@ def analyse(request: AnalyseIn):
             niveau=request.niveau,
             nb_partants_course=request.nb_partants_course or len(horses),
         )
-    results = analyse_course(horses, target, request.params, mode_recence=request.mode_recence)
+    params = request.params.model_dump(exclude_none=True) if request.params is not None else None
+    results = analyse_course(horses, target, params, mode_recence=request.mode_recence)
     combinaisons = build_combinaisons(results, len(horses))
     # analyse_course renvoie les chevaux reels PUIS des outsiders virtuels
     # (num_pmu=None) qui ne comptent que pour le calcul de probabilites/

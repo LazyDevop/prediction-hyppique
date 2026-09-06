@@ -7,6 +7,8 @@ import atexit
 import os
 import tempfile
 
+import pytest
+
 _tmp_db_fd, _tmp_db_path = tempfile.mkstemp(suffix=".db", prefix="test_routes_analyse_")
 os.close(_tmp_db_fd)
 
@@ -142,3 +144,98 @@ def test_analyse_champs_optionnels_none_traversent_le_schema():
     assert resultat["value"] is None
     assert resultat["kelly"] is None
     assert resultat["mise"] is None
+
+
+def _payload_deux_chevaux(params=None):
+    payload = {
+        "chevaux": [
+            {"nom": "A", "num_pmu": 1, "age": 5, "poids": 60, "cote": 2.0, "inedit": False,
+             "performances": [{"partants": 10, "rang": 1, "distance": 1600, "terrain": 1.0, "niveau": 3.0, "incident": None}]},
+            {"nom": "B", "num_pmu": 2, "age": 5, "poids": 60, "cote": 3.0, "inedit": False,
+             "performances": [{"partants": 10, "rang": 5, "distance": 1600, "terrain": 1.0, "niveau": 3.0, "incident": None}]},
+        ],
+        "distance": 1600, "terrain": 1.0, "niveau": 3.0, "nb_partants_course": 2,
+    }
+    if params is not None:
+        payload["params"] = params
+    return payload
+
+
+def test_analyse_params_cle_inconnue_rejetee_422():
+    # Story 1.4 : une cle mal orthographiee (ex. "shrnk" pour "shrink") doit
+    # etre rejetee explicitement (422), pas silencieusement ignoree par le
+    # dict-merge d'analyse_course sur DEFAULT_PARAMETERS.
+    response = client.post("/analyse", json=_payload_deux_chevaux(params={"shrnk": 2}))
+    assert response.status_code == 422
+
+
+def test_analyse_params_shrink_negatif_rejete_422():
+    # shrink < 0 n'a pas de sens (facteur de retrecissement bayesien vers la
+    # moyenne du lot, scoring.py) et doit etre rejete a la frontiere API.
+    response = client.post("/analyse", json=_payload_deux_chevaux(params={"shrink": -1}))
+    assert response.status_code == 422
+
+
+def test_analyse_params_age_min_superieur_age_max_rejete_422():
+    response = client.post("/analyse", json=_payload_deux_chevaux(params={"age_min": 8, "age_max": 4}))
+    assert response.status_code == 422
+
+
+def test_analyse_params_age_min_egal_age_max_accepte_200():
+    # Borne : age_min == age_max est une plage valide (un seul age optimal),
+    # pas une inversion - ne doit jamais etre rejete.
+    response = client.post("/analyse", json=_payload_deux_chevaux(params={"age_min": 5, "age_max": 5}))
+    assert response.status_code == 200
+
+
+def test_analyse_params_age_min_seul_reste_accepte_200():
+    # Spec 1.4 (frozen intent) : "either one alone, or neither, is fine - no
+    # cross-field requirement when only one is set". Un override partiel qui
+    # ne fournit que age_min (jamais age_max) ne doit jamais etre rejete pour
+    # incoherence avec la valeur par defaut de age_max - ce n'est pas une
+    # borne prevue par cette story.
+    response = client.post("/analyse", json=_payload_deux_chevaux(params={"age_min": 10}))
+    assert response.status_code == 200
+
+
+@pytest.mark.parametrize("champ,valeur", [
+    ("contraste", 0),
+    ("contraste", -1),
+    ("fraction_kelly", -0.01),
+    ("fraction_kelly", 1.01),
+    ("bankroll", -1),
+    ("malus_incident", -1),
+    ("sensibilite_poids", -1),
+    ("coef_inedit", -1),
+    ("shrink", -1),
+])
+def test_analyse_params_hors_bornes_rejete_422(champ, valeur):
+    # Chacune des bornes du modele (spec 1.4) a sa propre preuve de rejet.
+    response = client.post("/analyse", json=_payload_deux_chevaux(params={champ: valeur}))
+    assert response.status_code == 422, f"{champ}={valeur} aurait du etre rejete"
+
+
+def test_analyse_params_override_partiel_valide_200():
+    # Story 1.4 : un override partiel valide (seul shrink est fourni, le
+    # reste par defaut) doit repondre 200 et se comporter comme
+    # test_analyse_course_params_partiel_ne_touche_pas_les_autres_defauts
+    # (test_scoring.py), maintenant atteignable via la vraie API : un shrink
+    # plus fort rapproche les scores des deux chevaux (ecart reduit).
+    reponse_defaut = client.post("/analyse", json=_payload_deux_chevaux())
+    reponse_shrink = client.post("/analyse", json=_payload_deux_chevaux(params={"shrink": 10}))
+    assert reponse_defaut.status_code == 200
+    assert reponse_shrink.status_code == 200
+
+    scores_defaut = {r["nom"]: r["score"] for r in reponse_defaut.json()["resultats"]}
+    scores_shrink = {r["nom"]: r["score"] for r in reponse_shrink.json()["resultats"]}
+
+    ecart_defaut = abs(scores_defaut["A"] - scores_defaut["B"])
+    ecart_shrink_fort = abs(scores_shrink["A"] - scores_shrink["B"])
+    assert ecart_shrink_fort < ecart_defaut
+
+    # bankroll/fraction_kelly non surcharges doivent rester aux vrais
+    # defauts (100, 0.25) a travers le round-trip du nouveau schema, pas
+    # seulement "ne pas planter" (test_scoring.py:490-493, ported ici).
+    for r in reponse_shrink.json()["resultats"]:
+        if r["kelly"] is not None and r["kelly"] > 0:
+            assert r["mise"] == pytest.approx(100.0 * r["kelly"] * 0.25)
