@@ -1,3 +1,6 @@
+import json
+from pathlib import Path
+
 import pytest
 
 from app.engine.constants import DEFAULT_PARAMETERS, RECENCE_FORME, RECENCE_STD
@@ -9,6 +12,175 @@ from app.engine.scoring import (
     compute_forme,
     compute_note,
 )
+
+# ---------------------------------------------------------------------------
+# Fixture loader + assertion mini-language (Architecture Spine AD-2).
+#
+# `fixtures/engine_cases.json` (repo root — neutral, owned by neither
+# backend/ nor mobile/) is the single source of truth for the 6 fixed-input
+# -> fixed-or-tolerance-checked-output cases below, plus the canonical
+# default engine parameters. This loader/runner is deliberately small and
+# the assertion type list is closed (see the story's Boundaries & Constraints):
+# sum_field_approx, field_in_range, field_equals, field_greater_than,
+# field_less_than_with_aggregate, any_field_not_null. Comparative/structural
+# tests (e.g. test_disqualification_vs_chute below) are NOT fixture-driven —
+# they stay hand-written per AD-2.
+# ---------------------------------------------------------------------------
+
+_FIXTURE_PATH = Path(__file__).resolve().parents[2] / "fixtures" / "engine_cases.json"
+
+with open(_FIXTURE_PATH, encoding="utf-8") as _f:
+    _FIXTURE = json.load(_f)
+
+_CASES_BY_ID: dict = {}
+for _case in _FIXTURE["cases"]:
+    _case_id = _case["id"]
+    if _case_id in _CASES_BY_ID:
+        raise ValueError(f"duplicate fixture case id: {_case_id!r}")
+    _CASES_BY_ID[_case_id] = _case
+
+
+def _build_performance(data: dict) -> Performance:
+    return Performance(
+        partants=data["partants"],
+        rang=data.get("rang"),
+        distance=data.get("distance"),
+        terrain=data.get("terrain"),
+        niveau=data.get("niveau"),
+        incident=data.get("incident"),
+    )
+
+
+def _build_horse(data: dict) -> HorseAnalysis:
+    return HorseAnalysis(
+        nom=data["nom"],
+        num_pmu=data.get("num_pmu"),
+        age=data.get("age"),
+        poids=data.get("poids"),
+        cote=data.get("cote"),
+        inedit=data.get("inedit", False),
+        performances=[_build_performance(p) for p in data.get("performances", [])],
+    )
+
+
+def _build_target(data: dict) -> CourseTarget:
+    return CourseTarget(
+        distance=data["distance"],
+        terrain=data.get("terrain"),
+        niveau=data.get("niveau"),
+        nb_partants_course=data.get("nb_partants_course", 0),
+    )
+
+
+def _matches(horse: HorseAnalysis, criteria: dict) -> bool:
+    for field_name, expected in criteria.items():
+        actual = getattr(horse, field_name)
+        if isinstance(expected, dict):
+            if "not_null" in expected:
+                if (actual is not None) != expected["not_null"]:
+                    return False
+            else:
+                raise ValueError(f"unsupported match operator: {expected!r}")
+        elif actual != expected:
+            return False
+    return True
+
+
+def _filter_by_criteria(horses: list, criteria: dict, label: str) -> list:
+    # An empty {} would trivially match every horse -- almost certainly a
+    # typo'd fixture, never an intentional "match everything" spelling (that
+    # is simply omitting "match"/"filter" altogether).
+    if not criteria:
+        raise ValueError(f"empty {label!r} dict is not allowed (would match every horse)")
+    return [h for h in horses if _matches(h, criteria)]
+
+
+def _select(results: list, assertion: dict) -> list:
+    if "index" in assertion:
+        index = assertion["index"]
+        assert 0 <= index < len(results), (
+            f"index {index} out of range for {len(results)} result(s): {assertion}"
+        )
+        return [results[index]]
+    if "match" in assertion:
+        return _filter_by_criteria(results, assertion["match"], "match")
+    return results
+
+
+def _run_assertion(results: list, assertion: dict) -> None:
+    a_type = assertion["type"]
+
+    if a_type == "sum_field_approx":
+        total = sum(getattr(h, assertion["field"]) for h in results)
+        assert abs(total - assertion["expected"]) < assertion["tolerance"]
+
+    elif a_type == "field_in_range":
+        selected = _select(results, assertion)
+        assert selected, f"selector matched no horses: {assertion}"
+        exclusive_min = assertion.get("exclusive_min", False)
+        exclusive_max = assertion.get("exclusive_max", False)
+        for h in selected:
+            value = getattr(h, assertion["field"])
+            if exclusive_min:
+                assert value > assertion["min"]
+            else:
+                assert value >= assertion["min"]
+            if exclusive_max:
+                assert value < assertion["max"]
+            else:
+                assert value <= assertion["max"]
+
+    elif a_type == "field_equals":
+        selected = _select(results, assertion)
+        assert selected, f"selector matched no horses: {assertion}"
+        for h in selected:
+            assert getattr(h, assertion["field"]) == assertion["expected"]
+
+    elif a_type == "field_greater_than":
+        selected = _select(results, assertion)
+        assert selected, f"selector matched no horses: {assertion}"
+        for h in selected:
+            assert getattr(h, assertion["field"]) > assertion["than"]
+
+    elif a_type == "field_less_than_with_aggregate":
+        filtered = results
+        if "filter" in assertion:
+            filtered = _filter_by_criteria(filtered, assertion["filter"], "filter")
+        assert filtered, f"selector matched no horses: {assertion}"
+        values = [getattr(h, assertion["field"]) for h in filtered]
+        aggregate = assertion.get("aggregate", "max")
+        if aggregate == "max":
+            agg_value = max(values)
+        elif aggregate == "min":
+            agg_value = min(values)
+        else:
+            raise ValueError(f"unknown aggregate: {aggregate!r}")
+        assert agg_value < assertion["than"]
+
+    elif a_type == "any_field_not_null":
+        # AND across `fields` (a single horse must have every listed field
+        # non-null), OR across horses (at least one such horse is enough) --
+        # NOT an OR across fields, despite the type name reading that way.
+        fields = assertion.get("fields") or [assertion["field"]]
+        assert any(all(getattr(h, f) is not None for f in fields) for h in results)
+
+    else:
+        raise ValueError(f"Unknown fixture assertion type: {a_type!r}")
+
+
+def _run_fixture_case(case_id: str) -> None:
+    case = _CASES_BY_ID.get(case_id)
+    assert case is not None, f"unknown fixture case id: {case_id!r}"
+    try:
+        horses = [_build_horse(h) for h in case["horses"]]
+        target = _build_target(case["target"])
+    except KeyError as exc:
+        raise KeyError(f"fixture case {case_id!r} missing required key: {exc}") from exc
+    params = case.get("params")
+    mode_recence = case.get("mode_recence", "std")
+    results = analyse_course(horses, target, params=params, mode_recence=mode_recence)
+    for assertion in case["assertions"]:
+        _run_assertion(results, assertion)
 
 
 def test_mode_recence_std_vs_forme_utilisent_des_courbes_distinctes():
@@ -44,56 +216,19 @@ def test_compute_forme_tronque_a_6_performances():
 
 
 def test_probabilities_sum_to_one():
-    horses = [
-        HorseAnalysis(nom=f"H{i}", num_pmu=i, age=5, poids=60, cote=2.0, inedit=False,
-                      performances=[Performance(partants=10, rang=1, distance=1600, terrain=1.0, niveau=3.0, incident=None)]
-                      ) for i in range(5)
-    ]
-    target = CourseTarget(distance=1600, terrain=1.0, niveau=3.0, nb_partants_course=5)
-    results = analyse_course(horses, target)
-    assert abs(sum(h.probabilite for h in results) - 1.0) < 1e-6
+    _run_fixture_case("probabilities_sum_to_one")
 
 
 def test_harville_sums():
-    horses = [
-        HorseAnalysis(nom=f"H{i}", num_pmu=i, age=5, poids=60, cote=2.0, inedit=False,
-                      performances=[Performance(partants=10, rang=i + 1, distance=1600, terrain=1.0, niveau=3.0, incident=None)]
-                      ) for i in range(6)
-    ]
-    target = CourseTarget(distance=1600, terrain=1.0, niveau=3.0, nb_partants_course=6)
-    results = analyse_course(horses, target)
-    assert abs(sum(h.top1 for h in results) - 1.0) < 1e-6
-    assert abs(sum(h.top2 for h in results) - 2.0) < 1e-6
-    assert abs(sum(h.top3 for h in results) - 3.0) < 1e-6
-    assert abs(sum(h.top4 for h in results) - 4.0) < 1e-6
+    _run_fixture_case("harville_sums")
 
 
 def test_bayes_shrinkage():
-    horses = [
-        HorseAnalysis(nom="A", num_pmu=1, age=5, poids=60, cote=2.0, inedit=False,
-                      performances=[Performance(partants=10, rang=1, distance=1600, terrain=1.0, niveau=3.0, incident=None)]),
-        HorseAnalysis(nom="B", num_pmu=2, age=5, poids=60, cote=3.0, inedit=False,
-                      performances=[Performance(partants=10, rang=5, distance=1600, terrain=1.0, niveau=3.0, incident=None)]),
-    ]
-    target = CourseTarget(distance=1600, terrain=1.0, niveau=3.0, nb_partants_course=2)
-    results = analyse_course(horses, target)
-    horse_a = next(h for h in results if h.nom == "A")
-    assert horse_a.score < 1.0
-    assert horse_a.score > 0.65
+    _run_fixture_case("bayes_shrinkage")
 
 
 def test_nr_excluded_from_forme():
-    horses = [
-        HorseAnalysis(nom="NR", num_pmu=1, age=5, poids=60, cote=2.0, inedit=False,
-                      performances=[
-                          Performance(partants=10, rang=1, distance=1600, terrain=1.0, niveau=3.0, incident="NR"),
-                          Performance(partants=10, rang=1, distance=1600, terrain=1.0, niveau=3.0, incident=None),
-                      ])
-    ]
-    target = CourseTarget(distance=1600, terrain=1.0, niveau=3.0, nb_partants_course=1)
-    results = analyse_course(horses, target)
-    assert results[0].nb_perfs == 1
-    assert results[0].forme > 0
+    _run_fixture_case("nr_excluded_from_forme")
 
 
 def test_disqualification_vs_chute():
@@ -111,26 +246,109 @@ def test_disqualification_vs_chute():
 
 
 def test_outsiders_virtuel_reduit():
-    horses = [
-        HorseAnalysis(nom=f"H{i}", num_pmu=i, age=5, poids=60, cote=2.0, inedit=False,
-                      performances=[Performance(partants=10, rang=1, distance=1600, terrain=1.0, niveau=3.0, incident=None)])
-        for i in range(5)
-    ]
-    target = CourseTarget(distance=1600, terrain=1.0, niveau=3.0, nb_partants_course=14)
-    results = analyse_course(horses, target)
-    favouri_prob = max(h.probabilite for h in results if h.num_pmu is not None)
-    assert favouri_prob < 0.5
+    _run_fixture_case("outsiders_virtuel_reduit")
 
 
 def test_value_and_kelly():
-    horses = [
-        HorseAnalysis(nom=f"H{i}", num_pmu=i, age=5, poids=60, cote=cote, inedit=False,
-                      performances=[Performance(partants=10, rang=1, distance=1600, terrain=1.0, niveau=3.0, incident=None)])
-        for i, cote in enumerate([2.4, 3.6, 5.0, 7.0, 11.0])
+    _run_fixture_case("value_and_kelly")
+
+
+def test_fixture_default_parameters_matches_constants():
+    # AD-2: the fixture's default_parameters block is validated against
+    # constants.DEFAULT_PARAMETERS mechanically, not just visually kept in
+    # sync — a deliberate hand-edit to either side must fail this test.
+    assert _FIXTURE["default_parameters"] == DEFAULT_PARAMETERS
+
+
+def test_dsl_selection_actually_filters_not_vacuous():
+    # Hand-written (NOT fixture-JSON) regression on the DSL's own selection
+    # machinery (_matches/_select/_run_assertion). Code review found that the
+    # two fixture cases that exercise "match"/"filter" today
+    # (test_bayes_shrinkage, test_outsiders_virtuel_reduit) both happen to
+    # pass regardless of whether selection/filtering is broken, inverted, or
+    # skipped entirely -- their asserted bound holds for the whole result set
+    # anyway. This stub is engineered so the filtered-in and filtered-out
+    # groups have deliberately OPPOSITE values on the asserted field, so a
+    # broken/inverted/skipped selector is caught red-handed.
+    stub_results = [
+        HorseAnalysis(nom="Real1", num_pmu=1, score=0.2, probabilite=0.2),
+        HorseAnalysis(nom="Real2", num_pmu=2, score=0.3, probabilite=0.3),
+        HorseAnalysis(nom="Virtual", num_pmu=None, score=0.9, probabilite=0.9),
     ]
-    target = CourseTarget(distance=1600, terrain=1.0, niveau=3.0, nb_partants_course=5)
-    results = analyse_course(horses, target)
-    assert any(h.value is not None and h.mise is not None for h in results)
+
+    # -- _matches directly: a real horse matches num_pmu-not-null, the
+    # virtual one doesn't.
+    assert _matches(stub_results[0], {"num_pmu": {"not_null": True}}) is True
+    assert _matches(stub_results[2], {"num_pmu": {"not_null": True}}) is False
+
+    # -- _select directly: "match" narrows to exactly the intended horse,
+    # never the whole list nor its complement.
+    assert [h.nom for h in _select(stub_results, {"match": {"nom": "Real1"}})] == ["Real1"]
+    assert _select(stub_results, {"index": 2}) == [stub_results[2]]
+
+    # -- _run_assertion / field_less_than_with_aggregate: filtering to real
+    # horses (low probabilite) and excluding the virtual one (high
+    # probabilite) passes; a filter that selects the virtual horse instead
+    # (or a skipped/inverted filter, which would include 0.9) fails.
+    _run_assertion(stub_results, {
+        "type": "field_less_than_with_aggregate", "aggregate": "max",
+        "field": "probabilite", "than": 0.5,
+        "filter": {"num_pmu": {"not_null": True}},
+    })
+    with pytest.raises(AssertionError):
+        _run_assertion(stub_results, {
+            "type": "field_less_than_with_aggregate", "aggregate": "max",
+            "field": "probabilite", "than": 0.5,
+            "filter": {"num_pmu": {"not_null": False}},
+        })
+
+    # -- _run_assertion / field_in_range via "match": Real2's score (0.3) is
+    # well outside Real1's range (0.15-0.25), so matching the wrong horse
+    # would visibly fail rather than coincidentally pass.
+    _run_assertion(stub_results, {
+        "type": "field_in_range", "match": {"nom": "Real1"}, "field": "score",
+        "min": 0.15, "max": 0.25,
+    })
+    with pytest.raises(AssertionError):
+        _run_assertion(stub_results, {
+            "type": "field_in_range", "match": {"nom": "Real2"}, "field": "score",
+            "min": 0.15, "max": 0.25,
+        })
+
+
+def test_dsl_guards_reject_malformed_or_ambiguous_assertions():
+    # Hand-written coverage for the DSL's defensive guards added in code
+    # review: an out-of-range index, an empty match/filter dict, an unknown
+    # match operator, an unknown aggregate, and a selector matching nothing
+    # must all fail loudly and specifically, never silently pass or raise a
+    # confusing bare KeyError/IndexError.
+    stub_results = [
+        HorseAnalysis(nom="Only", num_pmu=1, score=0.5, probabilite=0.5),
+    ]
+
+    with pytest.raises(AssertionError):
+        _select(stub_results, {"index": 5})
+
+    with pytest.raises(ValueError):
+        _select(stub_results, {"match": {}})
+
+    with pytest.raises(ValueError):
+        _matches(stub_results[0], {"num_pmu": {"unsupported_op": True}})
+
+    with pytest.raises(ValueError):
+        _run_assertion(stub_results, {
+            "type": "field_less_than_with_aggregate", "aggregate": "median",
+            "field": "probabilite", "than": 1.0,
+        })
+
+    with pytest.raises(AssertionError):
+        _run_assertion(stub_results, {
+            "type": "field_equals", "match": {"nom": "Nobody"},
+            "field": "score", "expected": 0.5,
+        })
+
+    with pytest.raises(AssertionError):
+        _run_fixture_case("this-case-id-does-not-exist-in-the-fixture")
 
 
 def test_terrain_inconnu_traite_comme_neutre():

@@ -1,0 +1,133 @@
+{
+  "$comment": "Architecture Spine AD-2 — shared, language-neutral source of truth for backend/tests/test_scoring.py and, eventually, mobile/test/engine/scoring_test.dart. That Dart consumer doesn't exist yet not merely because Epic 3 hasn't started, but because mobile/lib/engine/scoring.dart and mobile/test/engine/scoring_test.dart are themselves corrupted (binary garbage, confirmed 2026-09-04) and blocked pending reconstruction from the cahier des charges — see _bmad-output/implementation-artifacts/deferred-work.md. Only fixed-input -> fixed-or-tolerance-checked-output cases live here; comparative/structural tests (e.g. test_disqualification_vs_chute) stay hand-written per language. Do not fold the terrain/niveau/incidents/recence coefficient tables in here — that's fixtures/engine_constants.json (Story 1.2).",
+  "default_parameters": {
+    "malus_incident": 1.0,
+    "sensibilite_poids": 1.0,
+    "age_min": 4,
+    "age_max": 7,
+    "shrink": 2,
+    "coef_inedit": 0.75,
+    "contraste": 3,
+    "bankroll": 100.0,
+    "fraction_kelly": 0.25
+  },
+  "cases": [
+    {
+      "id": "probabilities_sum_to_one",
+      "description": "Plackett-Luce probabilities across the full field always sum to 1.0.",
+      "horses": [
+        { "nom": "H0", "num_pmu": 0, "age": 5, "poids": 60, "cote": 2.0, "inedit": false,
+          "performances": [ { "partants": 10, "rang": 1, "distance": 1600, "terrain": 1.0, "niveau": 3.0, "incident": null } ] },
+        { "nom": "H1", "num_pmu": 1, "age": 5, "poids": 60, "cote": 2.0, "inedit": false,
+          "performances": [ { "partants": 10, "rang": 1, "distance": 1600, "terrain": 1.0, "niveau": 3.0, "incident": null } ] },
+        { "nom": "H2", "num_pmu": 2, "age": 5, "poids": 60, "cote": 2.0, "inedit": false,
+          "performances": [ { "partants": 10, "rang": 1, "distance": 1600, "terrain": 1.0, "niveau": 3.0, "incident": null } ] },
+        { "nom": "H3", "num_pmu": 3, "age": 5, "poids": 60, "cote": 2.0, "inedit": false,
+          "performances": [ { "partants": 10, "rang": 1, "distance": 1600, "terrain": 1.0, "niveau": 3.0, "incident": null } ] },
+        { "nom": "H4", "num_pmu": 4, "age": 5, "poids": 60, "cote": 2.0, "inedit": false,
+          "performances": [ { "partants": 10, "rang": 1, "distance": 1600, "terrain": 1.0, "niveau": 3.0, "incident": null } ] }
+      ],
+      "target": { "distance": 1600, "terrain": 1.0, "niveau": 3.0, "nb_partants_course": 5 },
+      "assertions": [
+        { "type": "sum_field_approx", "field": "probabilite", "expected": 1.0, "tolerance": 1e-6 }
+      ]
+    },
+    {
+      "id": "harville_sums",
+      "description": "Harville top1-4 sums across the field equal 1, 2, 3, 4 respectively.",
+      "horses": [
+        { "nom": "H0", "num_pmu": 0, "age": 5, "poids": 60, "cote": 2.0, "inedit": false,
+          "performances": [ { "partants": 10, "rang": 1, "distance": 1600, "terrain": 1.0, "niveau": 3.0, "incident": null } ] },
+        { "nom": "H1", "num_pmu": 1, "age": 5, "poids": 60, "cote": 2.0, "inedit": false,
+          "performances": [ { "partants": 10, "rang": 2, "distance": 1600, "terrain": 1.0, "niveau": 3.0, "incident": null } ] },
+        { "nom": "H2", "num_pmu": 2, "age": 5, "poids": 60, "cote": 2.0, "inedit": false,
+          "performances": [ { "partants": 10, "rang": 3, "distance": 1600, "terrain": 1.0, "niveau": 3.0, "incident": null } ] },
+        { "nom": "H3", "num_pmu": 3, "age": 5, "poids": 60, "cote": 2.0, "inedit": false,
+          "performances": [ { "partants": 10, "rang": 4, "distance": 1600, "terrain": 1.0, "niveau": 3.0, "incident": null } ] },
+        { "nom": "H4", "num_pmu": 4, "age": 5, "poids": 60, "cote": 2.0, "inedit": false,
+          "performances": [ { "partants": 10, "rang": 5, "distance": 1600, "terrain": 1.0, "niveau": 3.0, "incident": null } ] },
+        { "nom": "H5", "num_pmu": 5, "age": 5, "poids": 60, "cote": 2.0, "inedit": false,
+          "performances": [ { "partants": 10, "rang": 6, "distance": 1600, "terrain": 1.0, "niveau": 3.0, "incident": null } ] }
+      ],
+      "target": { "distance": 1600, "terrain": 1.0, "niveau": 3.0, "nb_partants_course": 6 },
+      "assertions": [
+        { "type": "sum_field_approx", "field": "top1", "expected": 1.0, "tolerance": 1e-6 },
+        { "type": "sum_field_approx", "field": "top2", "expected": 2.0, "tolerance": 1e-6 },
+        { "type": "sum_field_approx", "field": "top3", "expected": 3.0, "tolerance": 1e-6 },
+        { "type": "sum_field_approx", "field": "top4", "expected": 4.0, "tolerance": 1e-6 }
+      ]
+    },
+    {
+      "id": "bayes_shrinkage",
+      "description": "A single-good-performance horse against a single-poor one: Bayesian shrinkage pulls the favourite's score below 1.0 but keeps it above 0.65.",
+      "horses": [
+        { "nom": "A", "num_pmu": 1, "age": 5, "poids": 60, "cote": 2.0, "inedit": false,
+          "performances": [ { "partants": 10, "rang": 1, "distance": 1600, "terrain": 1.0, "niveau": 3.0, "incident": null } ] },
+        { "nom": "B", "num_pmu": 2, "age": 5, "poids": 60, "cote": 3.0, "inedit": false,
+          "performances": [ { "partants": 10, "rang": 5, "distance": 1600, "terrain": 1.0, "niveau": 3.0, "incident": null } ] }
+      ],
+      "target": { "distance": 1600, "terrain": 1.0, "niveau": 3.0, "nb_partants_course": 2 },
+      "assertions": [
+        { "type": "field_in_range", "match": { "nom": "A" }, "field": "score", "min": 0.65, "max": 1.0,
+          "exclusive_min": true, "exclusive_max": true }
+      ]
+    },
+    {
+      "id": "nr_excluded_from_forme",
+      "description": "A horse with one NR (non-partant) line and one real line: NR is excluded from nb_perfs and forme, leaving a positive forme computed from the single remaining line.",
+      "horses": [
+        { "nom": "NR", "num_pmu": 1, "age": 5, "poids": 60, "cote": 2.0, "inedit": false,
+          "performances": [
+            { "partants": 10, "rang": 1, "distance": 1600, "terrain": 1.0, "niveau": 3.0, "incident": "NR" },
+            { "partants": 10, "rang": 1, "distance": 1600, "terrain": 1.0, "niveau": 3.0, "incident": null }
+          ] }
+      ],
+      "target": { "distance": 1600, "terrain": 1.0, "niveau": 3.0, "nb_partants_course": 1 },
+      "assertions": [
+        { "type": "field_equals", "index": 0, "field": "nb_perfs", "expected": 1 },
+        { "type": "field_greater_than", "index": 0, "field": "forme", "than": 0 }
+      ]
+    },
+    {
+      "id": "outsiders_virtuel_reduit",
+      "description": "5 real horses in a 14-runner field: virtual outsiders fill the rest of the field and dilute the favourite's probability below 0.5.",
+      "horses": [
+        { "nom": "H0", "num_pmu": 0, "age": 5, "poids": 60, "cote": 2.0, "inedit": false,
+          "performances": [ { "partants": 10, "rang": 1, "distance": 1600, "terrain": 1.0, "niveau": 3.0, "incident": null } ] },
+        { "nom": "H1", "num_pmu": 1, "age": 5, "poids": 60, "cote": 2.0, "inedit": false,
+          "performances": [ { "partants": 10, "rang": 1, "distance": 1600, "terrain": 1.0, "niveau": 3.0, "incident": null } ] },
+        { "nom": "H2", "num_pmu": 2, "age": 5, "poids": 60, "cote": 2.0, "inedit": false,
+          "performances": [ { "partants": 10, "rang": 1, "distance": 1600, "terrain": 1.0, "niveau": 3.0, "incident": null } ] },
+        { "nom": "H3", "num_pmu": 3, "age": 5, "poids": 60, "cote": 2.0, "inedit": false,
+          "performances": [ { "partants": 10, "rang": 1, "distance": 1600, "terrain": 1.0, "niveau": 3.0, "incident": null } ] },
+        { "nom": "H4", "num_pmu": 4, "age": 5, "poids": 60, "cote": 2.0, "inedit": false,
+          "performances": [ { "partants": 10, "rang": 1, "distance": 1600, "terrain": 1.0, "niveau": 3.0, "incident": null } ] }
+      ],
+      "target": { "distance": 1600, "terrain": 1.0, "niveau": 3.0, "nb_partants_course": 14 },
+      "assertions": [
+        { "type": "field_less_than_with_aggregate", "aggregate": "max", "field": "probabilite", "than": 0.5,
+          "filter": { "num_pmu": { "not_null": true } } }
+      ]
+    },
+    {
+      "id": "value_and_kelly",
+      "description": "5 horses spanning a range of odds: at least one horse ends up with both value and mise populated (cote > 1 in all cases) — the assertion checks value and mise, not kelly directly.",
+      "horses": [
+        { "nom": "H0", "num_pmu": 0, "age": 5, "poids": 60, "cote": 2.4, "inedit": false,
+          "performances": [ { "partants": 10, "rang": 1, "distance": 1600, "terrain": 1.0, "niveau": 3.0, "incident": null } ] },
+        { "nom": "H1", "num_pmu": 1, "age": 5, "poids": 60, "cote": 3.6, "inedit": false,
+          "performances": [ { "partants": 10, "rang": 1, "distance": 1600, "terrain": 1.0, "niveau": 3.0, "incident": null } ] },
+        { "nom": "H2", "num_pmu": 2, "age": 5, "poids": 60, "cote": 5.0, "inedit": false,
+          "performances": [ { "partants": 10, "rang": 1, "distance": 1600, "terrain": 1.0, "niveau": 3.0, "incident": null } ] },
+        { "nom": "H3", "num_pmu": 3, "age": 5, "poids": 60, "cote": 7.0, "inedit": false,
+          "performances": [ { "partants": 10, "rang": 1, "distance": 1600, "terrain": 1.0, "niveau": 3.0, "incident": null } ] },
+        { "nom": "H4", "num_pmu": 4, "age": 5, "poids": 60, "cote": 11.0, "inedit": false,
+          "performances": [ { "partants": 10, "rang": 1, "distance": 1600, "terrain": 1.0, "niveau": 3.0, "incident": null } ] }
+      ],
+      "target": { "distance": 1600, "terrain": 1.0, "niveau": 3.0, "nb_partants_course": 5 },
+      "assertions": [
+        { "type": "any_field_not_null", "fields": ["value", "mise"] }
+      ]
+    }
+  ]
+}
