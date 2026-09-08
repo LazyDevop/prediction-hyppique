@@ -31,6 +31,16 @@ class _HorseEditScreenState extends ConsumerState<HorseEditScreen> {
   late List<Performance> _perfs;
   int? _chevalId;
 
+  // Compteur "X/6 performances avec terrain inconnu" (cahier des charges
+  // FR-5, EXPERIENCE.md ligne 93) : le terrain est neutre dans le calcul
+  // quand il est inconnu (engine/scoring.dart, computeNote), mais ça ne doit
+  // jamais être silencieusement absorbé — visible en permanence, pas
+  // seulement quand > 0 (même logique que les badges FR-4).
+  bool _isEntered(Performance p) => p.rang != null || p.partants > 0 || p.incident != null;
+
+  int get _terrainInconnuCount =>
+      _perfs.where((p) => _isEntered(p) && p.terrain == null).length;
+
   // Historique complet (bouton "Voir tout l'historique", section 7.4) :
   // distinct des 6 lignes ci-dessus, jamais éditable, ne remplace rien côté
   // moteur.
@@ -207,6 +217,11 @@ class _HorseEditScreenState extends ConsumerState<HorseEditScreen> {
           const SizedBox(height: 12),
           Text(
             'Ligne vide = ignorée par le moteur.',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            '$_terrainInconnuCount/6 performances avec terrain inconnu',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey),
           ),
           const Divider(height: 32),
