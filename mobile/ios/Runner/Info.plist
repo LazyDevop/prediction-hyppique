@@ -26,6 +26,10 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>Utilisée pour photographier une fiche cheval ou un programme de course à importer (spec-4-3) — sans cette clé, iOS termine l'application dès l'ouverture de l'appareil photo.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Utilisée pour choisir dans la galerie une photo d'une fiche cheval ou d'un programme de course à importer (spec-4-3).</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

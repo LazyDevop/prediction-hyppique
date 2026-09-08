@@ -8,6 +8,7 @@ import '../providers/api_provider.dart';
 import '../providers/horses_provider.dart';
 import '../providers/programme_provider.dart';
 import '../providers/race_provider.dart';
+import 'import_photo_screen.dart';
 import 'race_config_screen.dart';
 
 /// Programme du jour (section 7.1 du document mobile). Sélectionner une
@@ -104,7 +105,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Programme du jour'),
-        actions: [IconButton(icon: const Icon(Icons.calendar_today), onPressed: _pickDate)],
+        actions: [
+          // Point d'entrée unique vers l'import photo/PDF d'un programme
+          // complet (section 7.5 du document mobile, spec-4-3) — le seul
+          // ajout autorisé à ce fichier par cette story.
+          IconButton(
+            icon: const Icon(Icons.document_scanner_outlined),
+            tooltip: 'Importer un programme par photo/PDF',
+            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ImportPhotoScreen())),
+          ),
+          IconButton(icon: const Icon(Icons.calendar_today), onPressed: _pickDate),
+        ],
       ),
       body: Column(
         children: [

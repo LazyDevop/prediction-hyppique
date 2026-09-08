@@ -1,4 +1,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Import photo/PDF d'un programme de course (spec-4-3) : image_picker en
+         mode caméra a besoin de CAMERA ; la galerie et file_picker passent par
+         le Storage Access Framework sur les versions d'Android modernes et
+         n'ont pas besoin de permission de stockage explicite ici. -->
+    <uses-permission android:name="android.permission.CAMERA"/>
     <application
         android:label="prediction_hippique"
         android:name="${applicationName}"
