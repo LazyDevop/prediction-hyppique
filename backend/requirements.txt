@@ -4,3 +4,4 @@ SQLAlchemy
 pydantic
 requests
 numpy
+python-multipart

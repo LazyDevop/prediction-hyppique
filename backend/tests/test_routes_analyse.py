@@ -4,6 +4,7 @@ calcul (cahier des charges 7.8) ne doivent jamais fuiter dans la reponse de
 l'API /analyse."""
 
 import atexit
+import dataclasses
 import os
 import tempfile
 
@@ -25,6 +26,8 @@ os.environ.setdefault("DATABASE_URL", f"sqlite:///{_tmp_db_path}")
 
 from fastapi.testclient import TestClient
 
+from app.api import routes_analyse
+from app.data import vision_client
 from app.main import app
 
 client = TestClient(app)
@@ -247,3 +250,224 @@ def test_analyse_params_override_partiel_valide_200():
     for r in reponse_shrink.json()["resultats"]:
         if r["kelly"] is not None and r["kelly"] > 0:
             assert r["mise"] == pytest.approx(100.0 * r["kelly"] * 0.25)
+
+
+# ============ Story 4.2 : /extraction/fiche et /extraction/programme ============
+# vision_client est mocke a son chemin d'import dans routes_analyse.py
+# (`routes_analyse.vision_client.<fn>`) - jamais un appel HTTP reel a
+# l'API Anthropic depuis ces tests.
+
+FICHE_EXTRAITE = vision_client.FicheChevalExtraite(
+    name="PASSAGE VALLET",
+    num=101,
+    age=5,
+    poids=57.0,
+    cote=6.5,
+    perfs=[
+        vision_client.PerfFicheExtraite(rank=1, part=12, incident="", niveau=2.3, dist=2000.0, terr=1.0),
+        vision_client.PerfFicheExtraite(rank=None, part=None, incident="T", niveau=2.0, dist=1600.0, terr=0.97),
+    ],
+)
+
+PROGRAMME_EXTRAIT = vision_client.ProgrammeExtrait(
+    hippo="Vincennes",
+    dist=2700.0,
+    terr=1.0,
+    niveau=2.3,
+    partants=2,
+    horses=[
+        vision_client.HorseProgrammeExtrait(
+            num=1, name="CHEVAL UN", age=5, poids=58.0, cote=3.2,
+            perfs=[vision_client.PerfProgrammeExtraite(rank=1, incident=""),
+                   vision_client.PerfProgrammeExtraite(rank=None, incident="D")],
+        ),
+        vision_client.HorseProgrammeExtrait(
+            num=2, name="CHEVAL DEUX", age=4, poids=57.0, cote=None, perfs=[],
+        ),
+    ],
+)
+
+
+def test_extraction_fiche_png_valide_renvoie_200_et_les_donnees_mockees(monkeypatch):
+    appels = []
+
+    def _fake_extract_fiche_cheval(file_bytes, media_type):
+        appels.append((file_bytes, media_type))
+        return FICHE_EXTRAITE
+
+    monkeypatch.setattr(routes_analyse.vision_client, "extract_fiche_cheval", _fake_extract_fiche_cheval)
+
+    fichier_bytes = b"contenu-png-simule"
+    response = client.post(
+        "/extraction/fiche",
+        files={"file": ("fiche.png", fichier_bytes, "image/png")},
+    )
+
+    assert response.status_code == 200
+    assert response.json() == dataclasses.asdict(FICHE_EXTRAITE)
+    assert appels == [(fichier_bytes, "image/png")]
+
+
+def test_extraction_programme_pdf_valide_appelle_vision_client_avec_bytes_et_media_type_exacts(monkeypatch):
+    appels = []
+
+    def _fake_extract_programme(file_bytes, media_type):
+        appels.append((file_bytes, media_type))
+        return PROGRAMME_EXTRAIT
+
+    monkeypatch.setattr(routes_analyse.vision_client, "extract_programme", _fake_extract_programme)
+
+    fichier_bytes = b"%PDF-1.4 contenu-pdf-simule"
+    response = client.post(
+        "/extraction/programme",
+        files={"file": ("programme.pdf", fichier_bytes, "application/pdf")},
+    )
+
+    assert response.status_code == 200
+    assert response.json() == dataclasses.asdict(PROGRAMME_EXTRAIT)
+    assert appels == [(fichier_bytes, "application/pdf")]
+
+
+@pytest.mark.parametrize("endpoint,fn_name", [
+    ("/extraction/fiche", "extract_fiche_cheval"),
+    ("/extraction/programme", "extract_programme"),
+])
+def test_extraction_content_type_non_supporte_rejete_400_sans_appeler_vision_client(monkeypatch, endpoint, fn_name):
+    appels = []
+    monkeypatch.setattr(
+        routes_analyse.vision_client, fn_name,
+        lambda file_bytes, media_type: appels.append((file_bytes, media_type)),
+    )
+
+    response = client.post(endpoint, files={"file": ("notes.txt", b"pas une image", "text/plain")})
+
+    assert response.status_code == 400
+    assert appels == []
+
+
+@pytest.mark.parametrize("endpoint,fn_name", [
+    ("/extraction/fiche", "extract_fiche_cheval"),
+    ("/extraction/programme", "extract_programme"),
+])
+def test_extraction_budget_vision_epuise_renvoie_429_message_generique(monkeypatch, endpoint, fn_name):
+    def _raise_budget(file_bytes, media_type):
+        raise vision_client.VisionBudgetExceeded("Plafond quotidien d'appels vision atteint (50)")
+
+    monkeypatch.setattr(routes_analyse.vision_client, fn_name, _raise_budget)
+
+    response = client.post(endpoint, files={"file": ("fiche.png", b"donnees", "image/png")})
+
+    assert response.status_code == 429
+    detail = response.json()["detail"]
+    # Le detail doit rester generique/surete-utilisateur, jamais l'echo du
+    # message brut de l'exception capturee (Boundaries & Constraints du spec).
+    assert "50" not in detail
+    assert "Plafond quotidien" not in detail
+
+
+@pytest.mark.parametrize("endpoint,fn_name", [
+    ("/extraction/fiche", "extract_fiche_cheval"),
+    ("/extraction/programme", "extract_programme"),
+])
+def test_extraction_echec_vision_renvoie_502_message_generique(monkeypatch, endpoint, fn_name):
+    def _raise_extraction_error(file_bytes, media_type):
+        raise vision_client.VisionExtractionError("fragment de reponse upstream sensible")
+
+    monkeypatch.setattr(routes_analyse.vision_client, fn_name, _raise_extraction_error)
+
+    response = client.post(endpoint, files={"file": ("fiche.png", b"donnees", "image/png")})
+
+    assert response.status_code == 502
+    detail = response.json()["detail"]
+    assert "fragment de reponse upstream sensible" not in detail
+
+
+@pytest.mark.parametrize("endpoint,fn_name,content_type", [
+    ("/extraction/fiche", "extract_fiche_cheval", "image/jpeg"),
+    ("/extraction/fiche", "extract_fiche_cheval", "image/webp"),
+    ("/extraction/fiche", "extract_fiche_cheval", "image/gif"),
+])
+def test_extraction_accepte_individuellement_chaque_type_image_supporte(monkeypatch, endpoint, fn_name, content_type):
+    # verification-gap (revue de code) : seuls image/png et application/pdf
+    # etaient exerces par les tests precedents - un retrecissement silencieux
+    # de ACCEPTED_EXTRACTION_CONTENT_TYPES (perdant jpeg/webp/gif) serait
+    # passe inapercu. Chacun des 3 types restants ici, individuellement.
+    monkeypatch.setattr(routes_analyse.vision_client, fn_name, lambda file_bytes, media_type: FICHE_EXTRAITE)
+
+    response = client.post(endpoint, files={"file": ("fiche", b"donnees", content_type)})
+
+    assert response.status_code == 200
+
+
+@pytest.mark.parametrize("content_type_envoye", ["IMAGE/PNG", "image/png; charset=binary", " image/png "])
+def test_extraction_content_type_normalise_avant_comparaison(monkeypatch, content_type_envoye):
+    # blind-hunter + edge-case-hunter (revue de code) : la casse ou un
+    # parametre de type ("; charset=...") ne doivent pas faire rejeter a
+    # tort un type par ailleurs supporte.
+    monkeypatch.setattr(routes_analyse.vision_client, "extract_fiche_cheval", lambda fb, mt: FICHE_EXTRAITE)
+
+    response = client.post("/extraction/fiche", files={"file": ("fiche.png", b"donnees", content_type_envoye)})
+
+    assert response.status_code == 200
+
+
+def test_extraction_fichier_vide_rejete_400_sans_appeler_vision_client(monkeypatch):
+    # edge-case-hunter (revue de code) : un upload de 0 octet avec un
+    # content-type accepte ne doit pas consommer de budget vision pour rien.
+    appels = []
+    monkeypatch.setattr(
+        routes_analyse.vision_client, "extract_fiche_cheval",
+        lambda file_bytes, media_type: appels.append((file_bytes, media_type)),
+    )
+
+    response = client.post("/extraction/fiche", files={"file": ("fiche.png", b"", "image/png")})
+
+    assert response.status_code == 400
+    assert appels == []
+
+
+def test_extraction_fichier_trop_volumineux_rejete_413_sans_appeler_vision_client(monkeypatch):
+    appels = []
+    monkeypatch.setattr(
+        routes_analyse.vision_client, "extract_fiche_cheval",
+        lambda file_bytes, media_type: appels.append((file_bytes, media_type)),
+    )
+    trop_gros = b"x" * (routes_analyse.MAX_EXTRACTION_FILE_SIZE_BYTES + 1)
+
+    response = client.post("/extraction/fiche", files={"file": ("fiche.png", trop_gros, "image/png")})
+
+    assert response.status_code == 413
+    assert appels == []
+
+
+def test_extraction_reponse_mal_formee_de_vision_client_renvoie_502_pas_500(monkeypatch):
+    # edge-case-hunter (revue de code) : si vision_client renvoyait jamais un
+    # objet dont un champ imbrique requis (incident: str, sans defaut sur
+    # PerfFicheOut) est absent - ValidationError - la route doit degrader
+    # vers le meme 502 documente, pas une 500 brute non geree. Un objet SANS
+    # aucun attribut ne suffit pas a le prouver : perfs a un defaut ([]) au
+    # niveau racine, donc il faut une entree de perfs elle-meme incomplete.
+    class _PerfSansIncident:
+        rank = 1
+        part = None
+        niveau = None
+        dist = None
+        terr = None
+        # "incident" delibrement absent : champ requis sur PerfFicheOut.
+
+    class _FicheAvecPerfMalformee:
+        name = "X"
+        num = None
+        age = None
+        poids = None
+        cote = None
+        perfs = [_PerfSansIncident()]
+
+    monkeypatch.setattr(
+        routes_analyse.vision_client, "extract_fiche_cheval",
+        lambda file_bytes, media_type: _FicheAvecPerfMalformee(),
+    )
+
+    response = client.post("/extraction/fiche", files={"file": ("fiche.png", b"donnees", "image/png")})
+
+    assert response.status_code == 502
