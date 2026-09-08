@@ -9,8 +9,8 @@ Make the daily race programme, its partants, and their performance history avail
 ## Stories
 
 - Story 2.1: Tests for the persistence layer (`repository.py`) — done
-- Story 2.2: Tests for the daily ingestion job (`jobs/ingest_daily.py`)
-- Story 2.3: Tests for the historique backfill job (`jobs/backfill_historique.py`)
+- Story 2.2: Tests for the daily ingestion job (`jobs/ingest_daily.py`) — done
+- Story 2.3: Tests for the historique backfill job (`jobs/backfill_historique.py`) — done
 
 ## Requirements & Constraints
 
