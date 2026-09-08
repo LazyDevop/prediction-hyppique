@@ -7,16 +7,10 @@ import '../providers/results_provider.dart';
 import '../widgets/combo_block.dart';
 import '../widgets/option_lists.dart';
 import '../widgets/probability_gauge.dart';
+import '../widgets/transparency_label.dart';
 
 class ResultsScreen extends ConsumerWidget {
   const ResultsScreen({super.key});
-
-  String _regularite(Horse h) {
-    if (h.inedit) return '🆕 Inédit';
-    if (h.nbPerfs == 0) return 'Données non saisies';
-    if (h.nbPerfs < 3) return 'Historique court (${h.nbPerfs})';
-    return 'Régulier';
-  }
 
   String _reco(Horse h, int index) {
     if (h.nbPerfs == 0 && !h.inedit) return 'Données non saisies';
@@ -101,6 +95,7 @@ class ResultsScreen extends ConsumerWidget {
           ...reels.asMap().entries.map((entry) {
             final i = entry.key;
             final h = entry.value;
+            final label = transparencyLabel(h, h.nbPerfs);
             return Card(
               color: i == 0 ? Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.25) : null,
               child: Padding(
@@ -127,8 +122,11 @@ class ResultsScreen extends ConsumerWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(h.nom, style: const TextStyle(fontWeight: FontWeight.bold)),
-                              Text('${h.age ?? '—'} ans · ${h.poids ?? '—'} kg · ${h.nbPerfs} perfs · ${_regularite(h)}',
-                                  style: const TextStyle(fontSize: 11, color: Colors.grey)),
+                              Text(
+                                '${h.age ?? '—'} ans · ${h.poids ?? '—'} kg · ${h.nbPerfs} perfs'
+                                '${label != null ? ' · $label' : ''}',
+                                style: const TextStyle(fontSize: 11, color: Colors.grey),
+                              ),
                             ],
                           ),
                         ),

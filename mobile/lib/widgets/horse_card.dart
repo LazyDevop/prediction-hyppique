@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../models/horse.dart';
+import 'transparency_label.dart';
 
 class HorseCard extends StatelessWidget {
   final Horse horse;
@@ -11,11 +12,8 @@ class HorseCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final sousTitre = horse.inedit
-        ? '🆕 Inédit'
-        : horse.performances.isEmpty
-            ? 'Données non saisies'
-            : '${horse.performances.length} perf(s)';
+    final sousTitre = transparencyLabel(horse, horse.performances.length) ??
+        '${horse.performances.length} perf(s)';
 
     return Card(
       child: ListTile(
