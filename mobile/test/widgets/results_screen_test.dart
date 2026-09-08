@@ -3,8 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:prediction_hippique/models/horse.dart';
 import 'package:prediction_hippique/providers/horses_provider.dart';
+import 'package:prediction_hippique/providers/params_provider.dart';
 import 'package:prediction_hippique/providers/results_provider.dart';
 import 'package:prediction_hippique/screens/results_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 const _staleBanner = 'Recalcul nécessaire — les partants ont changé depuis ce calcul.';
 
@@ -16,7 +18,13 @@ Future<void> _scrollToText(WidgetTester tester, String text) {
 }
 
 Future<ProviderContainer> _pumpWithHorses(WidgetTester tester, List<String> names) async {
-  final container = ProviderContainer();
+  // calculer() lit engineParamsProvider, qui lit sharedPreferencesProvider
+  // (FR-20, spec-3-7) : même override minimal que main.dart, sans quoi il lève.
+  SharedPreferences.setMockInitialValues({});
+  final prefs = await SharedPreferences.getInstance();
+  final container = ProviderContainer(
+    overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+  );
   addTearDown(container.dispose);
 
   for (final name in names) {

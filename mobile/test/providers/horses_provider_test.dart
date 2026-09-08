@@ -2,12 +2,25 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:prediction_hippique/models/horse.dart';
 import 'package:prediction_hippique/providers/horses_provider.dart';
+import 'package:prediction_hippique/providers/params_provider.dart';
 import 'package:prediction_hippique/providers/results_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
+  // calculer() lit engineParamsProvider, qui lit sharedPreferencesProvider
+  // (FR-20, spec-3-7) : résolue une seule fois, réutilisée par chaque test.
+  late SharedPreferences prefs;
+  setUpAll(() async {
+    SharedPreferences.setMockInitialValues({});
+    prefs = await SharedPreferences.getInstance();
+  });
+  ProviderContainer newContainer() => ProviderContainer(
+        overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+      );
+
   group('HorsesNotifier mutations invalidate resultsProvider (FR-6)', () {
     test('add horse, no prior result -> markStale no-ops, state stays null', () {
-      final container = ProviderContainer();
+      final container = newContainer();
       addTearDown(container.dispose);
 
       container.read(horsesProvider.notifier).add(Horse(nom: 'A'));
@@ -16,7 +29,7 @@ void main() {
     });
 
     test('remove horse, result exists -> state becomes same data + isStale: true', () {
-      final container = ProviderContainer();
+      final container = newContainer();
       addTearDown(container.dispose);
 
       container.read(horsesProvider.notifier).add(Horse(nom: 'A'));
@@ -36,7 +49,7 @@ void main() {
       // Distinct from removeAt/replaceAt: proves add() itself calls
       // markStale() rather than relying on some other mutation's side
       // effect (mutation-testing gap closed per review).
-      final container = ProviderContainer();
+      final container = newContainer();
       addTearDown(container.dispose);
 
       container.read(horsesProvider.notifier).add(Horse(nom: 'A'));
@@ -49,7 +62,7 @@ void main() {
     });
 
     test('edit horse via replaceAt -> isStale: true', () {
-      final container = ProviderContainer();
+      final container = newContainer();
       addTearDown(container.dispose);
 
       container.read(horsesProvider.notifier).add(Horse(nom: 'A'));
@@ -62,7 +75,7 @@ void main() {
     });
 
     test('recalculate after stale -> new state, isStale: false', () {
-      final container = ProviderContainer();
+      final container = newContainer();
       addTearDown(container.dispose);
 
       container.read(horsesProvider.notifier).add(Horse(nom: 'A'));
@@ -80,7 +93,7 @@ void main() {
     });
 
     test('clear() (new course loaded) -> resultsProvider.state becomes null, not stale', () {
-      final container = ProviderContainer();
+      final container = newContainer();
       addTearDown(container.dispose);
 
       container.read(horsesProvider.notifier).add(Horse(nom: 'A'));
@@ -94,7 +107,7 @@ void main() {
     });
 
     test('already stale, another edit -> stays isStale: true, no redundant rebuild', () {
-      final container = ProviderContainer();
+      final container = newContainer();
       addTearDown(container.dispose);
 
       container.read(horsesProvider.notifier).add(Horse(nom: 'A'));

@@ -4,6 +4,7 @@
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:prediction_hippique/engine/combinatoire.dart';
 import 'package:prediction_hippique/models/engine_params.dart';
@@ -17,7 +18,15 @@ import 'package:prediction_hippique/providers/results_provider.dart';
 void main() {
   late ProviderContainer container;
 
-  setUp(() => container = ProviderContainer());
+  setUp(() async {
+    // EngineParamsNotifier.build() lit sharedPreferencesProvider (FR-20,
+    // spec-3-7) : même override minimal que main.dart, sans quoi il lève.
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+    container = ProviderContainer(
+      overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+    );
+  });
   tearDown(() => container.dispose());
 
   void seedResult() {

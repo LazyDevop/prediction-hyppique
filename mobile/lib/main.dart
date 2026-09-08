@@ -1,10 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
+import 'providers/params_provider.dart';
 import 'screens/home_screen.dart';
 
-void main() {
-  runApp(const ProviderScope(child: PredictionHippiqueApp()));
+void main() async {
+  // Résolu avant runApp (FR-20) : EngineParamsNotifier.build() reste un
+  // Notifier synchrone, sharedPreferencesProvider lui fournit une instance
+  // déjà prête plutôt que de gérer un état de chargement dans chaque écran.
+  WidgetsFlutterBinding.ensureInitialized();
+  final prefs = await SharedPreferences.getInstance();
+  runApp(ProviderScope(
+    overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+    child: const PredictionHippiqueApp(),
+  ));
 }
 
 class PredictionHippiqueApp extends StatelessWidget {

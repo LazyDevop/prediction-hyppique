@@ -1,12 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:prediction_hippique/main.dart';
+import 'package:prediction_hippique/providers/params_provider.dart';
 
 void main() {
   testWidgets('parcours complet : accueil -> saisie manuelle -> ajout cheval -> résultats', (WidgetTester tester) async {
-    await tester.pumpWidget(const ProviderScope(child: PredictionHippiqueApp()));
+    // main.dart résout SharedPreferences avant runApp (FR-20, spec-3-7) ;
+    // ce test construit PredictionHippiqueApp() directement sans passer par
+    // main(), donc le même override doit être fourni ici.
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+    await tester.pumpWidget(ProviderScope(
+      overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+      child: const PredictionHippiqueApp(),
+    ));
     // Un seul pump (pas pumpAndSettle) : l'accueil déclenche un appel réseau
     // vers le backend, absent dans cet environnement de test. Le bouton
     // "Saisie manuelle" est visible dès la première frame, indépendamment

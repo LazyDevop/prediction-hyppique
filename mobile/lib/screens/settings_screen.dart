@@ -15,27 +15,36 @@ class SettingsScreen extends ConsumerStatefulWidget {
 }
 
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
-  late TextEditingController _bankCtrl;
-  late TextEditingController _kCtrl;
-  late TextEditingController _sensPoidsCtrl;
-  late TextEditingController _ageMinCtrl;
-  late TextEditingController _ageMaxCtrl;
-  late TextEditingController _shrinkCtrl;
-  late TextEditingController _coefIneditCtrl;
-  late TextEditingController _malusIncCtrl;
+  final _bankCtrl = TextEditingController();
+  final _kCtrl = TextEditingController();
+  final _sensPoidsCtrl = TextEditingController();
+  final _ageMinCtrl = TextEditingController();
+  final _ageMaxCtrl = TextEditingController();
+  final _shrinkCtrl = TextEditingController();
+  final _coefIneditCtrl = TextEditingController();
+  final _malusIncCtrl = TextEditingController();
+  // Distingue une resynchronisation programmatique (reset, valeur chargée)
+  // d'une frappe utilisateur : évite que _syncControllers ne re-déclenche
+  // _update via un onChanged reçu pendant l'assignation de .text.
+  bool _syncing = false;
 
   @override
   void initState() {
     super.initState();
-    final p = ref.read(engineParamsProvider);
-    _bankCtrl = TextEditingController(text: p.bankroll.toString());
-    _kCtrl = TextEditingController(text: p.contraste.toString());
-    _sensPoidsCtrl = TextEditingController(text: p.sensibilitePoids.toString());
-    _ageMinCtrl = TextEditingController(text: p.ageMin.toString());
-    _ageMaxCtrl = TextEditingController(text: p.ageMax.toString());
-    _shrinkCtrl = TextEditingController(text: p.shrink.toString());
-    _coefIneditCtrl = TextEditingController(text: p.coefInedit.toString());
-    _malusIncCtrl = TextEditingController(text: p.malusIncident.toString());
+    _syncControllers(ref.read(engineParamsProvider));
+  }
+
+  void _syncControllers(EngineParams p) {
+    _syncing = true;
+    _bankCtrl.text = p.bankroll.toString();
+    _kCtrl.text = p.contraste.toString();
+    _sensPoidsCtrl.text = p.sensibilitePoids.toString();
+    _ageMinCtrl.text = p.ageMin.toString();
+    _ageMaxCtrl.text = p.ageMax.toString();
+    _shrinkCtrl.text = p.shrink.toString();
+    _coefIneditCtrl.text = p.coefInedit.toString();
+    _malusIncCtrl.text = p.malusIncident.toString();
+    _syncing = false;
   }
 
   @override
@@ -52,15 +61,46 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   void _update(EngineParams Function(EngineParams) f) {
+    if (_syncing) return; // évite de re-persister une valeur qu'on vient de charger/réinitialiser
     ref.read(engineParamsProvider.notifier).update(f(ref.read(engineParamsProvider)));
+  }
+
+  Future<void> _confirmReset() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Réinitialiser les réglages ?'),
+        content: const Text('Tous les paramètres du moteur reviendront à leurs valeurs par défaut.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('Annuler')),
+          TextButton(onPressed: () => Navigator.pop(dialogContext, true), child: const Text('Réinitialiser')),
+        ],
+      ),
+    );
+    if (confirmed == true) {
+      ref.read(engineParamsProvider.notifier).reset();
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final params = ref.watch(engineParamsProvider);
+    // Resynchronise les champs texte après un changement externe (reset, ou
+    // tout futur appel à update() hors de cet écran) — les TextField eux-
+    // mêmes ne réagissent pas automatiquement aux changements de provider.
+    ref.listen<EngineParams>(engineParamsProvider, (previous, next) => _syncControllers(next));
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Paramètres du moteur')),
+      appBar: AppBar(
+        title: const Text('Paramètres du moteur'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.restore),
+            tooltip: 'Réinitialiser aux valeurs par défaut',
+            onPressed: _confirmReset,
+          ),
+        ],
+      ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
