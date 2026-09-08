@@ -26,10 +26,30 @@ class HomeScreen extends ConsumerStatefulWidget {
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   DateTime _date = DateTime.now();
   bool _loadingPartants = false;
-  // Le chargement du programme est déclenché explicitement par un bouton,
-  // pas automatiquement à l'ouverture de l'écran (section 6.2 du document
-  // mobile : "au chargement de l'app OU sur action explicite 'rafraîchir'").
-  bool _loaded = false;
+  bool _refreshing = false;
+
+  // Rafraîchissement explicite uniquement (bouton), jamais automatique en
+  // arrière-plan (EXPERIENCE.md Interaction Primitives). Le programme est
+  // cache-first (CourseRepository.programmeDuJour) : le cache s'affiche
+  // immédiatement au premier build, sans geste requis — voir State Patterns
+  // "Cold start, programme en cache".
+  Future<void> _refresh() async {
+    setState(() => _refreshing = true);
+    try {
+      final result = await ref.read(courseRepositoryProvider).rafraichirProgramme(_date);
+      if (result.refreshError != null && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Impossible de rafraîchir — dernières données affichées.')),
+        );
+      }
+    } catch (_) {
+      // Aucun cache de secours : laisser le provider ré-échouer normalement
+      // ci-dessous pour afficher l'état d'erreur habituel.
+    } finally {
+      if (mounted) setState(() => _refreshing = false);
+      ref.invalidate(programmeProvider(_date));
+    }
+  }
 
   Future<void> _pickDate() async {
     final picked = await showDatePicker(
@@ -74,7 +94,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Widget build(BuildContext context) {
     final dateLabel = '${_date.day.toString().padLeft(2, '0')}/'
         '${_date.month.toString().padLeft(2, '0')}/${_date.year}';
-    final programmeAsync = _loaded ? ref.watch(programmeProvider(_date)) : null;
+    // Cache-first (CourseRepository.programmeDuJour) : pas de porte manuelle
+    // avant le premier watch, le cache (s'il existe) s'affiche dès le
+    // premier build sans geste requis — EXPERIENCE.md "Cold start, programme
+    // en cache : affiche le cache immédiatement, pas d'écran de chargement
+    // bloquant."
+    final programmeAsync = ref.watch(programmeProvider(_date));
 
     return Scaffold(
       appBar: AppBar(
@@ -89,31 +114,43 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(dateLabel, style: Theme.of(context).textTheme.titleMedium),
-                if (_loaded)
-                  TextButton.icon(
-                    onPressed: () => ref.invalidate(programmeProvider(_date)),
-                    icon: const Icon(Icons.refresh),
-                    label: const Text('Rafraîchir'),
-                  ),
+                TextButton.icon(
+                  onPressed: _refreshing ? null : _refresh,
+                  icon: _refreshing
+                      ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                      : const Icon(Icons.refresh),
+                  label: const Text('Rafraîchir'),
+                ),
               ],
             ),
           ),
           Expanded(
-            child: programmeAsync == null
-                ? Center(
-                    child: ElevatedButton.icon(
-                      onPressed: () => setState(() => _loaded = true),
-                      icon: const Icon(Icons.download),
-                      label: const Text('Charger le programme'),
-                    ),
-                  )
-                : programmeAsync.when(
-                    data: (courses) {
-                      if (courses.isEmpty) {
-                        return const Center(child: Text('Aucune course en base pour cette date.'));
+            child: programmeAsync.when(
+                    data: (result) {
+                      if (result.courses.isEmpty) {
+                        return Center(
+                          child: Padding(
+                            padding: const EdgeInsets.all(24),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Text(
+                                  'Aucune course chargée — rafraîchissez ou ajoutez une course manuellement.',
+                                  textAlign: TextAlign.center,
+                                ),
+                                const SizedBox(height: 12),
+                                ElevatedButton.icon(
+                                  onPressed: _refreshing ? null : _refresh,
+                                  icon: const Icon(Icons.refresh),
+                                  label: const Text('Rafraîchir'),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
                       }
                       final parReunion = <String, List<CourseSummary>>{};
-                      for (final c in courses) {
+                      for (final c in result.courses) {
                         parReunion.putIfAbsent(c.hippodrome, () => []).add(c);
                       }
                       for (final list in parReunion.values) {

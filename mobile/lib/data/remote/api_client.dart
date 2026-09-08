@@ -6,10 +6,17 @@ import '../../models/historique_performance.dart';
 import '../../models/horse.dart';
 import '../../models/performance.dart';
 
+/// Interface minimale pour permettre à CourseRepository de recevoir un faux
+/// client en test (spec-3-5) sans mocker Dio — ApiClient reste la seule
+/// implémentation réelle.
+abstract class CoursesApi {
+  Future<List<CourseSummary>> getCourses(DateTime date);
+}
+
 /// Client HTTP vers le backend — section 6 du document mobile. Ne JAMAIS
 /// embarquer de clé API tierce ici : l'extraction vision passe entièrement
 /// par le backend (section 6.3).
-class ApiClient {
+class ApiClient implements CoursesApi {
   final Dio _dio;
 
   ApiClient({String baseUrl = 'http://localhost:8000'})
@@ -19,6 +26,7 @@ class ApiClient {
           receiveTimeout: const Duration(seconds: 10),
         ));
 
+  @override
   Future<List<CourseSummary>> getCourses(DateTime date) async {
     final iso = '${date.year.toString().padLeft(4, '0')}-'
         '${date.month.toString().padLeft(2, '0')}-'

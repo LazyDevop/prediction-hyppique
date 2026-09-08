@@ -47,4 +47,41 @@ class CourseSummary {
       source: json['source'] as String,
     );
   }
+
+  /// Sérialisation pour le cache local SQLite (data/local/database_helper.dart,
+  /// table programme_courses — FR-1/FR-14). Même convention que
+  /// HistoriquePerformance.toCacheMap.
+  Map<String, Object?> toCacheMap() => {
+        'id': id,
+        'date': date.toIso8601String(),
+        'heure_depart': heureDepart?.toIso8601String(),
+        'hippodrome': hippodrome,
+        'discipline': discipline,
+        'distance': distance,
+        'allocation': allocation,
+        'nb_partants': nbPartants,
+        'corde': corde,
+        'terrain': terrain,
+        'niveau_estime': niveauEstime,
+        'finalisee': finalisee ? 1 : 0,
+        'source': source,
+      };
+
+  factory CourseSummary.fromCacheMap(Map<String, Object?> map) {
+    return CourseSummary(
+      id: map['id'] as int,
+      date: DateTime.parse(map['date'] as String),
+      heureDepart: map['heure_depart'] != null ? DateTime.parse(map['heure_depart'] as String) : null,
+      hippodrome: map['hippodrome'] as String,
+      discipline: map['discipline'] as String,
+      distance: (map['distance'] as num?)?.toDouble(),
+      allocation: (map['allocation'] as num?)?.toDouble(),
+      nbPartants: map['nb_partants'] as int?,
+      corde: map['corde'] as String?,
+      terrain: map['terrain'] as String?,
+      niveauEstime: map['niveau_estime'] as String?,
+      finalisee: (map['finalisee'] as int) != 0,
+      source: map['source'] as String,
+    );
+  }
 }

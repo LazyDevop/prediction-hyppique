@@ -1,9 +1,10 @@
 import 'dart:developer' as developer;
 
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb, visibleForTesting;
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 
+import '../../models/course_summary.dart';
 import '../../models/historique_performance.dart';
 
 /// Cache local de l'historique complet d'un cheval (section 7.4 du document
@@ -23,6 +24,12 @@ class DatabaseHelper {
 
   Database? _db;
 
+  /// Injecte une base déjà ouverte (typiquement sqflite_common_ffi en
+  /// mémoire) pour les tests — court-circuite la résolution de chemin
+  /// normale de [_database]. Ne pas utiliser en dehors des tests.
+  @visibleForTesting
+  void setDatabaseForTesting(Database db) => _db = db;
+
   Future<Database?> _database() async {
     if (kIsWeb) return null;
     if (_db != null) return _db;
@@ -31,7 +38,8 @@ class DatabaseHelper {
       _db = await openDatabase(
         path,
         version: 1,
-        onCreate: (db, version) => db.execute('''
+        onCreate: (db, version) async {
+          await db.execute('''
           CREATE TABLE historique_performances (
             cheval_id INTEGER NOT NULL,
             date_course TEXT,
@@ -44,7 +52,27 @@ class DatabaseHelper {
             terrain TEXT,
             incident TEXT
           )
-        '''),
+        ''');
+          // Cache du programme du jour (FR-1/FR-14) : une ligne par course,
+          // 'date' au format ISO (YYYY-MM-DD) pour filtrer par jour.
+          await db.execute('''
+          CREATE TABLE programme_courses (
+            id INTEGER PRIMARY KEY,
+            date TEXT NOT NULL,
+            heure_depart TEXT,
+            hippodrome TEXT NOT NULL,
+            discipline TEXT NOT NULL,
+            distance REAL,
+            allocation REAL,
+            nb_partants INTEGER,
+            corde TEXT,
+            terrain TEXT,
+            niveau_estime TEXT,
+            finalisee INTEGER NOT NULL,
+            source TEXT NOT NULL
+          )
+        ''');
+        },
       );
       return _db;
     } catch (e) {
@@ -94,4 +122,46 @@ class DatabaseHelper {
       developer.log('Écriture du cache échouée, ignorée : $e', name: 'DatabaseHelper');
     }
   }
+
+  /// Cache du programme du jour (FR-1/FR-14). [] si aucun cache n'existe ou
+  /// n'est disponible sur cette plateforme — jamais d'exception, l'appelant
+  /// (CourseRepository) retombe alors sur le réseau.
+  Future<List<CourseSummary>> getProgramme(DateTime date) async {
+    try {
+      final db = await _database();
+      if (db == null) return [];
+      final iso = _isoDate(date);
+      final rows = await db.query('programme_courses', where: 'date = ?', whereArgs: [iso]);
+      return rows.map(CourseSummary.fromCacheMap).toList();
+    } catch (e) {
+      developer.log('Lecture du cache programme échouée, dégradation sans cache : $e', name: 'DatabaseHelper');
+      return [];
+    }
+  }
+
+  /// Remplace intégralement le cache du programme pour ce jour. Échec
+  /// silencieux côté cache (loggé, jamais propagé) : ne doit jamais faire
+  /// échouer un chargement qui a déjà réussi côté réseau.
+  Future<void> saveProgramme(DateTime date, List<CourseSummary> courses) async {
+    try {
+      final db = await _database();
+      if (db == null) return;
+      final iso = _isoDate(date);
+      await db.transaction((txn) async {
+        await txn.delete('programme_courses', where: 'date = ?', whereArgs: [iso]);
+        for (final course in courses) {
+          // 'date' est la clé de bucket de la requête (jour demandé), pas le
+          // champ date brut de la course (qui peut porter une heure) — sinon
+          // getProgramme(date) ne retrouverait jamais ces lignes.
+          await txn.insert('programme_courses', {...course.toCacheMap(), 'date': iso});
+        }
+      });
+    } catch (e) {
+      developer.log('Écriture du cache programme échouée, ignorée : $e', name: 'DatabaseHelper');
+    }
+  }
+
+  String _isoDate(DateTime date) => '${date.year.toString().padLeft(4, '0')}-'
+      '${date.month.toString().padLeft(2, '0')}-'
+      '${date.day.toString().padLeft(2, '0')}';
 }
