@@ -18,8 +18,8 @@ void main() {
     await tester.pumpAndSettle();
 
     // Écran de config course : passer directement aux partants.
-    expect(find.text('Course cible'), findsOneWidget);
-    await tester.tap(find.text('Suivant : les partants'));
+    expect(find.text('Configuration course'), findsOneWidget);
+    await tester.tap(find.text('Voir les partants'));
     await tester.pumpAndSettle();
 
     // Liste des partants (vide) : ajouter un cheval.

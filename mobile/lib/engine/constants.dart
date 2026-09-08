@@ -4,6 +4,8 @@
 /// répercuter côté Python.
 library;
 
+import 'dart:developer' as developer;
+
 class IncidentDefinition {
   final double malus;
   final bool chute;
@@ -78,6 +80,25 @@ double? terrainCoefficient(String? label) {
     return terrainCoefficientsPsf[label];
   }
   return null;
+}
+
+/// Résolution du label de niveau vers son coefficient (Architecture Spine
+/// AD-5) — symétrique de [terrainCoefficient] : un label `null` est un état
+/// "non renseigné" silencieux, mais un label non-null absent de
+/// [niveauCoefficients] est une anomalie distincte (faute de frappe, libellé
+/// jamais synchronisé avec le backend...) et ne doit jamais être confondue
+/// avec l'absence de valeur — elle est donc signalée via un log nommé
+/// plutôt que simplement absorbée dans le même `null` de retour.
+double? niveauCoefficient(String? label) {
+  if (label == null) return null;
+  final value = niveauCoefficients[label];
+  if (value == null) {
+    developer.log(
+      'Label de niveau non reconnu : "$label"',
+      name: 'niveau_label_unrecognized',
+    );
+  }
+  return value;
 }
 
 // Pondération de récence : index 0 = C1 = course la plus récente = poids max.
