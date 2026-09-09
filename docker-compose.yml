@@ -5,6 +5,9 @@ services:
       - "8000:8000"
     environment:
       - DATABASE_URL=sqlite:////app/data/hippique.db
+    env_file:
+      - path: .env
+        required: false
     volumes:
       - hippique_data:/app/data
     restart: unless-stopped
@@ -15,6 +18,9 @@ services:
     environment:
       - DATABASE_URL=sqlite:////app/data/hippique.db
       - INGEST_HOUR=6
+    env_file:
+      - path: .env
+        required: false
     volumes:
       - hippique_data:/app/data
     restart: unless-stopped
