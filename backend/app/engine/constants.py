@@ -25,7 +25,12 @@ TERRAIN_COEFFICIENTS_GRASS: Dict[str, float] = {
 }
 
 TERRAIN_COEFFICIENTS_PSF: Dict[str, float] = {
-    "Rapide": 1.00,
+    # 1.001 (not 1.00) matches docs/analyse_hippique_ia.jsx's own TERRAINS
+    # table (line 16) and vision_client.py's verbatim-ported extraction
+    # prompts (NFR-6) — a deliberate tiny offset from grass "Bon" (1.00) so a
+    # value-based reverse lookup (mobile RaceConfigScreen) never confuses PSF
+    # "Rapide" with grass "Bon", which this table previously did not honor.
+    "Rapide": 1.001,
     "Standard": 0.99,
     "Lent": 0.95,
 }

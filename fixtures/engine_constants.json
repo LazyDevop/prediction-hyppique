@@ -13,7 +13,7 @@
     "Très lourd": 0.70
   },
   "terrain_coefficients_psf": {
-    "Rapide": 1.00,
+    "Rapide": 1.001,
     "Standard": 0.99,
     "Lent": 0.95
   },

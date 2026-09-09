@@ -32,7 +32,13 @@ const Map<String, double> terrainCoefficientsGazon = {
 };
 
 const Map<String, double> terrainCoefficientsPsf = {
-  'Rapide': 1.00,
+  // 1.001 (pas 1.00) : reflète docs/analyse_hippique_ia.jsx (table TERRAINS,
+  // ligne 16) et le prompt d'extraction vision (backend/app/data/vision_client.py,
+  // porté verbatim, NFR-6) — un léger décalage volontaire par rapport au gazon
+  // "Bon" (1.00) pour qu'une recherche inverse par valeur (RaceConfigScreen)
+  // ne confonde jamais PSF "Rapide" avec gazon "Bon" (voir option_lists.dart,
+  // qui utilisait déjà 1.001 — cette table-ci était la seule à diverger).
+  'Rapide': 1.001,
   'Standard': 0.99,
   'Lent': 0.95,
 };
