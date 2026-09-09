@@ -33,7 +33,7 @@ abstract class ExtractionApi {
 class ApiClient implements CoursesApi, ExtractionApi {
   final Dio _dio;
 
-  ApiClient({String baseUrl = 'http://localhost:8000'})
+  ApiClient({String baseUrl = 'http://102.220.19.200:8000'})
       : _dio = Dio(BaseOptions(
           baseUrl: baseUrl,
           connectTimeout: const Duration(seconds: 10),
