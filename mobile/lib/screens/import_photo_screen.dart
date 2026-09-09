@@ -68,6 +68,7 @@ class _ImportPhotoScreenState extends ConsumerState<ImportPhotoScreen> {
   bool _loading = false;
   String? _error;
   ProgrammeExtrait? _result;
+  bool _confirming = false;
 
   ExtractionApi _api() => widget.api ?? ref.read(apiClientProvider);
 
@@ -256,7 +257,13 @@ class _ImportPhotoScreenState extends ConsumerState<ImportPhotoScreen> {
       distance: extrait.dist,
       terrain: extrait.terr,
       niveau: extrait.niveau,
-      nbPartantsCourse: extrait.partants,
+      // `null` est le sentinel "auto" du modèle (RaceConfig, doc du champ) -
+      // si l'extraction ne rapporte pas de nombre de partants MAIS a bien
+      // détecté des chevaux, se replier sur ce compte plutôt que de laisser
+      // un champ vide que l'extraction avait pourtant les moyens de remplir
+      // (edge-case-hunter, revue de code). Une liste vide ne doit jamais
+      // devenir un "0 partants" explicite - reste `null` (auto).
+      nbPartantsCourse: extrait.partants ?? (extrait.horses.isEmpty ? null : extrait.horses.length),
     );
   }
 
@@ -281,9 +288,20 @@ class _ImportPhotoScreenState extends ConsumerState<ImportPhotoScreen> {
   /// `RaceConfigScreen` en remplaçant cet écran dans la pile — même motif
   /// que `home_screen.dart::_selectCourse`, pour ne pas laisser l'utilisateur
   /// revenir "en arrière" vers la vue d'extraction devenue périmée.
+  ///
+  /// Ordre volontaire : `horsesProvider.setAll` (qui vide `resultsProvider`
+  /// via `.clear()`) tourne AVANT `raceConfigProvider.update` (qui, s'il
+  /// tournait en premier, appellerait `markStale()` sur un résultat encore
+  /// présent l'instant d'après) - sinon toute vue qui écoute `resultsProvider`
+  /// observe transitoirement la NOUVELLE config associée à d'ANCIENS
+  /// résultats périmés au lieu d'un état vidé (edge-case-hunter, revue de
+  /// code). `_confirming` évite un double appui de déclencher deux
+  /// `Navigator.pushReplacement` (blind-hunter + edge-case-hunter).
   void _confirmImport(ProgrammeExtrait extrait) {
-    ref.read(raceConfigProvider.notifier).update(_toRaceConfig(extrait));
+    if (_confirming) return;
+    _confirming = true;
     ref.read(horsesProvider.notifier).setAll(extrait.horses.map(_toHorse).toList());
+    ref.read(raceConfigProvider.notifier).update(_toRaceConfig(extrait));
     Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const RaceConfigScreen()));
   }
 
@@ -347,7 +365,7 @@ class _ImportPhotoScreenState extends ConsumerState<ImportPhotoScreen> {
           ),
         const SizedBox(height: 8),
         ElevatedButton(
-          onPressed: () => _confirmImport(extrait),
+          onPressed: _confirming ? null : () => _confirmImport(extrait),
           child: const Text('Confirmer et configurer'),
         ),
       ],

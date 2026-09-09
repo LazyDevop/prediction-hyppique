@@ -376,12 +376,114 @@ void main() {
         expect(horses[0].cote, 6.5);
         expect(horses[0].inedit, isFalse);
         expect(horses[0].performances, isEmpty);
+        expect(horses[0].chevalId, isNull, reason: 'un cheval importé par photo n\'est jamais lié à un cheval backend connu');
         expect(horses[1].nom, 'Éclair');
 
         expect(find.byType(RaceConfigScreen), findsOneWidget);
         expect(find.byType(ImportPhotoScreen), findsNothing);
       },
     );
+
+    testWidgets('confirm avec hippo absent -> RaceConfig.hippodrome == "" (jamais null)', (tester) async {
+      // verification-gap (revue de code) : aucun test n'exerçait la branche
+      // `extrait.hippo ?? ''` de _toRaceConfig.
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      final extrait = ProgrammeExtrait.fromJson({
+        'hippo': null, 'dist': 1600.0, 'terr': 1.0, 'niveau': 2.0, 'partants': 1,
+        'horses': [
+          {'num': 1, 'name': 'Sans Hippodrome', 'age': 5, 'poids': 58.0, 'cote': 5.0, 'perfs': []},
+        ],
+      });
+      final api = _FakeExtractionApi(() async => extrait);
+
+      await _pumpScreenWithContainer(tester, container, api: api, pickFile: _samplePickedUpload);
+      await tester.tap(find.widgetWithText(ElevatedButton, 'Galerie'));
+      await tester.pumpAndSettle();
+
+      await _tapConfirm(tester);
+
+      expect(container.read(raceConfigProvider).hippodrome, '');
+    });
+
+    testWidgets('nbPartantsCourse absent mais chevaux détectés -> se replie sur le nombre extrait', (tester) async {
+      // edge-case-hunter (revue de code) : `extrait.partants` peut être null
+      // alors même que des chevaux ont bien été détectés - se replier sur
+      // leur nombre plutôt que de laisser un champ vide que l'extraction
+      // avait les moyens de renseigner.
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      final extrait = ProgrammeExtrait.fromJson({
+        'hippo': 'Longchamp', 'dist': 2000.0, 'terr': 1.0, 'niveau': 2.0, 'partants': null,
+        'horses': [
+          {'num': 1, 'name': 'A', 'perfs': []},
+          {'num': 2, 'name': 'B', 'perfs': []},
+          {'num': 3, 'name': 'C', 'perfs': []},
+        ],
+      });
+      final api = _FakeExtractionApi(() async => extrait);
+
+      await _pumpScreenWithContainer(tester, container, api: api, pickFile: _samplePickedUpload);
+      await tester.tap(find.widgetWithText(ElevatedButton, 'Galerie'));
+      await tester.pumpAndSettle();
+
+      await _tapConfirm(tester);
+
+      expect(container.read(raceConfigProvider).nbPartantsCourse, 3);
+    });
+
+    testWidgets('nbPartantsCourse et chevaux tous deux absents -> reste null (sentinel "auto")', (tester) async {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      final extrait = ProgrammeExtrait.fromJson({
+        'hippo': 'Longchamp', 'dist': 2000.0, 'terr': 1.0, 'niveau': 2.0, 'partants': null, 'horses': <dynamic>[],
+      });
+      final api = _FakeExtractionApi(() async => extrait);
+
+      await _pumpScreenWithContainer(tester, container, api: api, pickFile: _samplePickedUpload);
+      await tester.tap(find.widgetWithText(ElevatedButton, 'Galerie'));
+      await tester.pumpAndSettle();
+
+      await _tapConfirm(tester);
+
+      expect(container.read(raceConfigProvider).nbPartantsCourse, isNull);
+    });
+
+    testWidgets('un double appui sur Confirmer ne déclenche pas une double navigation', (tester) async {
+      // blind-hunter + edge-case-hunter (revue de code) : le bouton n'avait
+      // aucune protection contre le double-tap, contrairement aux boutons
+      // de sélection de fichier.
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      final extrait = ProgrammeExtrait.fromJson({
+        'hippo': 'Vincennes', 'dist': 2100.0, 'terr': 1.0, 'niveau': 3.0, 'partants': 1,
+        'horses': [
+          {'num': 1, 'name': 'Bolide', 'age': 5, 'poids': 58.5, 'cote': 6.5, 'perfs': []},
+        ],
+      });
+      final api = _FakeExtractionApi(() async => extrait);
+
+      await _pumpScreenWithContainer(tester, container, api: api, pickFile: _samplePickedUpload);
+      await tester.tap(find.widgetWithText(ElevatedButton, 'Galerie'));
+      await tester.pumpAndSettle();
+
+      final finder = find.widgetWithText(ElevatedButton, 'Confirmer et configurer');
+      await tester.ensureVisible(finder);
+      await tester.pumpAndSettle();
+      // Deux appuis rapprochés, avant que la navigation ne règle l'arbre de
+      // widgets - ne doit lever aucune exception de Navigator et ne doit
+      // aboutir qu'à UN seul RaceConfigScreen.
+      await tester.tap(finder);
+      await tester.tap(finder);
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      expect(find.byType(RaceConfigScreen), findsOneWidget);
+    });
 
     testWidgets('confirm with a null name on one horse -> Horse.nom == "Cheval inconnu", not a crash', (tester) async {
       final container = ProviderContainer();

@@ -3,7 +3,7 @@ title: 'Story 4.4: wire import_photo_screen confirm action into raceConfigProvid
 type: 'feature'
 created: '2026-09-09'
 status: 'done'
-review_loop_iteration: 0
+review_loop_iteration: 1
 context: ['{project-root}/docs/cahier_des_charges_app_mobile.md']
 baseline_commit: 'e29a4565e8a12a746a6d42b0a88ed9f1d1c83a69'
 ---
@@ -66,5 +66,26 @@ baseline_commit: 'e29a4565e8a12a746a6d42b0a88ed9f1d1c83a69'
 ## Verification
 
 **Commands:**
-- `cd mobile && flutter test` -- expected: existing suite + new tests, 0 regressions.
-- `cd mobile && flutter analyze` -- expected: 0 issues.
+- `cd mobile && flutter test` -- expected: existing suite + new tests, 0 regressions -- actual (implementation, pre-review): 89/89 passed, 0 regressions. `flutter analyze` -- 0 issues.
+- Post-review (3-lens review: blind-hunter, edge-case-hunter, verification-gap — run retroactively after a session interruption caused this story to be committed once without it, see Review Findings below), re-verified independently -- **actual: 97/97 tests passed** (89 + 8 new), 0 regressions. `flutter analyze` -- 0 issues.
+
+## Review Findings & Resolution
+
+This story was first committed (`0597831`) after implementation but before its 3-lens review could run — a session crash interrupted the review mid-flight, and a subsequent continuation of this session committed without completing it, breaking this session's own established rhythm for the first time in 9 prior stories. The commit was not yet pushed, so the review ran retroactively against the already-committed state, with fixes landing in a follow-up commit rather than rewriting history.
+
+**Fixed directly (3 source-code changes + 5 new tests):**
+- **`_confirmImport`** ([import_photo_screen.dart:284-296](mobile/lib/screens/import_photo_screen.dart#L284-L296)): reordered the two provider writes — `horsesProvider.setAll` (which clears `resultsProvider`) now runs BEFORE `raceConfigProvider.update` (which would otherwise call `markStale()` on a still-live result the instant before it's cleared). Without the reorder, any widget watching `resultsProvider` could transiently observe the NEW config paired with STALE results computed from the OLD horse list (edge-case-hunter finding #6).
+- Same function: added a `_confirming` re-entrancy guard and disabled the button once set — the confirm button had no double-tap protection, unlike the picker buttons, risking two `Navigator.pushReplacement` calls (blind-hunter #11, edge-case-hunter #4).
+- **`_toRaceConfig`** ([import_photo_screen.dart:253-262](mobile/lib/screens/import_photo_screen.dart#L253-L262)): `nbPartantsCourse` now falls back to `extrait.horses.length` when `extrait.partants` is null AND horses were actually detected — previously stayed null (the model's own "auto" sentinel) even when the extraction had the means to fill it (edge-case-hunter #3).
+- New tests: the null-`hippo` fallback branch (verification-gap's one confirmed gap), both `nbPartantsCourse` fallback branches (falls back when horses exist; stays null when neither is present), `Horse.chevalId` staying null after import (extending the main confirm test), and the double-tap-doesn't-double-navigate behavior.
+
+**Logged to `deferred-work.md`:**
+- **HIGH-PRIORITY, cross-cutting, out of this story's scope:** the vision-extraction prompt's own coefficient table (Story 4.1, `vision_client.py`, ported verbatim per NFR-6) disagrees with `mobile/lib/engine/constants.dart`'s canonical tables for at least two values (`niveau=2` for Handicap collides with "Catégorie C"'s own value; PSF "rapide"=1.001 matches nothing in the mobile table) — `RaceConfigScreen`'s reverse-lookup silently mislabels or fails for these, indistinguishable from "not on the photo." Confirmed by reading both sides' actual table values, not assumed. Needs a dedicated reconciliation story spanning already-shipped code, not a one-line fix here.
+- Lower-priority: no confirmation dialog before an import silently overwrites unsaved manual work (a real UX product decision, not built without an explicit ask); no dedup check on duplicate extracted dossard numbers; an entirely-null horse entry still becomes a visible "Cheval inconnu" ghost row (arguably correct per "never silently drop extracted data"); extraction-sourced horses are indistinguishable downstream from genuinely-unfilled ones for scoring purposes; the per-horse "Musique" shown on the review screen is discarded on confirm (deliberate mapping decision, not a bug, but worth a UI note); `RaceConfigScreen`'s own save button redundantly calls `raceConfigProvider.notifier.update()` a second time (currently harmless).
+
+## Suggested Review Order
+
+1. [mobile/lib/screens/import_photo_screen.dart:279-297](mobile/lib/screens/import_photo_screen.dart#L279-L297) — `_confirmImport`, the call-order fix and the re-entrancy guard together.
+2. [mobile/test/screens/import_photo_screen_test.dart:455-478](mobile/test/screens/import_photo_screen_test.dart#L455-L478) — the double-tap test, the most structurally interesting new test.
+3. [mobile/lib/screens/import_photo_screen.dart:253-262](mobile/lib/screens/import_photo_screen.dart#L253-L262) and [mobile/test/screens/import_photo_screen_test.dart:410-452](mobile/test/screens/import_photo_screen_test.dart#L410-L452) — the `nbPartantsCourse` fallback and its two tests.
+4. [_bmad-output/implementation-artifacts/deferred-work.md](_bmad-output/implementation-artifacts/deferred-work.md) — new entries, especially the HIGH-PRIORITY terrain/niveau coefficient mismatch.
