@@ -33,6 +33,18 @@ class HorsesNotifier extends Notifier<List<Horse>> {
     state = [];
     ref.read(resultsProvider.notifier).clear();
   }
+
+  /// Remplace la liste entière en une seule mise à jour d'état (pas N appels
+  /// `add()` séquentiels, qui déclencheraient N rebuilds Riverpod et
+  /// marqueraient successivement `resultsProvider` périmé pour rien). Utilisé
+  /// par l'import photo/PDF d'un programme complet (spec-4-4) : un programme
+  /// importé est un nouveau contexte, pas une édition du précédent — mêmes
+  /// sémantiques "nouvelle course" que `clear()`, donc `.clear()` sur
+  /// `resultsProvider` plutôt que `.markStale()`.
+  void setAll(List<Horse> horses) {
+    state = horses;
+    ref.read(resultsProvider.notifier).clear();
+  }
 }
 
 final horsesProvider = NotifierProvider<HorsesNotifier, List<Horse>>(HorsesNotifier.new);

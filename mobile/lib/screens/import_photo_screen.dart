@@ -7,8 +7,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../data/remote/api_client.dart';
+import '../models/horse.dart';
 import '../models/programme_extrait.dart';
+import '../models/race_config.dart';
 import '../providers/api_provider.dart';
+import '../providers/horses_provider.dart';
+import '../providers/race_provider.dart';
+import 'race_config_screen.dart';
 
 /// Fichier choisi par l'utilisateur (photo ou PDF), normalisé pour l'appel
 /// à `/extraction/programme` indépendamment du plugin qui l'a produit
@@ -30,14 +35,17 @@ class PickedUpload {
 enum _ImportSource { gallery, camera, pdf }
 
 /// Import photo/PDF d'un programme complet — section 7.5 du document
-/// mobile, `POST /extraction/programme` (Story 4.2). Portée de cette story :
-/// choisir un fichier, appeler le backend, AFFICHER le résultat marqué
-/// "à vérifier" (bandeau "✨ Rempli par l'IA", repris du prototype React).
-/// Appliquer les champs confirmés dans `raceConfigProvider`/`horsesProvider`
-/// est explicitement hors scope (voir Intent de spec-4-3 et
-/// `deferred-work.md`) : ce screen ne doit jamais écrire dans ces
-/// providers, seulement les lire serait déjà hors scope — il ne fait
-/// qu'afficher la réponse brute de l'API.
+/// mobile, `POST /extraction/programme` (Story 4.2). Choisit un fichier,
+/// appelle le backend, affiche le résultat marqué "à vérifier" (bandeau
+/// "✨ Rempli par l'IA", repris du prototype React), puis — spec-4-4 — un
+/// bouton "Confirmer et configurer" mappe ce résultat dans
+/// `raceConfigProvider`/`horsesProvider` (`HorsesNotifier.setAll`, un seul
+/// remplacement en bloc) et navigue vers `RaceConfigScreen` pour que
+/// l'utilisateur vérifie/ajuste les champs préremplis avant de continuer —
+/// jamais appliqués silencieusement. `Story 4.3` avait volontairement laissé
+/// cet écran display-only le temps que `race_provider.dart`/
+/// `horses_provider.dart` se stabilisent dans une session concurrente (voir
+/// `deferred-work.md`) ; ce n'est plus le cas.
 class ImportPhotoScreen extends ConsumerStatefulWidget {
   /// Permet d'injecter un faux `ExtractionApi` en test. Hors test,
   /// `ref.read(apiClientProvider)` fournit l'implémentation réelle (même
@@ -238,6 +246,47 @@ class _ImportPhotoScreenState extends ConsumerState<ImportPhotoScreen> {
     return '?';
   }
 
+  // Mapping verbatim (Intent de spec-4-4) : dist/terr/niveau sont déjà des
+  // coefficients résolus (Story 4.1), pas des libellés — RaceConfigScreen
+  // les retrouve via son reverse-lookup existant, à l'identique d'une course
+  // chargée depuis le backend (home_screen.dart::_selectCourse).
+  RaceConfig _toRaceConfig(ProgrammeExtrait extrait) {
+    return RaceConfig(
+      hippodrome: extrait.hippo ?? '',
+      distance: extrait.dist,
+      terrain: extrait.terr,
+      niveau: extrait.niveau,
+      nbPartantsCourse: extrait.partants,
+    );
+  }
+
+  // `perfs` au niveau programme n'a que rang/incident (pas partants/
+  // distance/terrain/niveau) : pas assez riche pour devenir des
+  // `Performance` valides (Intent de spec-4-4) — l'historique de chaque
+  // cheval reste vide, comme pour un cheval ajouté manuellement.
+  Horse _toHorse(HorseProgrammeExtrait horse) {
+    return Horse(
+      nom: horse.name ?? 'Cheval inconnu',
+      numPmu: horse.num,
+      age: horse.age,
+      poids: horse.poids,
+      cote: horse.cote,
+      inedit: false,
+      performances: const [],
+    );
+  }
+
+  /// Applique le résultat extrait dans les providers (un seul remplacement
+  /// en bloc via `setAll`, pas N `add()`) puis navigue vers
+  /// `RaceConfigScreen` en remplaçant cet écran dans la pile — même motif
+  /// que `home_screen.dart::_selectCourse`, pour ne pas laisser l'utilisateur
+  /// revenir "en arrière" vers la vue d'extraction devenue périmée.
+  void _confirmImport(ProgrammeExtrait extrait) {
+    ref.read(raceConfigProvider.notifier).update(_toRaceConfig(extrait));
+    ref.read(horsesProvider.notifier).setAll(extrait.horses.map(_toHorse).toList());
+    Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const RaceConfigScreen()));
+  }
+
   Widget _buildResult(BuildContext context, ProgrammeExtrait extrait) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -296,6 +345,11 @@ class _ImportPhotoScreenState extends ConsumerState<ImportPhotoScreen> {
               ),
             ),
           ),
+        const SizedBox(height: 8),
+        ElevatedButton(
+          onPressed: () => _confirmImport(extrait),
+          child: const Text('Confirmer et configurer'),
+        ),
       ],
     );
   }

@@ -6,8 +6,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:prediction_hippique/data/remote/api_client.dart';
+import 'package:prediction_hippique/engine/combinatoire.dart';
+import 'package:prediction_hippique/models/horse.dart';
 import 'package:prediction_hippique/models/programme_extrait.dart';
+import 'package:prediction_hippique/providers/horses_provider.dart';
+import 'package:prediction_hippique/providers/race_provider.dart';
+import 'package:prediction_hippique/providers/results_provider.dart';
 import 'package:prediction_hippique/screens/import_photo_screen.dart';
+import 'package:prediction_hippique/screens/race_config_screen.dart';
 
 /// Faux `ExtractionApi` (jamais de mock Dio, convention établie par
 /// `CoursesApi`/spec-3-5) — piloté par un callback pour simuler un succès ou
@@ -56,6 +62,58 @@ Future<void> _pumpScreen(
     ),
   );
   await tester.pump();
+}
+
+// Variante avec un ProviderContainer explicite (UncontrolledProviderScope,
+// même convention que horse_edit_screen_test.dart) : nécessaire pour
+// inspecter raceConfigProvider/horsesProvider/resultsProvider après l'appui
+// sur "Confirmer et configurer" (spec-4-4).
+Future<void> _pumpScreenWithContainer(
+  WidgetTester tester,
+  ProviderContainer container, {
+  required ExtractionApi api,
+  Future<PickedUpload?> Function()? pickFile,
+}) async {
+  await tester.pumpWidget(
+    UncontrolledProviderScope(
+      container: container,
+      child: MaterialApp(
+        home: ImportPhotoScreen(api: api, pickFile: pickFile),
+      ),
+    ),
+  );
+  await tester.pump();
+}
+
+// Le bouton "Confirmer et configurer" est en bas de la ListView, sous la
+// liste des partants extraits : hors du viewport de test par défaut (même
+// raison que le compteur dans horse_edit_screen_test.dart) — il faut le
+// faire défiler dans la vue avant de le taper, sans quoi le tap ne touche
+// rien et le confirm n'a jamais lieu.
+Future<void> _tapConfirm(WidgetTester tester) async {
+  final finder = find.widgetWithText(ElevatedButton, 'Confirmer et configurer');
+  await tester.ensureVisible(finder);
+  await tester.pumpAndSettle();
+  await tester.tap(finder);
+  await tester.pumpAndSettle();
+}
+
+// Résultat calculé factice, juste pour prouver qu'il est bien effacé par le
+// confirm (même construction que race_and_params_provider_test.dart).
+AnalyseResult _dummyResult() {
+  ComboOrdreDesordre empty() => ComboOrdreDesordre([], []);
+  return AnalyseResult(
+    const [],
+    0,
+    Combinaisons(
+      couple: empty(),
+      trio: empty(),
+      quarte: empty(),
+      quinte: empty(),
+      couplePlace: [],
+      deuxSurQuatre: [],
+    ),
+  );
 }
 
 void main() {
@@ -265,6 +323,141 @@ void main() {
 
       expect(find.textContaining('Musique'), findsOneWidget);
       expect(find.textContaining('1 · D'), findsOneWidget);
+    });
+  });
+
+  group('ImportPhotoScreen — confirm import into providers (spec-4-4)', () {
+    testWidgets('confirm button is not shown before any successful extraction', (tester) async {
+      final api = _FakeExtractionApi(() async => throw StateError('never called'));
+
+      await _pumpScreen(tester, api: api, pickFile: _samplePickedUpload);
+
+      expect(find.widgetWithText(ElevatedButton, 'Confirmer et configurer'), findsNothing);
+    });
+
+    testWidgets(
+      'confirm a populated result maps into raceConfigProvider/horsesProvider and navigates to RaceConfigScreen',
+      (tester) async {
+        final container = ProviderContainer();
+        addTearDown(container.dispose);
+
+        final extrait = ProgrammeExtrait.fromJson({
+          'hippo': 'Vincennes',
+          'dist': 2100.0,
+          'terr': 1.0,
+          'niveau': 3.0,
+          'partants': 2,
+          'horses': [
+            {'num': 3, 'name': 'Bolide', 'age': 5, 'poids': 58.5, 'cote': 6.5, 'perfs': []},
+            {'num': 7, 'name': 'Éclair', 'age': 4, 'poids': 56.0, 'cote': 3.2, 'perfs': []},
+          ],
+        });
+        final api = _FakeExtractionApi(() async => extrait);
+
+        await _pumpScreenWithContainer(tester, container, api: api, pickFile: _samplePickedUpload);
+        await tester.tap(find.widgetWithText(ElevatedButton, 'Galerie'));
+        await tester.pumpAndSettle();
+
+        await _tapConfirm(tester);
+
+        final config = container.read(raceConfigProvider);
+        expect(config.hippodrome, 'Vincennes');
+        expect(config.distance, 2100.0);
+        expect(config.terrain, 1.0);
+        expect(config.niveau, 3.0);
+        expect(config.nbPartantsCourse, 2);
+
+        final horses = container.read(horsesProvider);
+        expect(horses, hasLength(2));
+        expect(horses[0].nom, 'Bolide');
+        expect(horses[0].numPmu, 3);
+        expect(horses[0].age, 5);
+        expect(horses[0].poids, 58.5);
+        expect(horses[0].cote, 6.5);
+        expect(horses[0].inedit, isFalse);
+        expect(horses[0].performances, isEmpty);
+        expect(horses[1].nom, 'Éclair');
+
+        expect(find.byType(RaceConfigScreen), findsOneWidget);
+        expect(find.byType(ImportPhotoScreen), findsNothing);
+      },
+    );
+
+    testWidgets('confirm with a null name on one horse -> Horse.nom == "Cheval inconnu", not a crash', (tester) async {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      final extrait = ProgrammeExtrait.fromJson({
+        'hippo': 'Auteuil',
+        'dist': 1800.0,
+        'terr': 1.0,
+        'niveau': 2.0,
+        'partants': 1,
+        'horses': [
+          {'num': 5, 'name': null, 'age': 6, 'poids': 60.0, 'cote': 4.0, 'perfs': []},
+        ],
+      });
+      final api = _FakeExtractionApi(() async => extrait);
+
+      await _pumpScreenWithContainer(tester, container, api: api, pickFile: _samplePickedUpload);
+      await tester.tap(find.widgetWithText(ElevatedButton, 'Galerie'));
+      await tester.pumpAndSettle();
+
+      await _tapConfirm(tester);
+
+      expect(container.read(horsesProvider).single.nom, 'Cheval inconnu');
+    });
+
+    testWidgets('confirm with zero extracted horses -> horsesProvider becomes [], navigation still proceeds', (tester) async {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      container.read(horsesProvider.notifier).add(Horse(nom: 'Ancien partant'));
+
+      final extrait = ProgrammeExtrait.fromJson({
+        'hippo': 'Chantilly',
+        'dist': 1600.0,
+        'terr': 1.0,
+        'niveau': 3.0,
+        'partants': 0,
+        'horses': [],
+      });
+      final api = _FakeExtractionApi(() async => extrait);
+
+      await _pumpScreenWithContainer(tester, container, api: api, pickFile: _samplePickedUpload);
+      await tester.tap(find.widgetWithText(ElevatedButton, 'Galerie'));
+      await tester.pumpAndSettle();
+
+      await _tapConfirm(tester);
+
+      expect(container.read(horsesProvider), isEmpty);
+      expect(find.byType(RaceConfigScreen), findsOneWidget);
+    });
+
+    testWidgets('resultsProvider had a prior calculated result -> cleared (not marked stale) after confirm', (tester) async {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      container.read(resultsProvider.notifier).state = _dummyResult();
+      expect(container.read(resultsProvider), isNotNull);
+
+      final extrait = ProgrammeExtrait.fromJson({
+        'hippo': 'Vincennes',
+        'dist': 2100.0,
+        'terr': 1.0,
+        'niveau': 3.0,
+        'partants': 1,
+        'horses': [
+          {'num': 1, 'name': 'Bolide', 'age': 5, 'poids': 58.5, 'cote': 6.5, 'perfs': []},
+        ],
+      });
+      final api = _FakeExtractionApi(() async => extrait);
+
+      await _pumpScreenWithContainer(tester, container, api: api, pickFile: _samplePickedUpload);
+      await tester.tap(find.widgetWithText(ElevatedButton, 'Galerie'));
+      await tester.pumpAndSettle();
+
+      await _tapConfirm(tester);
+
+      expect(container.read(resultsProvider), isNull);
     });
   });
 }

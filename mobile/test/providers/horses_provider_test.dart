@@ -106,6 +106,44 @@ void main() {
       expect(container.read(horsesProvider), isEmpty);
     });
 
+    test('setAll (spec-4-4) — bulk replace, no prior result -> state becomes the given list', () {
+      final container = newContainer();
+      addTearDown(container.dispose);
+
+      container.read(horsesProvider.notifier).setAll([Horse(nom: 'A'), Horse(nom: 'B')]);
+
+      expect(container.read(horsesProvider).map((h) => h.nom), ['A', 'B']);
+      expect(container.read(resultsProvider), isNull);
+    });
+
+    test('setAll (spec-4-4) — result existed -> resultsProvider becomes null, not isStale', () {
+      // Matches clear()'s "nouvelle course chargée" semantics (Intent de
+      // spec-4-4) : un programme importé est un nouveau contexte, pas une
+      // édition du précédent — jamais un bandeau "recalculer la même course".
+      final container = newContainer();
+      addTearDown(container.dispose);
+
+      container.read(horsesProvider.notifier).add(Horse(nom: 'A'));
+      container.read(resultsProvider.notifier).calculer();
+      expect(container.read(resultsProvider), isNotNull);
+
+      container.read(horsesProvider.notifier).setAll([Horse(nom: 'C')]);
+
+      expect(container.read(resultsProvider), isNull);
+      expect(container.read(horsesProvider).map((h) => h.nom), ['C']);
+    });
+
+    test('setAll (spec-4-4) — empty list -> horsesProvider becomes []', () {
+      final container = newContainer();
+      addTearDown(container.dispose);
+
+      container.read(horsesProvider.notifier).add(Horse(nom: 'A'));
+
+      container.read(horsesProvider.notifier).setAll([]);
+
+      expect(container.read(horsesProvider), isEmpty);
+    });
+
     test('already stale, another edit -> stays isStale: true, no redundant rebuild', () {
       final container = newContainer();
       addTearDown(container.dispose);
