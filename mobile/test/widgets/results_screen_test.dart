@@ -120,5 +120,44 @@ void main() {
 
       expect(container.read(resultsProvider), isNull);
     });
+
+    testWidgets('stale after removal -> header shows live roster count, not the frozen one', (tester) async {
+      final container = await _pumpWithHorses(tester, ['Foudre Noire', 'Vent Rapide']);
+
+      container.read(horsesProvider.notifier).removeAt(0);
+      await tester.pump();
+
+      expect(find.text('1 partants actuellement — recalcul nécessaire'), findsOneWidget);
+      expect(find.textContaining('2 partants'), findsNothing);
+    });
+
+    testWidgets('stale after addition -> header shows the larger live roster count', (tester) async {
+      final container = await _pumpWithHorses(tester, ['Foudre Noire']);
+
+      container.read(horsesProvider.notifier).add(Horse(nom: 'Vent Rapide'));
+      await tester.pump();
+
+      expect(find.text('2 partants actuellement — recalcul nécessaire'), findsOneWidget);
+    });
+
+    testWidgets('non-stale -> header keeps the frozen count, no live-roster phrasing', (tester) async {
+      await _pumpWithHorses(tester, ['Foudre Noire']);
+
+      expect(find.textContaining('partants actuellement'), findsNothing);
+      expect(find.textContaining('1 partants'), findsOneWidget);
+    });
+
+    testWidgets('banner carries a liveRegion semantics flag for screen readers', (tester) async {
+      final handle = tester.ensureSemantics();
+      final container = await _pumpWithHorses(tester, ['Foudre Noire']);
+
+      container.read(horsesProvider.notifier).removeAt(0);
+      await tester.pump();
+
+      final node = tester.getSemantics(find.byKey(const Key('stale-banner-semantics')));
+      expect(node.flagsCollection.isLiveRegion, isTrue);
+
+      handle.dispose();
+    });
   });
 }

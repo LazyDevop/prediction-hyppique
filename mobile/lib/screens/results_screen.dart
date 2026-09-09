@@ -64,34 +64,42 @@ class ResultsScreen extends ConsumerWidget {
           // rester visible même une fois l'utilisateur scrollé dans le
           // classement, pas seulement en haut de la ListView (voir revue).
           if (result.isStale)
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                // Ambre, pas rouge : périmé est un état attendu et bénin
-                // ("les partants ont changé"), pas une erreur.
-                color: Colors.amber.withValues(alpha: 0.15),
-                border: const Border(bottom: BorderSide(color: Colors.amber)),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.warning_amber_rounded, color: Colors.amber),
-                  const SizedBox(width: 8),
-                  const Expanded(
-                    child: Text(
-                      'Recalcul nécessaire — les partants ont changé depuis ce calcul.',
-                      style: TextStyle(color: Colors.amber),
+            // liveRegion : un utilisateur de lecteur d'écran doit être notifié
+            // proactivement qu'un classement affiché vient de devenir périmé,
+            // pas seulement un utilisateur voyant qui balaie l'écran.
+            Semantics(
+              key: const Key('stale-banner-semantics'),
+              liveRegion: true,
+              container: true,
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  // Ambre, pas rouge : périmé est un état attendu et bénin
+                  // ("les partants ont changé"), pas une erreur.
+                  color: Colors.amber.withValues(alpha: 0.15),
+                  border: const Border(bottom: BorderSide(color: Colors.amber)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.warning_amber_rounded, color: Colors.amber),
+                    const SizedBox(width: 8),
+                    const Expanded(
+                      child: Text(
+                        'Recalcul nécessaire — les partants ont changé depuis ce calcul.',
+                        style: TextStyle(color: Colors.amber),
+                      ),
                     ),
-                  ),
-                  TextButton(
-                    // Pas de recalcul possible sur un effectif vide, comme le
-                    // FAB "Calculer" de horse_list_screen.dart.
-                    onPressed: horses.isEmpty
-                        ? null
-                        : () => ref.read(resultsProvider.notifier).calculer(),
-                    child: const Text('Recalculer'),
-                  ),
-                ],
+                    TextButton(
+                      // Pas de recalcul possible sur un effectif vide, comme le
+                      // FAB "Calculer" de horse_list_screen.dart.
+                      onPressed: horses.isEmpty
+                          ? null
+                          : () => ref.read(resultsProvider.notifier).calculer(),
+                      child: const Text('Recalculer'),
+                    ),
+                  ],
+                ),
               ),
             ),
           Expanded(
@@ -120,9 +128,18 @@ class ResultsScreen extends ConsumerWidget {
                       Text('${race.distance?.toStringAsFixed(0) ?? '—'} m'),
                       Text(terrainLabel),
                       Text(niveauLabel),
-                      Text(
-                        '${result.resultats.length} partants${nVirtuels > 0 ? ' (dont $nVirtuels non analysés)' : ''}',
-                      ),
+                      // Une fois périmé, l'effectif figé du calcul n'a plus de
+                      // sens à afficher tel quel : bascule sur l'effectif
+                      // réel courant, stylé comme le bandeau (jamais color-only
+                      // : le suffixe "recalcul nécessaire" porte le même signal).
+                      result.isStale
+                          ? Text(
+                              '${horses.length} partants actuellement — recalcul nécessaire',
+                              style: const TextStyle(color: Colors.amber),
+                            )
+                          : Text(
+                              '${result.resultats.length} partants${nVirtuels > 0 ? ' (dont $nVirtuels non analysés)' : ''}',
+                            ),
                     ],
                   ),
                 ),
