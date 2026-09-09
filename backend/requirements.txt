@@ -3,5 +3,10 @@ uvicorn[standard]
 SQLAlchemy
 pydantic
 requests
-numpy
+# Épinglé (pas juste "numpy") : les wheels manylinux les plus récentes
+# exigent une CPU baseline x86-64-v2 (SSE4.2+) — plante au démarrage sur un
+# VPS dont l'hyperviseur expose un CPU virtuel générique (ex. QEMU "Virtual
+# CPU version 2.5+", sans ces instructions). 1.26.4 est la dernière version
+# dont le wheel manylinux reste compatible SSE2-only.
+numpy==1.26.4
 python-multipart
