@@ -6,8 +6,10 @@ plugins {
 
 android {
     namespace = "com.predictionhippique.prediction_hippique"
-    compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
+    // flutter_plugin_android_lifecycle (pulled in transitively by file_picker)
+    // requires compileSdk 36+; flutter.compileSdkVersion resolves lower for
+    // this Flutter SDK, so pin it explicitly.
+    compileSdk = 36
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
