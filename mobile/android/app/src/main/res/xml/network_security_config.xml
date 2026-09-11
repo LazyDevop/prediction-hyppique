@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The online backend (see ApiClient.baseUrl) is served over plain HTTP,
+     not HTTPS. Android blocks cleartext traffic by default since API 28,
+     so it's allowlisted here for that one host instead of turning off the
+     cleartext block app-wide. -->
+<network-security-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">102.220.19.200</domain>
+    </domain-config>
+</network-security-config>

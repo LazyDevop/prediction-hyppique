@@ -4,10 +4,16 @@
          le Storage Access Framework sur les versions d'Android modernes et
          n'ont pas besoin de permission de stockage explicite ici. -->
     <uses-permission android:name="android.permission.CAMERA"/>
+    <!-- The debug/profile manifests already declare this for the Flutter
+         tool's own use (hot reload, etc.), but release builds don't merge
+         those overlays in; without it here, every socket() call in a
+         release build fails with "Operation not permitted" (EPERM). -->
+    <uses-permission android:name="android.permission.INTERNET"/>
     <application
         android:label="prediction_hippique"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher"
+        android:networkSecurityConfig="@xml/network_security_config">
         <activity
             android:name=".MainActivity"
             android:exported="true"
