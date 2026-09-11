@@ -1,0 +1,1020 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Analyse Hippique V2 — Moteur de value</title>
+<style>
+  :root{
+    --bg:#0B1120; --surface:#131C2E; --surface2:#0F1728;
+    --line:rgba(255,255,255,.08); --line2:rgba(255,255,255,.14);
+    --gold:#E8B33C; --gold-dim:rgba(232,179,60,.12);
+    --green:#3DD68C; --red:#E5533D; --blue:#5B9BD5;
+    --txt:#E7E4DA; --muted:#8B93A7;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{
+    font-family:'Segoe UI',system-ui,-apple-system,sans-serif;
+    background:var(--bg); color:var(--txt);
+    padding:16px; min-height:100vh;
+    font-variant-numeric:tabular-nums;
+  }
+  .wrap{max-width:1100px;margin:0 auto}
+  header{padding:18px 0 26px;border-bottom:2px solid var(--gold);margin-bottom:24px}
+  header h1{font-size:1.7em;letter-spacing:.5px;color:var(--gold);text-transform:uppercase}
+  header .sub{color:var(--muted);font-size:.9em;margin-top:4px}
+  h2{font-size:1.05em;text-transform:uppercase;letter-spacing:1.2px;color:var(--gold);margin-bottom:14px}
+  .panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px;margin-bottom:20px}
+  .grid{display:grid;gap:12px}
+  .grid.cols4{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+  label{display:flex;flex-direction:column;gap:5px;font-size:.8em;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+  input,select{
+    padding:9px 10px;border-radius:8px;border:1px solid var(--line2);
+    background:var(--surface2);color:var(--txt);font-size:14px;width:100%;
+    font-variant-numeric:tabular-nums;
+  }
+  input:focus,select:focus{outline:2px solid var(--gold);outline-offset:1px}
+  input.invalid{border-color:var(--red)}
+  details.params{margin-top:14px}
+  details.params summary{cursor:pointer;color:var(--muted);font-size:.85em;user-select:none}
+  details.params summary:hover{color:var(--gold)}
+  details.params .grid{margin-top:12px}
+
+  /* ---- cartes chevaux ---- */
+  .horse-card{background:var(--surface);border:1px solid var(--line);border-radius:12px;margin-bottom:14px;overflow:hidden}
+  .horse-head{display:grid;grid-template-columns:minmax(52px,.6fr) minmax(130px,2fr) repeat(3,minmax(72px,1fr)) auto;gap:10px;padding:12px 14px;align-items:end;background:var(--gold-dim)}
+  .horse-head input[type=text]{font-weight:700;color:var(--gold)}
+  .inedit-lbl{display:flex;align-items:center;gap:7px;font-size:.78em;color:var(--muted);margin-top:10px;text-transform:none;letter-spacing:0;cursor:pointer;flex-direction:row}
+  .inedit-lbl input{width:auto}
+  .inedit-lbl b{color:var(--blue)}
+  .horse-body{padding:10px 14px 14px}
+  table.perfs{width:100%;border-collapse:collapse;font-size:13px}
+  table.perfs th{color:var(--muted);font-weight:600;font-size:.75em;text-transform:uppercase;letter-spacing:.5px;padding:6px 4px;text-align:center;border-bottom:1px solid var(--line)}
+  table.perfs td{padding:4px 3px;text-align:center}
+  table.perfs td:first-child{color:var(--gold);font-weight:700;width:34px}
+  table.perfs input,table.perfs select{padding:6px 4px;font-size:13px;text-align:center}
+  .btn-x{background:none;border:1px solid var(--line2);color:var(--muted);border-radius:8px;padding:8px 12px;cursor:pointer;font-size:13px}
+  .btn-x:hover{border-color:var(--red);color:var(--red)}
+  .hint{font-size:.75em;color:var(--muted);margin-top:8px}
+
+  /* ---- boutons ---- */
+  .btn-row{display:flex;flex-wrap:wrap;gap:10px;margin:22px 0}
+  .btn{border:none;border-radius:10px;padding:13px 22px;font-size:14px;font-weight:700;cursor:pointer;letter-spacing:.4px;text-transform:uppercase}
+  .btn.primary{background:var(--gold);color:#14100a;flex:1;min-width:180px;font-size:15px}
+  .btn.primary:hover{filter:brightness(1.1)}
+  .btn.ghost{background:var(--surface);color:var(--txt);border:1px solid var(--line2)}
+  .btn.ghost:hover{border-color:var(--gold);color:var(--gold)}
+  .btn.danger{background:var(--surface);color:var(--red);border:1px solid var(--line2)}
+  .btn.danger:hover{border-color:var(--red)}
+
+  /* ---- résultats ---- */
+  #results{display:none}
+  #results.show{display:block;animation:fade .3s ease}
+  @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  .race-banner{background:var(--gold-dim);border:1px solid var(--gold);border-radius:10px;padding:12px 16px;margin-bottom:14px;display:flex;flex-wrap:wrap;gap:8px 22px;align-items:baseline}
+  .race-banner b{color:var(--gold)}
+  .race-banner .over{margin-left:auto;font-size:.85em;color:var(--muted)}
+  table.res{width:100%;border-collapse:collapse;font-size:13.5px}
+  table.res th{background:var(--surface2);color:var(--gold);padding:9px 8px;text-align:left;font-size:.75em;text-transform:uppercase;letter-spacing:.6px;border-bottom:2px solid var(--gold)}
+  table.res th.num, table.res td.num{text-align:right}
+  table.res td{padding:9px 8px;border-bottom:1px solid var(--line);vertical-align:middle}
+  table.res tr.top1 td{background:rgba(232,179,60,.10)}
+  .pos{display:inline-block;min-width:24px;text-align:center;font-weight:700}
+  .hname{font-weight:700;color:var(--txt)}
+  .hsub{font-size:.75em;color:var(--muted)}
+  .val-pos{color:var(--green);font-weight:700}
+  .val-neg{color:var(--red)}
+  .val-na{color:var(--muted)}
+  .reg-ok{color:var(--green)} .reg-mid{color:var(--gold)} .reg-bad{color:var(--red)}
+
+  /* signature : double jauge modèle vs marché */
+  .gauge{width:150px}
+  .gauge .bar{height:7px;border-radius:4px;background:var(--surface2);position:relative;overflow:hidden;margin:3px 0}
+  .gauge .bar i{position:absolute;left:0;top:0;bottom:0;border-radius:4px}
+  .gauge .bar.model i{background:var(--gold)}
+  .gauge .bar.market i{background:var(--blue)}
+  .gauge .lbl{display:flex;justify-content:space-between;font-size:.68em;color:var(--muted)}
+
+  .reco{font-size:.85em;white-space:nowrap}
+  .stake{font-weight:700;color:var(--green)}
+
+  /* ordres d'arrivée probables */
+  .orders-box{background:var(--surface2);border:1px solid var(--line2);border-radius:10px;padding:12px 16px;margin-bottom:14px}
+  .orders-title{color:var(--gold);font-size:.8em;text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px}
+  .order-line{display:flex;align-items:center;gap:12px;padding:5px 0;border-bottom:1px solid var(--line);font-size:.92em}
+  .order-line:last-of-type{border-bottom:none}
+  .order-rank{color:var(--gold);font-weight:700;min-width:16px}
+  .order-names{flex:1;font-weight:600}
+  .order-p{color:var(--green);font-weight:700}
+
+  /* trio de probabilités par cheval */
+  .ptrio{display:flex;gap:8px;font-size:.85em;white-space:nowrap}
+  .ptrio span{padding:2px 7px;border-radius:6px;background:var(--surface2);border:1px solid var(--line)}
+  .ptrio span:first-child{border-color:var(--gold);color:var(--gold)}
+
+  /* badge dossard + inédit */
+  .hname-row{display:flex;align-items:center;gap:9px}
+  .dossard{background:var(--gold);color:#14100a;font-weight:800;border-radius:7px;min-width:26px;text-align:center;padding:3px 5px;font-size:.95em;flex-shrink:0}
+  .reg-inedit{color:var(--blue);font-weight:700}
+  .fragile{color:var(--red);font-weight:700}
+  .chute-note{color:var(--gold)}
+
+  /* grille des paris combinés */
+  .combo-head{color:var(--gold);font-size:.8em;text-transform:uppercase;letter-spacing:.8px;margin:4px 0 10px}
+  .combo-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(215px,1fr));gap:9px;margin-bottom:10px}
+  .combo-box{background:var(--surface2);border:1px solid var(--line);border-radius:10px;padding:9px 11px}
+  .combo-title{color:var(--gold);font-size:.68em;text-transform:uppercase;letter-spacing:.6px;margin-bottom:5px}
+  .combo-line{padding:3px 0}
+  .combo-line.bd{border-bottom:1px solid var(--line)}
+  .combo-top{display:flex;align-items:baseline;gap:8px}
+  .combo-nums{font-weight:800;font-size:1.05em;letter-spacing:.5px;flex:1}
+  .combo-p{color:var(--green);font-weight:700;font-size:.82em}
+  .combo-names{font-size:.66em;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .combo-note{font-size:.68em;color:var(--muted);margin-top:5px;font-style:italic}
+
+  .legend{margin-top:16px;padding:14px;background:var(--surface2);border-radius:10px;border-left:3px solid var(--gold);font-size:.85em;line-height:1.7;color:var(--muted)}
+  .legend b{color:var(--gold)}
+  .disclaimer{margin-top:14px;font-size:.78em;color:var(--muted);text-align:center;font-style:italic}
+  .table-scroll{overflow-x:auto}
+  footer{margin-top:28px;padding-top:14px;border-top:1px solid var(--line);color:var(--muted);font-size:.78em;text-align:center}
+  .hname .mpos{display:none}
+
+  /* ================= MOBILE ================= */
+  @media (max-width:700px){
+    body{padding:10px}
+    header h1{font-size:1.35em}
+    .panel{padding:14px}
+
+    /* en-tête de carte cheval : 2 colonnes, nom en pleine largeur */
+    .horse-head{grid-template-columns:1fr 1fr;align-items:end}
+    .horse-head label:nth-child(2){grid-column:1 / -1}
+    .horse-head .btn-x{grid-column:2;justify-self:end}
+
+    /* grille des 6 courses : compacte + défilement horizontal de secours */
+    .horse-body{overflow-x:auto}
+    table.perfs{min-width:500px}
+    table.perfs input,table.perfs select{padding:7px 2px;font-size:12.5px}
+
+    /* boutons empilés pleine largeur */
+    .btn-row{flex-direction:column}
+    .btn{width:100%}
+
+    .race-banner .over{margin-left:0;width:100%}
+
+    /* résultats : le tableau devient des cartes empilées */
+    table.res thead{display:none}
+    table.res, table.res tbody, table.res tr, table.res td{display:block;width:100%}
+    table.res tr{border:1px solid var(--line);border-radius:12px;margin-bottom:12px;padding:12px 14px;background:var(--surface2)}
+    table.res tr.top1{border-color:var(--gold)}
+    table.res td{border:none;padding:5px 0;display:flex;justify-content:space-between;align-items:center;gap:12px;text-align:left}
+    table.res td.num{text-align:left}
+    table.res td::before{content:attr(data-l);color:var(--muted);font-size:.7em;text-transform:uppercase;letter-spacing:.6px;flex-shrink:0}
+    table.res td.no-l::before{display:none}
+    table.res td.cell-pos{display:none}
+    table.res td.cell-name{padding-bottom:8px;border-bottom:1px solid var(--line);margin-bottom:4px}
+    table.res td.cell-gauge{display:block}
+    .gauge{width:100%;margin-top:4px}
+    .hname .mpos{display:inline;color:var(--gold);margin-right:6px}
+    .reco{white-space:normal;text-align:right}
+  }
+  @media (max-width:380px){
+    table.perfs{min-width:470px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>Analyse Hippique <span style="color:var(--txt)">V2</span></h1>
+    <div class="sub">Score de forme pondéré · probabilités vs cotes · détection de value · mise suggérée</div>
+  </header>
+
+  <!-- ======== COURSE CIBLE ======== -->
+  <section class="panel">
+    <h2>Course cible</h2>
+    <div class="grid cols4">
+      <label>Hippodrome
+        <input type="text" id="cfgHippo" value="Vincennes">
+      </label>
+      <label>Distance (m)
+        <input type="number" id="cfgDist" value="2000" min="800" step="25">
+      </label>
+      <label>Nombre de partants
+        <input type="number" id="cfgPart" min="3" max="24" placeholder="auto (chevaux saisis)">
+      </label>
+      <label>Terrain
+        <select id="cfgTerr">
+          <optgroup label="Gazon — échelle officielle (10 niveaux)">
+          <option value="1.08">Très léger (1.08)</option>
+          <option value="1.05">Léger (1.05)</option>
+          <option value="1.02">Bon léger (1.02)</option>
+          <option value="1" selected>Bon (1)</option>
+          <option value="0.97">Bon souple (0.97)</option>
+          <option value="0.93">Souple (0.93)</option>
+          <option value="0.88">Très souple (0.88)</option>
+          <option value="0.83">Collant (0.83)</option>
+          <option value="0.77">Lourd (0.77)</option>
+          <option value="0.7">Très lourd (0.7)</option>
+          </optgroup>
+          <optgroup label="Sable fibré (PSF) — échelle distincte">
+          <option value="1.001">Rapide — PSF (1.0)</option>
+          <option value="0.99">Standard — PSF (0.99)</option>
+          <option value="0.95">Lent — PSF (0.95)</option>
+          </optgroup>
+        </select>
+      </label>
+      <label>Niveau de la course
+        <select id="cfgNiv">
+          <option value="5">Groupe I (5)</option>
+          <option value="4.5">Groupe II (4.5)</option>
+          <option value="4">Groupe III (4)</option>
+          <option value="3.5">Groupe IV (3.5)</option>
+          <option value="3" selected>Listed (3)</option>
+          <option value="2.6">Catégorie A (2.6)</option>
+          <option value="2.3">Catégorie B (2.3)</option>
+          <option value="2">Catégorie C (2)</option>
+          <option value="1.7">Catégorie D (1.7)</option>
+          <option value="1.4">Catégorie E (1.4)</option>
+          <option value="1.1">Catégorie F (1.1)</option>
+          <option value="1">Catégorie G/H (1)</option>
+        </select>
+      </label>
+    </div>
+
+    <details class="params">
+      <summary>Paramètres du modèle (bankroll, récence, agressivité…)</summary>
+      <div class="grid cols4">
+        <label>Bankroll (unités)
+          <input type="number" id="prmBank" value="100" min="1">
+        </label>
+        <label>Fraction de Kelly
+          <select id="prmKelly">
+            <option value="0.1">Prudent (10 %)</option>
+            <option value="0.25" selected>Standard (25 %)</option>
+            <option value="0.5">Agressif (50 %)</option>
+          </select>
+        </label>
+        <label>Pondération récence
+          <select id="prmRec">
+            <option value="std" selected>Standard (dégressif)</option>
+            <option value="forme">Forme récente (fort)</option>
+            <option value="flat">Uniforme (aucune)</option>
+          </select>
+        </label>
+        <label>Contraste des probabilités (k)
+          <input type="number" id="prmK" value="3" min="1" max="6" step="0.5">
+        </label>
+        <label>Sensibilité au poids (%/kg)
+          <input type="number" id="prmPoids" value="1" min="0" max="3" step="0.5">
+        </label>
+        <label>Âge optimal min
+          <input type="number" id="prmAgeMin" value="4" min="2" max="10">
+        </label>
+        <label>Âge optimal max
+          <input type="number" id="prmAgeMax" value="7" min="2" max="14">
+        </label>
+        <label>Lissage petits historiques
+          <input type="number" id="prmShrink" value="2" min="0" max="6" step="0.5">
+        </label>
+        <label>Coef. inédit
+          <input type="number" id="prmInedit" value="0.75" min="0.3" max="1.3" step="0.05">
+        </label>
+        <label>Intensité malus incident
+          <input type="number" id="prmMalusInc" value="1" min="0" max="2" step="0.1">
+        </label>
+      </div>
+      <div class="hint">La récence pondère C1 (dernière course) le plus fort. k accentue les écarts entre chevaux lors de la conversion score → probabilité (3 = réaliste). La sensibilité au poids pénalise chaque kg au-dessus de la moyenne du lot. Le lissage tire les chevaux à petit historique vers la moyenne du lot : 0 = aucun lissage, 2 = standard, 4+ = très prudent. Le coef. inédit fixe le niveau d'un cheval qui n'a jamais couru (0.75 = un cran sous la moyenne du lot), avant application de l'âge et du poids.</div>
+    </details>
+  </section>
+
+  <!-- ======== CHEVAUX ======== -->
+  <section>
+    <h2>Partants <span id="countBadge" style="color:var(--muted);font-weight:400"></span></h2>
+    <div id="horseList"></div>
+    <div class="btn-row" style="margin-top:6px">
+      <button class="btn ghost" onclick="addHorse()">+ Ajouter un cheval</button>
+      <button class="btn ghost" onclick="loadExample()">Charger l'exemple</button>
+      <button class="btn ghost" onclick="exportJSON()">Exporter (JSON)</button>
+      <button class="btn ghost" onclick="importInput.click()">Importer (JSON)</button>
+      <button class="btn danger" onclick="clearAll()">Tout effacer</button>
+      <input type="file" id="importInput" accept=".json,application/json" style="display:none" onchange="importJSON(this)">
+    </div>
+  </section>
+
+  <div class="btn-row">
+    <button class="btn primary" onclick="calculate()">Calculer le classement &amp; les values</button>
+  </div>
+
+  <!-- ======== RÉSULTATS ======== -->
+  <section id="results" class="panel">
+    <h2>Classement &amp; recommandations</h2>
+    <div id="resultsContent"></div>
+    <div class="disclaimer">Outil d'aide à la décision — aucun modèle ne garantit un gain. Jouez uniquement ce que vous pouvez vous permettre de perdre.</div>
+  </section>
+
+  <footer>
+    V2 — score de forme (moyenne pondérée par récence) × ajustements distance / terrain / niveau / poids / âge → probabilités → value = p × cote − 1 → mise Kelly fractionné.
+  </footer>
+</div>
+
+<script>
+/* =====================================================================
+   ÉTAT — tout vit dans le DOM (les cartes), pas de stockage navigateur.
+   Sauvegarde durable : Exporter / Importer JSON.
+   ===================================================================== */
+let horseSeq = 0;
+
+const TERRAIN_OPTIONS = [
+  ["1.08","Très léger"],["1.05","Léger"],["1.02","Bon léger"],["1","Bon"],
+  ["0.97","Bon souple"],["0.93","Souple"],["0.88","Très souple"],
+  ["0.83","Collant"],["0.77","Lourd"],["0.7","Très lourd"],
+  ["1.001","Rapide (PSF)"],["0.99","Standard (PSF)"],["0.95","Lent (PSF)"]
+];
+const NIVEAU_OPTIONS = [
+  ["5","G I"],["4.5","G II"],["4","G III"],["3.5","G IV"],["3","Listed"],
+  ["2.6","Cat. A"],["2.3","Cat. B"],["2","Cat. C"],["1.7","Cat. D"],
+  ["1.4","Cat. E"],["1.1","Cat. F"],["1","Cat. G/H"]
+];
+// Incidents obstacle. malus = pénalité appliquée à la note de la ligne.
+// chute = compte dans le taux de fiabilité au saut.
+const INCIDENTS = {
+  '':   {label:'—',                 malus:0,   chute:false},
+  'T':  {label:'T · Tombé',         malus:1.2, chute:true },
+  'F':  {label:'F · Fell',          malus:1.2, chute:true },
+  'BD': {label:'BD · Brought Down', malus:1.0, chute:true },
+  'U':  {label:'U · Désarçonné',    malus:1.0, chute:true },
+  'A':  {label:'A · Arrêté',        malus:0.7, chute:false},
+  'RO': {label:'RO · Sorti piste',  malus:0.7, chute:true },
+  'RR': {label:'RR · Refus départ', malus:0.7, chute:false},
+  'D':  {label:'D · Disqualifié',   malus:0.8, chute:false},
+  'R':  {label:'R · Rétrogradé',    malus:0.5, chute:false},
+  'NR': {label:'NR · Non partant',  malus:0,   chute:false, ignore:true}
+};
+const INCIDENT_OPTIONS = Object.keys(INCIDENTS).map(function(k){ return [k, INCIDENTS[k].label]; });
+const RECENCE_PRESETS = {
+  std:   [1.00, 0.85, 0.70, 0.55, 0.42, 0.30],   // C1 = plus récente = poids max
+  forme: [1.00, 0.65, 0.42, 0.28, 0.18, 0.12],
+  flat:  [1.00, 1.00, 1.00, 1.00, 1.00, 1.00]
+};
+
+function selectHTML(cls, options, selected){
+  return '<select class="'+cls+'">' + options.map(function(o){
+    return '<option value="'+o[0]+'"'+(o[0]===selected?' selected':'')+'>'+o[1]+'</option>';
+  }).join('') + '</select>';
+}
+
+/* ---------- construction d'une carte cheval ---------- */
+function addHorse(data){
+  horseSeq++;
+  data = data || {};
+  const num   = data.num   != null ? data.num : '';
+  const name  = data.name  || ('Cheval ' + horseSeq);
+  const age   = data.age   != null ? data.age   : 5;
+  const poids = data.poids != null ? data.poids : 58;
+  const cote  = data.cote  != null ? data.cote  : '';
+  const inedit = !!data.inedit;
+  const perfs = data.perfs || [];
+
+  const card = document.createElement('div');
+  card.className = 'horse-card';
+
+  let rows = '';
+  for (let i = 0; i < 6; i++){
+    const p = perfs[i] || {};
+    rows += '<tr>'
+      + '<td>C'+(i+1)+'</td>'
+      + '<td><input type="number" class="p-rank" min="1" value="'+(p.rank!=null?p.rank:'')+'" placeholder="—"></td>'
+      + '<td><input type="number" class="p-part" min="2" value="'+(p.part!=null?p.part:'')+'" placeholder="—"></td>'
+      + '<td>'+selectHTML('p-inc', INCIDENT_OPTIONS, String(p.incident||''))+'</td>'
+      + '<td>'+selectHTML('p-niv', NIVEAU_OPTIONS, String(p.niveau!=null?p.niveau:'2'))+'</td>'
+      + '<td><input type="number" class="p-dist" step="25" value="'+(p.dist!=null?p.dist:'')+'" placeholder="—"></td>'
+      + '<td>'+selectHTML('p-terr', TERRAIN_OPTIONS, String(p.terr!=null?p.terr:'1'))+'</td>'
+      + '</tr>';
+  }
+
+  card.innerHTML =
+    '<div class="horse-head">'
+    + '<label>N°<input type="number" class="h-num" min="1" value="'+num+'" placeholder="—" style="text-align:center"></label>'
+    + '<label>Nom<input type="text" class="h-name" value="'+name+'"></label>'
+    + '<label>Âge<input type="number" class="h-age" min="2" max="15" value="'+age+'"></label>'
+    + '<label>Poids jockey (kg)<input type="number" class="h-poids" step="0.5" value="'+poids+'"></label>'
+    + '<label>Cote<input type="number" class="h-cote" step="0.1" min="1.01" value="'+cote+'" placeholder="ex. 6.5"></label>'
+    + '<button class="btn-x" onclick="this.closest(\'.horse-card\').remove(); refreshCount(); hideResults();">×</button>'
+    + '</div>'
+    + '<div class="horse-body">'
+    + '<table class="perfs"><thead><tr>'
+    + '<th></th><th>Rang</th><th>Partants</th><th>Incident</th><th>Niveau</th><th>Dist (m)</th><th>Terrain</th>'
+    + '</tr></thead><tbody>' + rows + '</tbody></table>'
+    + '<label class="inedit-lbl"><input type="checkbox" class="h-inedit"'+(inedit?' checked':'')+'> <b>Cheval inédit</b> — n\'a jamais couru (à cocher seulement si l\'absence de perf est un fait, pas un oubli)</label>'
+    + '<div class="hint">C1 = course la plus récente. Ligne vide = ignorée. Colonne <b>Incident</b> (courses d\'obstacle) : T/F/BD/U = chute, A/RR/RO/D/R = faute — un malus s\'applique à la note ; NR (non partant) ignore la ligne.</div>'
+    + '</div>';
+
+  document.getElementById('horseList').appendChild(card);
+  refreshCount();
+  hideResults();
+}
+
+function refreshCount(){
+  const n = document.querySelectorAll('.horse-card').length;
+  document.getElementById('countBadge').textContent = n ? '· ' + n + ' cheval' + (n>1?'aux':'') : '';
+}
+function hideResults(){ document.getElementById('results').classList.remove('show'); }
+function clearAll(){
+  document.getElementById('horseList').innerHTML = '';
+  horseSeq = 0; refreshCount(); hideResults();
+}
+
+/* ---------- lecture d'une carte ---------- */
+function readHorse(card){
+  const perfs = [];
+  card.querySelectorAll('.horse-body tbody tr').forEach(function(tr){
+    const rank = parseFloat(tr.querySelector('.p-rank').value);
+    const part = parseFloat(tr.querySelector('.p-part').value);
+    const incident = tr.querySelector('.p-inc').value || '';
+    const inc = INCIDENTS[incident] || INCIDENTS[''];
+    // NR (non partant) : la course n'a pas eu lieu pour ce cheval — ignorée.
+    if (inc.ignore) return;
+    // Ligne prise en compte si on a un rang+partants valides, OU un incident
+    // (un cheval tombé n'a pas de rang mais la ligne compte via son malus).
+    const hasRank = isFinite(rank) && isFinite(part) && part >= 2;
+    if (!hasRank && incident === '') return;   // ligne vraiment vide — ignorée
+    const partSafe = isFinite(part) && part >= 2 ? part : 12;
+    perfs.push({
+      rank: hasRank ? Math.min(rank, part) : partSafe,   // sans rang → traité comme dernier
+      part: partSafe,
+      incident: incident,
+      niveau: parseFloat(tr.querySelector('.p-niv').value) || 1,
+      dist:  parseFloat(tr.querySelector('.p-dist').value) || 0,
+      terr:  parseFloat(tr.querySelector('.p-terr').value) || 1
+    });
+  });
+  const coteRaw = parseFloat(card.querySelector('.h-cote').value);
+  const numRaw = parseFloat(card.querySelector('.h-num').value);
+  return {
+    num:   isFinite(numRaw) ? numRaw : null,
+    name:  card.querySelector('.h-name').value.trim() || 'Sans nom',
+    age:   parseFloat(card.querySelector('.h-age').value) || 5,
+    poids: parseFloat(card.querySelector('.h-poids').value) || 0,
+    cote:  (isFinite(coteRaw) && coteRaw > 1) ? coteRaw : null,
+    inedit: card.querySelector('.h-inedit').checked,
+    perfs: perfs
+  };
+}
+
+/* =====================================================================
+   MOTEUR DE CALCUL
+   ===================================================================== */
+function computeNote(p, cfg, prm){
+  // Score brut : 1 = victoire, ≈0 = dernier, quel que soit le nb de partants
+  const sb = Math.max(0, (p.part - p.rank + 1) / p.part);
+
+  // Distance : dégradé progressif au lieu du tout-ou-rien
+  const dd = Math.abs(p.dist - cfg.dist);
+  const cDist = dd <= 200 ? 1 : dd <= 500 ? 0.9 : 0.8;
+
+  // Terrain : dégradé progressif
+  const dt = Math.abs(p.terr - cfg.terr);
+  const cTerr = dt < 0.05 ? 1 : dt <= 0.10 ? 0.95 : 0.9;
+
+  // Niveau RELATIF à la course cible (corrige le niveau cible inutilisé) :
+  // une perf réalisée à niveau supérieur vaut plus, amortie par une racine
+  // et bornée pour éviter les explosions.
+  const ratio = p.niveau / cfg.niveau;
+  const cNiv = Math.min(1.5, Math.max(0.55, Math.sqrt(ratio)));
+
+  // Malus d'incident (obstacle) : soustrait directement de la note, borné à 0.
+  const inc = INCIDENTS[p.incident] || INCIDENTS[''];
+  const malus = inc.malus * (prm && prm.malusInc != null ? prm.malusInc : 1);
+
+  return Math.max(0, sb * cNiv * cDist * cTerr - malus);   // note ∈ [0, ~1.5]
+}
+
+function analyseHorse(h, cfg, prm, avgPoids){
+  // Poids et âge sont connus même sans performance : toujours calculés.
+  let cPoids = 1;
+  if (h.poids > 0 && avgPoids > 0){
+    cPoids = 1 - (prm.sensPoids/100) * (h.poids - avgPoids);
+    cPoids = Math.min(1.15, Math.max(0.85, cPoids));
+  }
+  let cAge = 1;
+  if (h.age < prm.ageMin) cAge = Math.max(0.8, 1 - 0.05*(prm.ageMin - h.age));
+  if (h.age > prm.ageMax) cAge = Math.max(0.8, 1 - 0.05*(h.age - prm.ageMax));
+
+  const common = { num:h.num, name:h.name, cote:h.cote, age:h.age, poids:h.poids,
+                   inedit:h.inedit, cPoids:cPoids, cAge:cAge };
+
+  if (!h.perfs.length){
+    return Object.assign({}, common, { forme:0, score:0, ecart:0, nPerfs:0 });
+  }
+  const w = prm.recence;
+  let sumWN = 0, sumW = 0;
+  const notes = [];
+  h.perfs.forEach(function(p, i){
+    const n = computeNote(p, cfg, prm);
+    notes.push(n);
+    sumWN += n * w[i];
+    sumW  += w[i];
+  });
+  const forme = sumWN / sumW;
+
+  const mean = notes.reduce(function(a,b){return a+b;},0) / notes.length;
+  const ecart = Math.sqrt(notes.reduce(function(a,n){return a + Math.pow(n-mean,2);},0) / notes.length);
+
+  // Fiabilité au saut : proportion de courses terminées par une chute.
+  const nChutes = h.perfs.filter(function(p){
+    const inc = INCIDENTS[p.incident] || INCIDENTS['']; return inc.chute;
+  }).length;
+  const tauxChute = h.perfs.length ? nChutes / h.perfs.length : 0;
+
+  return Object.assign({}, common, {
+    forme: forme,
+    score: 0,   // fixé après lissage bayésien dans calculate()
+    ecart: ecart, nPerfs: h.perfs.length,
+    nChutes: nChutes, tauxChute: tauxChute
+  });
+}
+
+function calculate(){
+  const cards = document.querySelectorAll('.horse-card');
+  if (!cards.length){ alert('Ajoutez au moins un cheval.'); return; }
+
+  const cfg = {
+    hippo:  document.getElementById('cfgHippo').value.trim() || '—',
+    dist:   parseFloat(document.getElementById('cfgDist').value) || 2000,
+    terr:   parseFloat(document.getElementById('cfgTerr').value) || 1,
+    niveau: parseFloat(document.getElementById('cfgNiv').value) || 1
+  };
+  const prm = {
+    bank:      parseFloat(document.getElementById('prmBank').value) || 100,
+    kellyFrac: parseFloat(document.getElementById('prmKelly').value) || 0.25,
+    recence:   RECENCE_PRESETS[document.getElementById('prmRec').value] || RECENCE_PRESETS.std,
+    k:         parseFloat(document.getElementById('prmK').value) || 3,
+    sensPoids: parseFloat(document.getElementById('prmPoids').value) || 0,
+    ageMin:    parseFloat(document.getElementById('prmAgeMin').value) || 4,
+    ageMax:    parseFloat(document.getElementById('prmAgeMax').value) || 7,
+    shrink:    Math.max(0, parseFloat(document.getElementById('prmShrink').value) || 0),
+    coefInedit: parseFloat(document.getElementById('prmInedit').value) || 0.75,
+    malusInc:  parseFloat(document.getElementById('prmMalusInc').value)
+  };
+  if (!isFinite(prm.malusInc)) prm.malusInc = 1;
+
+  const horses = Array.prototype.map.call(cards, readHorse);
+
+  // moyenne des poids du lot (chevaux avec poids renseigné)
+  const poidsList = horses.filter(function(h){return h.poids>0;}).map(function(h){return h.poids;});
+  const avgPoids = poidsList.length ? poidsList.reduce(function(a,b){return a+b;},0)/poidsList.length : 0;
+
+  const res = horses.map(function(h){ return analyseHorse(h, cfg, prm, avgPoids); });
+
+  // ---- Lissage bayésien + traitement des chevaux sans performance ----
+  // Avec perf : formeAjustée = (n·forme + m·formeMoyenne)/(n+m), m = prm.shrink.
+  // Inédit (fait) : base × coefInedit, AVEC ajustements âge et poids.
+  // Données non saisies : base × 0.6, sans ajustement (on ne sait rien).
+  const SHRINK = prm.shrink;
+  const withData = res.filter(function(r){return r.nPerfs > 0;});
+  const meanForme = withData.length
+    ? withData.reduce(function(a,r){return a + r.forme;},0) / withData.length
+    : 0;
+  const base = meanForme > 0 ? meanForme : 1;   // course de débutants : base neutre
+  res.forEach(function(r){
+    if (r.nPerfs > 0){
+      const f = (r.nPerfs * r.forme + SHRINK * meanForme) / (r.nPerfs + SHRINK);
+      r.score = f * r.cPoids * r.cAge;
+    } else if (r.inedit){
+      r.score = base * prm.coefInedit * r.cPoids * r.cAge;
+    } else {
+      r.score = base * 0.6;
+    }
+  });
+
+  // ---- Nombre de partants de la course cible ----
+  // Les partants non saisis sont modélisés comme des outsiders "virtuels"
+  // (score = 60 % de la moyenne du lot analysé) : ils absorbent leur part
+  // de probabilité et rendent l'ordre d'arrivée réaliste.
+  const nEntered = res.length;
+  const nbPartRaw = parseFloat(document.getElementById('cfgPart').value);
+  const nbPart = (isFinite(nbPartRaw) && Math.round(nbPartRaw) > nEntered) ? Math.round(nbPartRaw) : nEntered;
+  const nVirt = nbPart - nEntered;
+  const meanScore = res.reduce(function(a,r){return a+r.score;},0) / Math.max(1,nEntered);
+  const virtScore = Math.max(meanScore * 0.6, 0.0001);
+
+  // Scores → probabilités : p_i = s_i^k / Σ s_j^k (outsiders virtuels inclus)
+  const powered = res.map(function(r){ return Math.pow(Math.max(r.score, 0.0001), prm.k); });
+  const virtPow = Math.pow(virtScore, prm.k);
+  const sumPow = powered.reduce(function(a,b){return a+b;},0) + nVirt * virtPow;
+  res.forEach(function(r, i){ r.prob = sumPow > 0 ? powered[i]/sumPow : 0; });
+  const virtProb = sumPow > 0 ? virtPow/sumPow : 0;
+
+  // ---- Modèle de Harville : probabilités d'ordre d'arrivée ----
+  // P(i 2e) = Σ_j p_j · p_i/(1−p_j) ; P(i 3e) = Σ_j Σ_k p_j · p_k/(1−p_j) · p_i/(1−p_j−p_k)
+  const P = res.map(function(r){return r.prob;});
+  for (let v = 0; v < nVirt; v++) P.push(virtProb);
+  const n = P.length;
+  res.forEach(function(r, i){
+    let p2nd = 0, p3rd = 0;
+    for (let j = 0; j < n; j++){
+      if (j === i) continue;
+      const d1 = 1 - P[j];
+      if (d1 > 1e-9) p2nd += P[j] * P[i] / d1;
+      for (let k = 0; k < n; k++){
+        if (k === i || k === j) continue;
+        const d2 = 1 - P[j] - P[k];
+        if (d1 > 1e-9 && d2 > 1e-9) p3rd += P[j] * (P[k]/d1) * (P[i]/d2);
+      }
+    }
+    r.pTop1 = P[i];
+    r.pTop2 = Math.min(1, P[i] + p2nd);
+    r.pTop3 = Math.min(1, P[i] + p2nd + p3rd);
+  });
+
+  // ---- Value + Kelly (uniquement si cote saisie) ----
+  let sumInv = 0, nCotes = 0;
+  res.forEach(function(r){
+    if (r.cote){
+      sumInv += 1/r.cote; nCotes++;
+      r.pImp  = 1/r.cote;
+      r.value = r.prob * r.cote - 1;
+      const kelly = (r.prob * r.cote - 1) / (r.cote - 1);
+      r.stake = kelly > 0 ? prm.bank * kelly * prm.kellyFrac : 0;
+    } else {
+      r.pImp = null; r.value = null; r.stake = 0;
+    }
+  });
+  const overround = (nCotes === res.length && nCotes > 0) ? (sumInv - 1) : null;
+
+  // ====== COMBINAISONS ======
+  const rankIdx = res.map(function(r,i){return i;}).sort(function(a,b){return P[b]-P[a];});
+  function labelCombo(ids){
+    return {
+      nums: ids.map(function(x){ return res[x].num != null ? res[x].num : '?'; }),
+      names: ids.map(function(x){ return res[x].name; })
+    };
+  }
+
+  // --- Énumération exacte (Plackett-Luce) : ordre + désordre ---
+  function enumerate(len, poolSize){
+    if (nEntered < len) return { ordre:[], desordre:[] };
+    const ids = rankIdx.slice(0, Math.min(poolSize, nEntered));
+    const tuples = [];
+    (function rec(chosen){
+      if (chosen.length === len){
+        let p = 1, d = 1;
+        for (let t = 0; t < chosen.length; t++){ p *= P[chosen[t]]/d; d -= P[chosen[t]]; if (d <= 1e-9) return; }
+        tuples.push({ ids: chosen.slice(), p: p });
+        return;
+      }
+      for (let x = 0; x < ids.length; x++){
+        if (chosen.indexOf(ids[x]) === -1) rec(chosen.concat(ids[x]));
+      }
+    })([]);
+    const ordre = tuples.slice().sort(function(a,b){return b.p-a.p;}).slice(0,3)
+      .map(function(t){ return Object.assign(labelCombo(t.ids), {p:t.p}); });
+    const agg = {};
+    tuples.forEach(function(t){
+      const k = t.ids.slice().sort(function(a,b){return a-b;}).join('-');
+      if (agg[k]) agg[k].p += t.p;
+      else agg[k] = { ids: t.ids.slice().sort(function(a,b){return P[b]-P[a];}), p: t.p };
+    });
+    const desordre = Object.keys(agg).map(function(k){return agg[k];})
+      .sort(function(a,b){return b.p-a.p;}).slice(0,3)
+      .map(function(t){ return Object.assign(labelCombo(t.ids), {p:t.p}); });
+    return { ordre: ordre, desordre: desordre };
+  }
+  const couple = enumerate(2, 8);
+  const tierce = enumerate(3, 7);
+  const quarte = enumerate(4, 7);
+  const quinte = enumerate(5, 7);
+
+  // --- Monte-Carlo : paris "parmi les k premiers" (couplé placé, 2 sur 4) ---
+  const NSIM = 20000;
+  const mcP3 = {}, mcP4 = {};
+  const top4 = new Array(nEntered).fill(0);
+  const w2 = new Float64Array(n);
+  function bump(m, key, ids){ if (m[key]) m[key].c++; else m[key] = { c:1, ids:ids }; }
+  for (let s = 0; s < NSIM; s++){
+    for (let i = 0; i < n; i++) w2[i] = P[i];
+    let total = 1; const ord = [];
+    for (let pos = 0; pos < Math.min(4, n); pos++){
+      let r = Math.random() * total, pick = -1;
+      for (let j = 0; j < n; j++){ if (w2[j] <= 0) continue; r -= w2[j]; if (r <= 0){ pick = j; break; } }
+      if (pick < 0) for (let j = n-1; j >= 0; j--) if (w2[j] > 0){ pick = j; break; }
+      if (pick < 0) break;
+      ord.push(pick); total -= w2[pick]; w2[pick] = 0;
+    }
+    const t3 = ord.slice(0,3).filter(function(x){return x < nEntered;});
+    const t4 = ord.slice(0,4).filter(function(x){return x < nEntered;});
+    t4.forEach(function(x){ top4[x]++; });
+    for (let i = 0; i < t3.length; i++) for (let j = i+1; j < t3.length; j++){
+      const a = Math.min(t3[i],t3[j]), b = Math.max(t3[i],t3[j]); bump(mcP3, a+'-'+b, [a,b]);
+    }
+    for (let i = 0; i < t4.length; i++) for (let j = i+1; j < t4.length; j++){
+      const a = Math.min(t4[i],t4[j]), b = Math.max(t4[i],t4[j]); bump(mcP4, a+'-'+b, [a,b]);
+    }
+  }
+  function mcBest(m){
+    return Object.keys(m).map(function(k){return m[k];}).sort(function(a,b){return b.c-a.c;}).slice(0,3)
+      .map(function(e){ return Object.assign(labelCombo(e.ids.slice().sort(function(x,y){return P[y]-P[x];})), {p: e.c/NSIM}); });
+  }
+  const couplePlace = mcBest(mcP3);
+  const deuxSur4 = mcBest(mcP4);
+  res.forEach(function(r, i){ r.pTop4 = top4[i]/NSIM; });
+
+  res.sort(function(a,b){ return b.score - a.score; });
+  render(res, cfg, prm, overround, {nbPart:nbPart, nVirt:nVirt},
+         {couple:couple, tierce:tierce, quarte:quarte, quinte:quinte, couplePlace:couplePlace, deuxSur4:deuxSur4});
+}
+
+/* =====================================================================
+   RENDU DES RÉSULTATS
+   ===================================================================== */
+function regLabel(r){
+  if (r.inedit) return '<span class="reg-inedit">Inédit</span>';
+  if (r.nPerfs === 0) return '<span class="val-na">Données non saisies</span>';
+  if (r.nPerfs < 3)  return '<span class="val-na">Historique court (' + r.nPerfs + ')</span>';
+  const e = r.ecart;
+  if (e < 0.12) return '<span class="reg-ok">Très régulier</span>';
+  if (e < 0.22) return '<span class="reg-ok">Régulier</span>';
+  if (e < 0.33) return '<span class="reg-mid">Moyen</span>';
+  return '<span class="reg-bad">Irrégulier</span>';
+}
+function recoLabel(r, index){
+  if (r.nPerfs === 0 && !r.inedit) return '<span class="val-na">Données non saisies</span>';
+  if (r.value === null) return '<span class="val-na">Cote manquante</span>';
+  if (r.value >= 0.15 && r.prob >= 0.07) return '<b>Value forte — jouable</b>';
+  if (r.value > 0.05) return 'Léger avantage';
+  if (r.value > 0) return 'Avantage marginal';
+  if (index < 2) return 'Favori du modèle, cote trop courte';
+  return '<span class="val-na">Pas d\'avantage</span>';
+}
+function fmtPct(x){ return (x*100).toFixed(1) + ' %'; }
+function fmtPctFine(x){ return (x >= 0.01 ? (x*100).toFixed(1) : (x*100).toFixed(3)) + ' %'; }
+
+function render(res, cfg, prm, overround, race, combos){
+  const maxProb = Math.max.apply(null, res.map(function(r){return r.prob;}).concat(
+                                 res.map(function(r){return r.pImp||0;})));
+  const terrTxt = document.querySelector('#cfgTerr option:checked').text;
+  const nivTxt  = document.querySelector('#cfgNiv option:checked').text;
+  const placeTxt = race.nbPart >= 8 ? 'Placé = 3 premiers'
+                 : race.nbPart >= 4 ? 'Placé = 2 premiers' : 'Pas de pari placé';
+
+  let html =
+    '<div class="race-banner">'
+    + '<span><b>' + cfg.hippo + '</b></span>'
+    + '<span>' + cfg.dist + ' m</span>'
+    + '<span>' + terrTxt + '</span>'
+    + '<span>' + nivTxt + '</span>'
+    + '<span><b>' + race.nbPart + ' partants</b>'
+    +   (race.nVirt > 0 ? ' <span style="color:var(--muted)">(dont ' + race.nVirt + ' non analysé' + (race.nVirt>1?'s':'') + ')</span>' : '')
+    + '</span>'
+    + '<span style="color:var(--muted)">' + placeTxt + '</span>'
+    + (overround !== null
+        ? '<span class="over">Marge du bookmaker (overround) : <b>' + fmtPct(overround) + '</b></span>'
+        : '<span class="over">Saisissez toutes les cotes pour l\'overround</span>')
+    + '</div>';
+
+  function comboBlock(title, list, note){
+    let h = '<div class="combo-box"><div class="combo-title">' + title + '</div>';
+    if (list && list.length){
+      list.forEach(function(o, i){
+        h += '<div class="combo-line' + (i < list.length-1 ? ' bd' : '') + '">'
+          + '<div class="combo-top"><span class="combo-nums">' + o.nums.join(' · ') + '</span>'
+          + '<span class="combo-p">' + fmtPctFine(o.p) + '</span></div>'
+          + '<div class="combo-names">' + o.names.join(' · ') + '</div></div>';
+      });
+    } else {
+      h += '<div class="hint">Pas assez de partants</div>';
+    }
+    if (note) h += '<div class="combo-note">' + note + '</div>';
+    return h + '</div>';
+  }
+
+  html += '<div class="combo-head">Paris combinés — meilleures combinaisons du modèle (numéros de dossard)</div>'
+    + '<div class="combo-grid">'
+    + comboBlock('Couplé gagnant (2 premiers)', combos.couple.desordre)
+    + comboBlock('Couplé ordre', combos.couple.ordre)
+    + comboBlock('Couplé placé (2 parmi 3)', combos.couplePlace, race.nbPart < 8 ? 'Proposé à partir de 8 partants' : null)
+    + comboBlock('2 sur 4 (2 parmi 4)', combos.deuxSur4, race.nbPart < 14 ? 'Sur les courses Quinté+ (14 partants et +)' : null)
+    + comboBlock('Trio (3 premiers, désordre)', combos.tierce.desordre)
+    + comboBlock('Tiercé ordre', combos.tierce.ordre)
+    + comboBlock('Quarté désordre', combos.quarte.desordre)
+    + comboBlock('Quarté ordre', combos.quarte.ordre)
+    + comboBlock('Quinté désordre', combos.quinte.desordre)
+    + comboBlock('Quinté ordre', combos.quinte.ordre)
+    + '</div>'
+    + '<div class="hint" style="margin-bottom:14px">Classés par probabilité décroissante. Paris à ordre et désordre : calcul exact. Couplé placé et 2 sur 4 : estimés par simulation de 20 000 courses (±0,3 %). Une probabilité faible n\'est pas un mauvais pari — comparez-la au rapport attendu, pas à zéro.</div>';
+
+  html += '<div class="table-scroll"><table class="res"><thead><tr>'
+    + '<th>#</th><th>Cheval</th><th class="num">Score</th><th>Régularité</th>'
+    + '<th>Modèle vs marché</th><th>1er · T2 · T3 · T4</th><th class="num">Cote</th><th class="num">Value</th>'
+    + '<th class="num">Mise</th><th>Recommandation</th>'
+    + '</tr></thead><tbody>';
+
+  res.forEach(function(r, i){
+    const wModel  = maxProb > 0 ? Math.round(100 * r.prob / maxProb) : 0;
+    const wMarket = (r.pImp && maxProb > 0) ? Math.round(100 * r.pImp / maxProb) : 0;
+    const valueCell = r.value === null
+      ? '<span class="val-na">—</span>'
+      : '<span class="' + (r.value > 0 ? 'val-pos' : 'val-neg') + '">'
+        + (r.value > 0 ? '+' : '') + fmtPct(r.value) + '</span>';
+    const stakeCell = r.stake > 0.01
+      ? '<span class="stake">' + r.stake.toFixed(1) + ' u</span>'
+      : '<span class="val-na">—</span>';
+    const badge = r.num != null ? '<span class="dossard">' + r.num + '</span>' : '';
+
+    html += '<tr class="' + (i === 0 ? 'top1' : '') + '">'
+      + '<td class="cell-pos no-l"><span class="pos">' + (i+1) + '</span></td>'
+      + '<td class="cell-name no-l"><div class="hname-row">' + badge + '<div><div class="hname"><span class="mpos">' + (i+1) + '.</span>' + r.name + '</div>'
+      +   '<div class="hsub">' + r.age + ' ans · ' + (r.poids || '—') + ' kg · ' + r.nPerfs + ' perfs'
+      +   (r.nChutes >= 2 && r.tauxChute >= 0.34 ? ' · <span class="fragile">Sauteur fragile (' + r.nChutes + ' chutes/' + r.nPerfs + ')</span>'
+          : r.nChutes >= 1 ? ' · <span class="chute-note">' + r.nChutes + ' chute' + (r.nChutes>1?'s':'') + '</span>' : '')
+      +   '</div></div></div></td>'
+      + '<td class="num" data-l="Score"><b>' + r.score.toFixed(3) + '</b></td>'
+      + '<td data-l="Régularité">' + regLabel(r) + '</td>'
+      + '<td class="cell-gauge no-l"><div class="gauge">'
+      +   '<div class="bar model"><i style="width:' + wModel + '%"></i></div>'
+      +   '<div class="bar market"><i style="width:' + wMarket + '%"></i></div>'
+      +   '<div class="lbl"><span>Modèle ' + fmtPct(r.prob) + '</span>'
+      +   '<span>' + (r.pImp ? 'Marché ' + fmtPct(r.pImp) : '') + '</span></div>'
+      + '</div></td>'
+      + '<td class="cell-ordre" data-l="1er · T2 · T3 · T4"><div class="ptrio">'
+      +   '<span title="Gagner"><b>' + fmtPct(r.pTop1) + '</b></span>'
+      +   '<span title="Top 2">' + fmtPct(r.pTop2) + '</span>'
+      +   '<span title="Top 3">' + fmtPct(r.pTop3) + '</span>'
+      +   '<span title="Top 4">' + fmtPct(r.pTop4) + '</span>'
+      + '</div></td>'
+      + '<td class="num" data-l="Cote">' + (r.cote ? r.cote.toFixed(1) : '—') + '</td>'
+      + '<td class="num" data-l="Value">' + valueCell + '</td>'
+      + '<td class="num" data-l="Mise">' + stakeCell + '</td>'
+      + '<td class="reco" data-l="Reco">' + recoLabel(r, i) + '</td>'
+      + '</tr>';
+  });
+
+  html += '</tbody></table></div>'
+    + '<div class="legend">'
+    + '<b>Lecture.</b> La barre <b style="color:var(--gold)">or</b> est la probabilité estimée par le modèle, '
+    + 'la barre <b style="color:var(--blue)">bleue</b> la probabilité implicite de la cote (1/cote). '
+    + 'Quand l\'or dépasse nettement le bleu, la <b>value</b> est positive : le marché sous-estime le cheval selon votre modèle. '
+    + '<b>1er · Top 2 · Top 3</b> : probabilités que le cheval gagne, finisse dans les 2 premiers, ou dans les 3 premiers (modèle de Harville) — à comparer aux cotes Simple Gagnant et Simple Placé. '
+    + 'Les partants non analysés sont traités comme des outsiders moyens : ils absorbent leur part de probabilité, ce qui évite de surestimer les chevaux saisis. '
+    + 'Les chevaux avec un historique court (moins de 6 courses) sont lissés vers la moyenne du lot : moins ils ont couru, moins leur score s\'écarte de la moyenne — une victoire isolée ne suffit pas à dominer le classement. '
+    + 'La <b>mise</b> suggérée est un Kelly fractionné (' + Math.round(prm.kellyFrac*100) + ' %) sur une bankroll de ' + prm.bank + ' unités. '
+    + 'L\'overround est la marge intégrée dans les cotes : plus elle est haute, plus il est difficile de trouver de la vraie value. '
+    + 'Un <b>incident</b> (chute, arrêt, disqualification…) applique un malus fixe à la note de cette course plutôt que de la traiter comme une simple dernière place — chutes et Brought Down comptent aussi dans le repère "Sauteur fragile" pour les courses d\'obstacle. Un Non Partant (NR) est exclu du calcul : ce n\'est pas une performance.'
+    + '</div>';
+
+  document.getElementById('resultsContent').innerHTML = html;
+  const box = document.getElementById('results');
+  box.classList.add('show');
+  box.scrollIntoView({behavior:'smooth'});
+}
+
+/* =====================================================================
+   EXPORT / IMPORT JSON  (persistance sans stockage navigateur)
+   ===================================================================== */
+function snapshot(){
+  return {
+    version: 2,
+    course: {
+      hippo: document.getElementById('cfgHippo').value,
+      dist:  document.getElementById('cfgDist').value,
+      partants: document.getElementById('cfgPart').value,
+      terr:  document.getElementById('cfgTerr').value,
+      niveau:document.getElementById('cfgNiv').value
+    },
+    horses: Array.prototype.map.call(document.querySelectorAll('.horse-card'), function(card){
+      return readHorse(card);   // inclut num, name, age, poids, cote, inedit, perfs
+    })
+  };
+}
+function exportJSON(){
+  const blob = new Blob([JSON.stringify(snapshot(), null, 2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'analyse_' + (document.getElementById('cfgHippo').value || 'course').replace(/\s+/g,'_') + '.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+function importJSON(input){
+  const file = input.files && input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(){
+    try {
+      const data = JSON.parse(reader.result);
+      clearAll();
+      if (data.course){
+        document.getElementById('cfgHippo').value = data.course.hippo || '';
+        document.getElementById('cfgDist').value  = data.course.dist  || 2000;
+        document.getElementById('cfgPart').value  = data.course.partants || '';
+        document.getElementById('cfgTerr').value  = data.course.terr  || '1';
+        document.getElementById('cfgNiv').value   = data.course.niveau|| '3';
+      }
+      (data.horses || []).forEach(function(h){ addHorse(h); });
+    } catch(e){
+      alert('Fichier illisible : ' + e.message);
+    }
+    input.value = '';
+  };
+  reader.readAsText(file);
+}
+
+/* =====================================================================
+   EXEMPLE — 5 chevaux avec cotes réalistes (overround ~15 %)
+   ===================================================================== */
+function loadExample(){
+  clearAll();
+  document.getElementById('cfgPart').value = 12;
+  const ex = [
+    { num:1, name:'Foudre Noire', age:5, poids:57, cote:3.2, perfs:[
+      {rank:1,part:12,niveau:3,dist:2000,terr:1},
+      {rank:2,part:14,niveau:3,dist:1900,terr:0.9},
+      {rank:1,part:10,niveau:2,dist:2100,terr:1},
+      {rank:2,part:16,niveau:3,dist:2000,terr:0.8},
+      {rank:3,part:12,niveau:4,dist:1800,terr:1},
+      {rank:1,part:14,niveau:2,dist:2000,terr:1}]},
+    { num:2, name:'Étoile du Nord', age:6, poids:59, cote:4.8, perfs:[
+      {rank:4,part:14,niveau:3,dist:1600,terr:1},
+      {rank:1,part:10,niveau:2,dist:2000,terr:1},
+      {rank:3,part:16,niveau:2,dist:1800,terr:1},
+      {rank:6,part:12,niveau:4.5,dist:2100,terr:0.9},
+      {rank:2,part:15,niveau:3,dist:1900,terr:1},
+      {rank:1,part:8,niveau:2,dist:2000,terr:1}]},
+    { num:3, name:'Sirocco Bleu', age:5, poids:58, cote:6.5, perfs:[
+      {rank:2,part:13,niveau:3,dist:2000,terr:1},
+      {rank:1,part:15,niveau:2,dist:1950,terr:1},
+      {rank:3,part:12,niveau:3,dist:2100,terr:0.9},
+      {rank:5,part:14,niveau:2,dist:1800,terr:1},
+      {rank:4,part:16,niveau:2,dist:2000,terr:1},
+      {rank:6,part:12,niveau:3,dist:1900,terr:0.9}]},
+    { num:4, name:'Belle de Nuit', age:4, poids:56, cote:8.5, perfs:[
+      {rank:2,part:12,niveau:2,dist:1800,terr:1},
+      {rank:5,part:16,niveau:1.5,dist:2000,terr:0.9},
+      {rank:1,part:14,niveau:2,dist:1600,terr:1},
+      {rank:3,part:10,niveau:3,dist:2000,terr:1},
+      {rank:7,part:12,niveau:4,dist:2200,terr:0.8},
+      {rank:4,part:15,niveau:2,dist:1900,terr:0.9}]},
+    { num:5, name:'Galop Royal', age:8, poids:61, cote:10, perfs:[
+      {rank:3,part:16,niveau:2,dist:1800,terr:1},
+      {rank:4,part:12,niveau:2,dist:2000,terr:1},
+      {rank:5,part:18,niveau:2,dist:1600,terr:0.9},
+      {rank:2,part:14,niveau:3,dist:1900,terr:1},
+      {rank:6,part:16,niveau:2,dist:2000,terr:0.9},
+      {rank:3,part:10,niveau:3,dist:2100,terr:1}]},
+    { num:6, name:'Perle d\'Ivoire', age:6, poids:58.5, cote:13, perfs:[
+      {rank:5,part:14,niveau:2,dist:2000,terr:1},
+      {rank:3,part:12,niveau:2,dist:1900,terr:1},
+      {rank:6,part:16,niveau:2.5,dist:2100,terr:0.9},
+      {rank:4,part:10,niveau:2,dist:1800,terr:1},
+      {rank:8,part:15,niveau:3,dist:2000,terr:0.8},
+      {rank:2,part:12,niveau:1.5,dist:1950,terr:1}]},
+    { num:7, name:'Tonnerre Sacré', age:7, poids:60, cote:17, perfs:[
+      {rank:1,part:14,niveau:2,dist:2000,terr:1},
+      {rank:2,part:12,niveau:2,dist:1900,terr:0.9,incident:'T'},
+      {rank:1,part:16,niveau:2,dist:2100,terr:1},
+      {rank:3,part:13,niveau:2.5,dist:1800,terr:1,incident:'BD'},
+      {rank:2,part:15,niveau:2,dist:2000,terr:0.9},
+      {rank:4,part:12,niveau:2,dist:1900,terr:1,incident:'U'}]},
+    { num:8, name:'Dune Dorée', age:4, poids:55, cote:21, perfs:[
+      {rank:4,part:12,niveau:1.5,dist:2000,terr:1},
+      {rank:6,part:14,niveau:1.5,dist:1900,terr:1},
+      {rank:3,part:10,niveau:1.5,dist:1800,terr:0.9},
+      {rank:8,part:16,niveau:2,dist:2000,terr:1},
+      {rank:7,part:12,niveau:1.5,dist:2100,terr:1},
+      {rank:9,part:14,niveau:1.5,dist:1900,terr:0.9}]},
+    { num:9, name:'Ombre Rapide', age:9, poids:62, cote:26, perfs:[
+      {rank:7,part:14,niveau:2,dist:2000,terr:1},
+      {rank:8,part:16,niveau:2,dist:1900,terr:0.9},
+      {rank:5,part:12,niveau:2.5,dist:2100,terr:1},
+      {rank:9,part:15,niveau:2,dist:1800,terr:1},
+      {rank:6,part:13,niveau:2,dist:2000,terr:0.8},
+      {rank:5,part:12,niveau:2,dist:1950,terr:1}]},
+    { num:10, name:'Vent d\'Est', age:5, poids:58, cote:34, perfs:[
+      {rank:8,part:18,niveau:1,dist:1600,terr:1},
+      {rank:6,part:14,niveau:1,dist:1800,terr:0.9},
+      {rank:9,part:16,niveau:1,dist:2000,terr:1},
+      {rank:5,part:12,niveau:1.5,dist:1700,terr:1},
+      {rank:7,part:15,niveau:1.5,dist:1900,terr:0.9},
+      {rank:12,part:18,niveau:2,dist:2100,terr:1}]},
+    { num:11, name:'Flamme Vive', age:3, inedit:false, poids:54, cote:45, perfs:[
+      {rank:6,part:12,niveau:1,dist:1800,terr:1},
+      {rank:9,part:14,niveau:1,dist:1900,terr:1},
+      {rank:7,part:10,niveau:1,dist:2000,terr:0.9}]},
+    { num:12, name:'Mistral Perdu', age:7, poids:59.5, cote:60, perfs:[
+      {rank:11,part:14,niveau:1.5,dist:2000,terr:1},
+      {rank:13,part:16,niveau:1.5,dist:1900,terr:0.9},
+      {rank:10,part:12,niveau:1,dist:2100,terr:1},
+      {rank:12,part:15,niveau:1.5,dist:1800,terr:1},
+      {rank:9,part:14,niveau:1,dist:2000,terr:0.9},
+      {rank:14,part:16,niveau:1.5,dist:1900,terr:1}]}
+  ];
+  ex.forEach(function(h){ addHorse(h); });
+}
+
+/* ---------- démarrage ---------- */
+window.onload = function(){
+  addHorse(); addHorse();
+};
+</script>
+</body>
+</html>

@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Maquette — Résultats</title>
+<style>
+/*
+  Gouverné par :
+  - DESIGN.md : Colors, Typography, Shapes, Elevation & Depth, Components
+    (results-card, dossard-badge, value-badge, regularity-indicator,
+    fragile-indicator, probability-gauge, combo-block)
+  - EXPERIENCE.md : Information Architecture (Résultats), Component Patterns
+    (results-card, jauge de probabilité, mise suggérée, bloc combinaison),
+    State Patterns (Calcul terminé), Key Flows UJ-1 (climax), Accessibility
+    Floor (ordre de lecture TalkBack, redondance non-couleur)
+  État illustré : "Calcul terminé" (canonique) + second panneau : carte
+  développée en accordéon (Tap → détail, voir Component Patterns results-card)
+*/
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  background:#05070d; font-family:'Segoe UI',Roboto,system-ui,-apple-system,sans-serif;
+  padding:40px 20px; display:flex; gap:40px; flex-wrap:wrap; justify-content:center;
+  font-variant-numeric:tabular-nums;
+}
+.caption { color:#8B93A7; font-size:12px; text-align:center; margin-bottom:10px; letter-spacing:.5px; text-transform:uppercase; }
+.frame {
+  width:390px; background:#0B1120; border-radius:28px; border:6px solid #1a1f2e;
+  overflow:hidden; box-shadow:0 0 0 1px rgba(255,255,255,.04);
+}
+.screen { height:780px; overflow-y:auto; padding:14px 14px 24px; color:#E7E4DA; }
+.screen::-webkit-scrollbar{ width:0; }
+
+h1 { font-size:15px; text-transform:uppercase; letter-spacing:.6px; color:#E8B33C; margin-bottom:2px; }
+.race-banner {
+  background:rgba(232,179,60,.12); border:1px solid rgba(255,255,255,.32);
+  border-radius:10px; padding:10px 12px; margin:10px 0 14px; font-size:12.5px;
+  display:flex; flex-wrap:wrap; gap:4px 14px; align-items:baseline;
+}
+.race-banner b { color:#E8B33C; }
+.race-banner .over { width:100%; color:#8B93A7; font-size:11px; margin-top:2px; }
+
+.section-label {
+  color:#E8B33C; font-size:11px; text-transform:uppercase; letter-spacing:.7px;
+  margin:16px 0 8px;
+}
+
+.results-card {
+  background:#0F1728; border:1px solid rgba(255,255,255,.32); border-radius:12px;
+  padding:12px 14px; margin-bottom:10px;
+}
+.results-card.top1 { border-color:#E8B33C; background:linear-gradient(rgba(232,179,60,.10),rgba(232,179,60,.10)),#0F1728; }
+.rc-head { display:flex; align-items:flex-start; gap:10px; }
+.dossard { background:#E8B33C; color:#14100A; font-weight:800; border-radius:6px; min-width:26px; text-align:center; padding:4px 6px; font-size:13px; flex-shrink:0; }
+.rc-id { flex:1; }
+.rc-name { font-weight:700; font-size:14.5px; }
+.rc-sub { font-size:11px; color:#8B93A7; margin-top:2px; }
+.rc-reg { font-size:11px; margin-top:3px; font-weight:600; }
+.reg-high{ color:#3DD68C; } .reg-med{ color:#E8B33C; } .reg-low{ color:#E5533D; } .reg-unk{ color:#8B93A7; }
+.fragile{ color:#E5533D; font-weight:700; font-size:11px; margin-top:2px; }
+
+.rc-metrics { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-top:10px; }
+.metric-label { font-size:9.5px; color:#8B93A7; text-transform:uppercase; letter-spacing:.5px; }
+.metric-value { font-size:14px; font-weight:700; margin-top:1px; }
+.val-pos { color:#3DD68C; } .val-neg { color:#E5533D; }
+.stake { color:#3DD68C; font-weight:700; }
+.stake-none { color:#8B93A7; }
+
+.gauge { margin-top:10px; }
+.gauge .bar { height:7px; border-radius:4px; background:#131C2E; border:1px solid rgba(255,255,255,.32); position:relative; overflow:hidden; margin:3px 0; }
+.gauge .bar i { position:absolute; left:0; top:0; bottom:0; border-radius:3px; }
+.gauge .model i { background:#E8B33C; }
+.gauge .market i { background:#5B9BD5; }
+.gauge .lbl { display:flex; justify-content:space-between; font-size:10px; color:#8B93A7; margin-top:2px; }
+
+.ptrio { display:flex; gap:6px; margin-top:8px; font-size:10.5px; flex-wrap:wrap; }
+.ptrio span { padding:2px 7px; border-radius:6px; background:#131C2E; border:1px solid rgba(255,255,255,.32); }
+.ptrio span.g { border-color:#E8B33C; color:#E8B33C; }
+
+.combo-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:6px; }
+.combo-box { background:#0F1728; border:1px solid rgba(255,255,255,.32); border-radius:12px; padding:9px 10px; }
+.combo-title { color:#E8B33C; font-size:9.5px; text-transform:uppercase; letter-spacing:.5px; margin-bottom:5px; }
+.combo-nums { font-weight:800; font-size:14px; }
+.combo-p { color:#3DD68C; font-weight:700; font-size:11px; float:right; }
+.combo-names { font-size:9.5px; color:#8B93A7; clear:both; }
+
+.disclaimer {
+  margin-top:16px; font-size:10.5px; color:#8B93A7; text-align:center;
+  font-style:italic; padding:10px; border-top:1px solid rgba(255,255,255,.14);
+}
+
+/* Panneau 2 — carte développée en accordéon */
+.detail-panel { background:#0F1728; border:1px solid #E8B33C; border-radius:12px; padding:14px; margin-top:6px; }
+.detail-row { display:flex; justify-content:space-between; padding:5px 0; border-bottom:1px solid rgba(255,255,255,.14); font-size:12.5px; }
+.detail-row:last-child { border-bottom:none; }
+.detail-row span:first-child { color:#8B93A7; }
+</style>
+</head>
+<body>
+
+<div>
+  <div class="caption">Résultats — état "Calcul terminé" (climax UJ-1)</div>
+  <div class="frame"><div class="screen">
+    <h1>Résultats</h1>
+    <div class="race-banner">
+      <span><b>Vincennes</b></span><span>2000 m</span><span>12 partants</span>
+      <span class="over">Overround : 14,8 % · Placé = 3 premiers</span>
+    </div>
+
+    <div class="results-card top1">
+      <div class="rc-head">
+        <div class="dossard">3</div>
+        <div class="rc-id">
+          <div class="rc-name">Foudre Noire</div>
+          <div class="rc-sub">5 ans · 57 kg · 6 perfs</div>
+          <div class="rc-reg reg-high">Très régulier</div>
+        </div>
+      </div>
+      <div class="rc-metrics">
+        <div><div class="metric-label">Score</div><div class="metric-value">0.842</div></div>
+        <div><div class="metric-label">Cote</div><div class="metric-value">3.2</div></div>
+        <div><div class="metric-label">Value</div><div class="metric-value val-pos">+31 %</div></div>
+        <div><div class="metric-label">Mise suggérée</div><div class="metric-value stake">4.6 u</div></div>
+        <div><div class="metric-label">Reco</div><div class="metric-value" style="font-size:11px">🔥 Value forte</div></div>
+      </div>
+      <div class="gauge">
+        <div class="bar model"><i style="width:82%"></i></div>
+        <div class="bar market"><i style="width:56%"></i></div>
+        <div class="lbl"><span>Modèle 24,6 %</span><span>Marché 18,7 %</span></div>
+      </div>
+      <div class="ptrio">
+        <span class="g">1er 24,6 %</span><span>Top2 41,3 %</span><span>Top3 55,0 %</span><span>Top4 66,2 %</span>
+      </div>
+    </div>
+
+    <div class="results-card">
+      <div class="rc-head">
+        <div class="dossard">7</div>
+        <div class="rc-id">
+          <div class="rc-name">Tonnerre Sacré</div>
+          <div class="rc-sub">7 ans · 60 kg · 6 perfs</div>
+          <div class="rc-reg reg-med">Moyen</div>
+          <div class="fragile">⚠️ Sauteur fragile (2 chutes/6)</div>
+        </div>
+      </div>
+      <div class="rc-metrics">
+        <div><div class="metric-label">Score</div><div class="metric-value">0.611</div></div>
+        <div><div class="metric-label">Cote</div><div class="metric-value">17.0</div></div>
+        <div><div class="metric-label">Value</div><div class="metric-value val-neg">−8 %</div></div>
+        <div><div class="metric-label">Mise suggérée</div><div class="metric-value stake-none">—</div></div>
+        <div><div class="metric-label">Reco</div><div class="metric-value" style="font-size:11px">— Pas d'avantage</div></div>
+      </div>
+      <div class="gauge">
+        <div class="bar model"><i style="width:38%"></i></div>
+        <div class="bar market"><i style="width:44%"></i></div>
+        <div class="lbl"><span>Modèle 9,1 %</span><span>Marché 10,4 %</span></div>
+      </div>
+    </div>
+
+    <div class="results-card">
+      <div class="rc-head">
+        <div class="dossard">11</div>
+        <div class="rc-id">
+          <div class="rc-name">Flamme Vive</div>
+          <div class="rc-sub">3 ans · 54 kg · 0 perf</div>
+          <div class="rc-reg reg-unk">🐎 Inédit</div>
+        </div>
+      </div>
+      <div class="rc-metrics">
+        <div><div class="metric-label">Score</div><div class="metric-value">0.512</div></div>
+        <div><div class="metric-label">Cote</div><div class="metric-value">45.0</div></div>
+        <div><div class="metric-label">Value</div><div class="metric-value val-neg">−4 %</div></div>
+        <div><div class="metric-label">Mise suggérée</div><div class="metric-value stake-none">—</div></div>
+        <div><div class="metric-label">Reco</div><div class="metric-value" style="font-size:11px">— Pas d'avantage</div></div>
+      </div>
+    </div>
+
+    <div class="section-label">🏇 Paris combinés</div>
+    <div class="combo-grid">
+      <div class="combo-box">
+        <div class="combo-title">Couplé gagnant</div>
+        <div><span class="combo-p">7,4 %</span><span class="combo-nums">3 — 9</span></div>
+        <div class="combo-names">Foudre Noire · Sirocco Bleu</div>
+      </div>
+      <div class="combo-box">
+        <div class="combo-title">Trio désordre</div>
+        <div><span class="combo-p">2,1 %</span><span class="combo-nums">3 — 9 — 2</span></div>
+        <div class="combo-names">Foudre Noire · Sirocco Bleu · Étoile du Nord</div>
+      </div>
+    </div>
+
+    <div class="disclaimer">Outil d'aide à la décision — aucun modèle ne garantit un gain. Jouez uniquement ce que vous pouvez vous permettre de perdre.</div>
+  </div></div>
+</div>
+
+<div>
+  <div class="caption">Résultats — carte développée en accordéon (Tap → détail)</div>
+  <div class="frame"><div class="screen">
+    <h1>Résultats</h1>
+    <div class="results-card top1" style="margin-top:10px">
+      <div class="rc-head">
+        <div class="dossard">3</div>
+        <div class="rc-id">
+          <div class="rc-name">Foudre Noire</div>
+          <div class="rc-sub">5 ans · 57 kg · 6 perfs</div>
+          <div class="rc-reg reg-high">Très régulier</div>
+        </div>
+      </div>
+      <div class="rc-metrics">
+        <div><div class="metric-label">Score</div><div class="metric-value">0.842</div></div>
+        <div><div class="metric-label">Cote</div><div class="metric-value">3.2</div></div>
+        <div><div class="metric-label">Value</div><div class="metric-value val-pos">+31 %</div></div>
+      </div>
+      <div class="detail-panel">
+        <div class="detail-row"><span>C1 · Vincennes 2000m</span><span>1er / 12</span></div>
+        <div class="detail-row"><span>C2 · Enghien 1900m</span><span>2e / 14</span></div>
+        <div class="detail-row"><span>C3 · Vincennes 2100m</span><span>1er / 10</span></div>
+        <div class="detail-row"><span>Écart-type des notes</span><span>0.09 (très régulier)</span></div>
+        <div class="detail-row"><span>Terrain inconnu</span><span>0/6 performances</span></div>
+      </div>
+    </div>
+  </div></div>
+</div>
+
+</body>
+</html>

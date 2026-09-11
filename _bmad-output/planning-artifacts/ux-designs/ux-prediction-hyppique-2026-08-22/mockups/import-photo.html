@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Maquette — Import photo</title>
+<style>
+/*
+  Gouverné par :
+  - DESIGN.md : Colors, Shapes, Components (import-sheet)
+  - EXPERIENCE.md : Information Architecture (Import photo, feuille modale),
+    Component Patterns (Feuille d'import), State Patterns (Import photo en
+    cours, Import photo échoué, Permission caméra/galerie refusée)
+  État illustré : choix à froid (canonique) + deux panneaux d'état :
+  lecture en cours, et permission refusée
+*/
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  background:#05070d; font-family:'Segoe UI',Roboto,system-ui,-apple-system,sans-serif;
+  padding:40px 20px; display:flex; gap:40px; flex-wrap:wrap; justify-content:center;
+  font-variant-numeric:tabular-nums;
+}
+.caption { color:#8B93A7; font-size:12px; text-align:center; margin-bottom:10px; letter-spacing:.5px; text-transform:uppercase; }
+.frame { width:390px; background:#0B1120; border-radius:28px; border:6px solid #1a1f2e; overflow:hidden; position:relative; }
+.screen { height:780px; padding:14px; color:#E7E4DA; display:flex; align-items:flex-end; }
+.screen::-webkit-scrollbar{ width:0; }
+
+.sheet { width:100%; background:#131C2E; border-radius:16px 16px 0 0; padding:18px 16px 24px; }
+.sheet-title { color:#E8B33C; font-size:13px; text-transform:uppercase; letter-spacing:.6px; margin-bottom:4px; }
+.sheet-sub { color:#8B93A7; font-size:11px; margin-bottom:16px; }
+
+.opt-row {
+  display:flex; align-items:center; gap:12px;
+  background:#0F1728; border:1px solid rgba(255,255,255,.32); border-radius:10px;
+  padding:13px 14px; margin-bottom:9px;
+}
+.opt-icon { color:#E8B33C; font-size:18px; }
+.opt-label { font-size:13.5px; font-weight:600; }
+
+.busy { text-align:center; padding:30px 0; }
+.busy .icon { font-size:26px; margin-bottom:10px; }
+.busy .txt { color:#E8B33C; font-size:13px; font-weight:600; }
+.busy .bar { height:4px; background:#0F1728; border-radius:2px; margin-top:16px; overflow:hidden; }
+.busy .bar i { display:block; height:100%; width:60%; background:#E8B33C; }
+
+.denied { text-align:center; padding:20px 0; }
+.denied .txt { font-size:13px; margin-bottom:6px; }
+.denied .hint { color:#8B93A7; font-size:11px; margin-bottom:14px; }
+.cta-ghost { background:#131C2E; color:#E7E4DA; border:1px solid rgba(255,255,255,.32); border-radius:10px; padding:11px 18px; font-size:12px; display:inline-block; }
+</style>
+</head>
+<body>
+
+<div>
+  <div class="caption">Import photo — choix à froid (canonique)</div>
+  <div class="frame"><div class="screen">
+    <div class="sheet">
+      <div class="sheet-title">Importer une fiche cheval</div>
+      <div class="sheet-sub">Photo, capture ou fichier PDF</div>
+      <div class="opt-row"><span class="opt-icon">📷</span><span class="opt-label">Prendre une photo</span></div>
+      <div class="opt-row"><span class="opt-icon">🖼️</span><span class="opt-label">Choisir dans la galerie</span></div>
+      <div class="opt-row"><span class="opt-icon">📄</span><span class="opt-label">Sélectionner un PDF</span></div>
+    </div>
+  </div></div>
+</div>
+
+<div>
+  <div class="caption">Import photo — lecture en cours</div>
+  <div class="frame"><div class="screen">
+    <div class="sheet">
+      <div class="busy">
+        <div class="icon">📷</div>
+        <div class="txt">Lecture en cours…</div>
+        <div class="bar"><i></i></div>
+      </div>
+    </div>
+  </div></div>
+</div>
+
+<div>
+  <div class="caption">Import photo — permission caméra refusée</div>
+  <div class="frame"><div class="screen">
+    <div class="sheet">
+      <div class="denied">
+        <div class="txt">Autorisez l'accès à la caméra pour importer une photo</div>
+        <div class="hint">Vous pouvez aussi choisir la galerie ou continuer en saisie manuelle.</div>
+        <div class="cta-ghost">Ouvrir les réglages</div>
+      </div>
+    </div>
+  </div></div>
+</div>
+
+</body>
+</html>

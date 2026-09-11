@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Analyse Hippique V2 — Moteur de value</title>
+<style>
+  :root{
+    --bg:#0B1120; --surface:#131C2E; --surface2:#0F1728;
+    --line:rgba(255,255,255,.08); --line2:rgba(255,255,255,.14);
+    --gold:#E8B33C; --gold-dim:rgba(232,179,60,.12);
+    --green:#3DD68C; --red:#E5533D; --blue:#5B9BD5;
+    --txt:#E7E4DA; --muted:#8B93A7;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{
+    font-family:'Segoe UI',system-ui,-apple-system,sans-serif;
+    background:var(--bg); color:var(--txt);
+    padding:16px; min-height:100vh;
+    font-variant-numeric:tabular-nums;
+  }
+  .wrap{max-width:1100px;margin:0 auto}
+  header{padding:18px 0 26px;border-bottom:2px solid var(--gold);margin-bottom:24px}
+  header h1{font-size:1.7em;letter-spacing:.5px;color:var(--gold);text-transform:uppercase}
+  header .sub{color:var(--muted);font-size:.9em;margin-top:4px}
+  h2{font-size:1.05em;text-transform:uppercase;letter-spacing:1.2px;color:var(--gold);margin-bottom:14px}
+  .panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px;margin-bottom:20px}
+  .grid{display:grid;gap:12px}
+  .grid.cols4{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+  label{display:flex;flex-direction:column;gap:5px;font-size:.8em;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+  input,select{
+    padding:9px 10px;border-radius:8px;border:1px solid var(--line2);
+    background:var(--surface2);color:var(--txt);font-size:14px;width:100%;
+    font-variant-numeric:tabular-nums;
+  }
+  input:focus,select:focus{outline:2px solid var(--gold);outline-offset:1px}
+  input.invalid{border-color:var(--red)}
+  details.params{margin-top:14px}
+  details.params summary{cursor:pointer;color:var(--muted);font-size:.85em;user-select:none}
+  details.params summary:hover{color:var(--gold)}
+  details.params .grid{margin-top:12px}
+
+  /* ---- cartes chevaux ---- */
+  .horse-card{background:var(--surface);border:1px solid var(--line);border-radius:12px;margin-bottom:14px;overflow:hidden}
+  .horse-head{display:grid;grid-template-columns:minmax(52px,.6fr) minmax(130px,2fr) repeat(3,minmax(72px,1fr)) auto;gap:10px;padding:12px 14px;align-items:end;background:var(--gold-dim)}
+  .horse-head input[type=text]{font-weight:700;color:var(--gold)}
+  .inedit-lbl{display:flex;align-items:center;gap:7px;font-size:.78em;color:var(--muted);margin-top:10px;text-transform:none;letter-spacing:0;cursor:pointer;flex-direction:row}
+  .inedit-lbl input{width:auto}
+  .inedit-lbl b{color:var(--blue)}
+  .horse-body{padding:10px 14px 14px}
+  table.perfs{width:100%;border-collapse:collapse;font-size:13px}
+  table.perfs th{color:var(--muted);font-weight:600;font-size:.75em;text-transform:uppercase;letter-spacing:.5px;padding:6px 4px;text-align:center;border-bottom:1px solid var(--line)}
+  table.perfs td{padding:4px 3px;text-align:center}
+  table.perfs td:first-child{color:var(--gold);font-weight:700;width:34px}
+  table.perfs input,table.perfs select{padding:6px 4px;font-size:13px;text-align:center}
+  .btn-x{background:none;border:1px solid var(--line2);color:var(--muted);border-radius:8px;padding:8px 12px;cursor:pointer;font-size:13px}
+  .btn-x:hover{border-color:var(--red);color:var(--red)}
+  .hint{font-size:.75em;color:var(--muted);margin-top:8px}
+
+  /* ---- boutons ---- */
+  .btn-row{display:flex;flex-wrap:wrap;gap:10px;margin:22px 0}
+  .btn{border:none;border-radius:10px;padding:13px 22px;font-size:14px;font-weight:700;cursor:pointer;letter-spacing:.4px;text-transform:uppercase}
+  .btn.primary{background:var(--gold);color:#14100a;flex:1;min-width:180px;font-size:15px}
+  .btn.primary:hover{filter:brightness(1.1)}
+  .btn.ghost{background:var(--surface);color:var(--txt);border:1px solid var(--line2)}
+  .btn.ghost:hover{border-color:var(--gold);color:var(--gold)}
+  .btn.danger{background:var(--surface);color:var(--red);border:1px solid var(--line2)}
+  .btn.danger:hover{border-color:var(--red)}
+
+  /* ---- résultats ---- */
+  #results{display:none}
+  #results.show{display:block;animation:fade .3s ease}
+  @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  .race-banner{background:var(--gold-dim);border:1px solid var(--gold);border-radius:10px;padding:12px 16px;margin-bottom:14px;display:flex;flex-wrap:wrap;gap:8px 22px;align-items:baseline}
+  .race-banner b{color:var(--gold)}
+  .race-banner .over{margin-left:auto;font-size:.85em;color:var(--muted)}
+  table.res{width:100%;border-collapse:collapse;font-size:13.5px}
+  table.res th{background:var(--surface2);color:var(--gold);padding:9px 8px;text-align:left;font-size:.75em;text-transform:uppercase;letter-spacing:.6px;border-bottom:2px solid var(--gold)}
+  table.res th.num, table.res td.num{text-align:right}
+  table.res td{padding:9px 8px;border-bottom:1px solid var(--line);vertical-align:middle}
+  table.res tr.top1 td{background:rgba(232,179,60,.10)}
+  .pos{display:inline-block;min-width:24px;text-align:center;font-weight:700}
+  .hname{font-weight:700;color:var(--txt)}
+  .hsub{font-size:.75em;color:var(--muted)}
+  .val-pos{color:var(--green);font-weight:700}
+  .val-neg{color:var(--red)}
+  .val-na{color:var(--muted)}
+  .reg-ok{color:var(--green)} .reg-mid{color:var(--gold)} .reg-bad{color:var(--red)}
+
+  /* signature : double jauge modèle vs marché */
+  .gauge{width:150px}
+  .gauge .bar{height:7px;border-radius:4px;background:var(--surface2);position:relative;overflow:hidden;margin:3px 0}
+  .gauge .bar i{position:absolute;left:0;top:0;bottom:0;border-radius:4px}
+  .gauge .bar.model i{background:var(--gold)}
+  .gauge .bar.market i{background:var(--blue)}
+  .gauge .lbl{display:flex;justify-content:space-between;font-size:.68em;color:var(--muted)}
+
+  .reco{font-size:.85em;white-space:nowrap}
+  .stake{font-weight:700;color:var(--green)}
+
+  /* ordres d'arrivée probables */
+  .orders-box{background:var(--surface2);border:1px solid var(--line2);border-radius:10px;padding:12px 16px;margin-bottom:14px}
+  .orders-title{color:var(--gold);font-size:.8em;text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px}
+  .order-line{display:flex;align-items:center;gap:12px;padding:5px 0;border-bottom:1px solid var(--line);font-size:.92em}
+  .order-line:last-of-type{border-bottom:none}
+  .order-rank{color:var(--gold);font-weight:700;min-width:16px}
+  .order-names{flex:1;font-weight:600}
+  .order-p{color:var(--green);font-weight:700}
+
+  /* trio de probabilités par cheval */
+  .ptrio{display:flex;gap:8px;font-size:.85em;white-space:nowrap}
+  .ptrio span{padding:2px 7px;border-radius:6px;background:var(--surface2);border:1px solid var(--line)}
+  .ptrio span:first-child{border-color:var(--gold);color:var(--gold)}
+
+  /* badge dossard + inédit */
+  .hname-row{display:flex;align-items:center;gap:9px}
+  .dossard{background:var(--gold);color:#14100a;font-weight:800;border-radius:7px;min-width:26px;text-align:center;padding:3px 5px;font-size:.95em;flex-shrink:0}
+  .reg-inedit{color:var(--blue);font-weight:700}
+  .fragile{color:var(--red);font-weight:700}
+  .chute-note{color:var(--gold)}
+
+  /* grille des paris combinés */
+  .combo-head{color:var(--gold);font-size:.8em;text-transform:uppercase;letter-spacing:.8px;margin:4px 0 10px}
+  .combo-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(215px,1fr));gap:9px;margin-bottom:10px}
+  .combo-box{background:var(--surface2);border:1px solid var(--line);border-radius:10px;padding:9px 11px}
+  .combo-title{color:var(--gold);font-size:.68em;text-transform:uppercase;letter-spacing:.6px;margin-bottom:5px}
+  .combo-line{padding:3px 0}
+  .combo-line.bd{border-bottom:1px solid var(--line)}
+  .combo-top{display:flex;align-items:baseline;gap:8px}
+  .combo-nums{font-weight:800;font-size:1.05em;letter-spacing:.5px;flex:1}
+  .combo-p{color:var(--green);font-weight:700;font-size:.82em}
+  .combo-names{font-size:.66em;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .combo-note{font-size:.68em;color:var(--muted);margin-top:5px;font-style:italic}
+
+  .legend{margin-top:16px;padding:14px;background:var(--surface2);border-radius:10px;border-left:3px solid var(--gold);font-size:.85em;line-height:1.7;color:var(--muted)}
+  .legend b{color:var(--gold)}
+  .disclaimer{margin-top:14px;font-size:.78em;color:var(--muted);text-align:center;font-style:italic}
+  .table-scroll{overflow-x:auto}
+  footer{margin-top:28px;padding-top:14px;border-top:1px solid var(--line);color:var(--muted);font-size:.78em;text-align:center}
+  .hname .mpos{display:none}
+
+  /* ================= MOBILE ================= */
+  @media (max-width:700px){
+    body{padding:10px}
+    header h1{font-size:1.35em}
+    .panel{padding:14px}
+
+    /* en-tête de carte cheval : 2 colonnes, nom en pleine largeur */
+    .horse-head{grid-template-columns:1fr 1fr;align-items:end}
+    .horse-head label:nth-child(2){grid-column:1 / -1}
+    .horse-head .btn-x{grid-column:2;justify-self:end}
+
+    /* grille des 6 courses : compacte + défilement horizontal de secours */
+    .horse-body{overflow-x:auto}
+    table.perfs{min-width:500px}
+    table.perfs input,table.perfs select{padding:7px 2px;font-size:12.5px}
+
+    /* boutons empilés pleine largeur */
+    .btn-row{flex-direction:column}
+    .btn{width:100%}
+
+    .race-banner .over{margin-left:0;width:100%}
+
+    /* résultats : le tableau devient des cartes empilées */
+    table.res thead{display:none}
+    table.res, table.res tbody, table.res tr, table.res td{display:block;width:100%}
+    table.res tr{border:1px solid var(--line);border-radius:12px;margin-bottom:12px;padding:12px 14px;background:var(--surface2)}
+    table.res tr.top1{border-color:var(--gold)}
+    table.res td{border:none;padding:5px 0;display:flex;justify-content:space-between;align-items:center;gap:12px;text-align:left}
+    table.res td.num{text-align:left}
+    table.res td::before{content:attr(data-l);color:var(--muted);font-size:.7em;text-transform:uppercase;letter-spacing:.6px;flex-shrink:0}
+    table.res td.no-l::before{display:none}
+    table.res td.cell-pos{display:none}
+    table.res td.cell-name{padding-bottom:8px;border-bottom:1px solid var(--line);margin-bottom:4px}
+    table.res td.cell-gauge{display:block}
+    .gauge{width:100%;margin-top:4px}
+    .hname .mpos{display:inline;color:var(--gold);margin-right:6px}
+    .reco{white-space:normal;text-align:right}
+  }
+  @media (max-width:380px){
+    table.perfs{min-width:470px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>Analyse Hippique <span style="color:var(--txt)">V2</span></h1>
+    <div class="sub">Score de forme pondéré · probabilités vs cotes · détection de value · mise suggérée</div>
+  </header>
+
+  <!-- ======== COURSE CIBLE ======== -->
+  <section class="panel">
+    <h2>Course cible</h2>
+    <div class="grid cols4">
+      <label>Hippodrome
+        <input type="text" id="cfgHippo" value="Vincennes">
+      </label>
+      <label>Distance (m)
+        <input type="number" id="cfgDist" value="2000" min="800" step="25">
+      </label>
+      <label>Nombre de partants
+        <input type="number" id="cfgPart" min="3" max="24" placeholder="auto (chevaux saisis)">
+      </label>
+      <label>Terrain
+        <select id="cfgTerr">
+          <optgroup label="Gazon — échelle officielle (10 niveaux)">
+          <option value="1.08">Très léger (1.08)</option>
+          <option value="1.05">Léger (1.05)</option>
+          <option value="1.02">Bon léger (1.02)</option>
+          <option value="1" selected>Bon (1)</option>
+          <option value="0.97">Bon souple (0.97)</option>
+          <option value="0.93">Souple (0.93)</option>
+          <option value="0.88">Très souple (0.88)</option>
+          <option value="0.83">Collant (0.83)</option>
+          <option value="0.77">Lourd (0.77)</option>
+          <option value="0.7">Très lourd (0.7)</option>
+          </optgroup>
+          <optgroup label="Sable fibré (PSF) — échelle distincte">
+          <option value="1.001">Rapide — PSF (1.0)</option>
+          <option value="0.99">Standard — PSF (0.99)</option>
+          <option value="0.95">Lent — PSF (0.95)</option>
+          </optgroup>
+        </select>
+      </label>
+      <label>Niveau de la course
+        <select id="cfgNiv">
+          <option value="5">Groupe I (5)</option>
+          <option value="4.5">Groupe II (4.5)</option>
+          <option value="4">Groupe III (4)</option>
+          <option value="3.5">Groupe IV (3.5)</option>
+          <option value="3" selected>Listed (3)</option>
+          <option value="2.6">Catégorie A (2.6)</option>
+          <option value="2.3">Catégorie B (2.3)</option>
+          <option value="2">Catégorie C (2)</option>
+          <option value="1.7">Catégorie D (1.7)</option>
+          <option value="1.4">Catégorie E (1.4)</option>
+          <option value="1.1">Catégorie F (1.1)</option>
+          <option value="1">Catégorie G/H (1)</option>
+        </select>
+      </label>
+    </div>
+
+    <details class="params">
+      <summary>⚙️ Paramètres du modèle (bankroll, récence, agressivité…)</summary>
+      <div class="grid cols4">
+        <label>Bankroll (unités)
+          <input type="number" id="prmBank" value="100" min="1">
+        </label>
+        <label>Fraction de Kelly
+          <select id="prmKelly">
+            <option value="0.1">Prudent (10 %)</option>
+            <option value="0.25" selected>Standard (25 %)</option>
+            <option value="0.5">Agressif (50 %)</option>
+          </select>
+        </label>
+        <label>Pondération récence
+          <select id="prmRec">
+            <option value="std" selected>Standard (dégressif)</option>
+            <option value="forme">Forme récente (fort)</option>
+            <option value="flat">Uniforme (aucune)</option>
+          </select>
+        </label>
+        <label>Contraste des probabilités (k)
+          <input type="number" id="prmK" value="3" min="1" max="6" step="0.5">
+        </label>
+        <label>Sensibilité au poids (%/kg)
+          <input type="number" id="prmPoids" value="1" min="0" max="3" step="0.5">
+        </label>
+        <label>Âge optimal min
+          <input type="number" id="prmAgeMin" value="4" min="2" max="10">
+        </label>
+        <label>Âge optimal max
+          <input type="number" id="prmAgeMax" value="7" min="2" max="14">
+        </label>
+        <label>Lissage petits historiques
+          <input type="number" id="prmShrink" value="2" min="0" max="6" step="0.5">
+        </label>
+        <label>Coef. inédit
+          <input type="number" id="prmInedit" value="0.75" min="0.3" max="1.3" step="0.05">
+        </label>
+        <label>Intensité malus incident
+          <input type="number" id="prmMalusInc" value="1" min="0" max="2" step="0.1">
+        </label>
+      </div>
+    </details>
+  </section>
+
+  <!-- ======== CHEVAUX ======== -->
+  <section>
+    <h2>Partants <span id="countBadge" style="color:var(--muted);font-weight:400"></span></h2>
+    <div id="horseList"></div>
+    <div class="btn-row" style="margin-top:6px">
+      <button class="btn ghost" onclick="addHorse()">➕ Ajouter un cheval</button>
+      <button class="btn ghost" onclick="loadExample()">Charger l'exemple</button>
+      <button class="btn ghost" onclick="exportJSON()">Exporter (JSON)</button>
+      <button class="btn ghost" onclick="importInput.click()">Importer (JSON)</button>
+      <button class="btn danger" onclick="clearAll()">Tout effacer</button>
+      <input type="file" id="importInput" accept=".json,application/json" style="display:none">
+    </div>
+  </section>
+
+  <div class="btn-row">
+    <button class="btn primary" onclick="calculate()">📊 Calculer le classement &amp; les values</button>
+  </div>
+
+  <!-- ======== RÉSULTATS ======== -->
+  <section id="results" class="panel">
+    <h2>Classement &amp; recommandations</h2>
+    <div id="resultsContent"></div>
+    <div class="disclaimer">Outil d'aide à la décision — aucun modèle ne garantit un gain. Jouez uniquement ce que vous pouvez vous permettre de perdre.</div>
+  </section>
+
+  <footer>
+    V2 — score de forme (moyenne pondérée par récence) × ajustements distance / terrain / niveau / poids / âge → probabilités → value = p × cote − 1 → mise Kelly fractionné.
+  </footer>
+</div>
+<!-- NOTE (importée pour la conception UX) : ce fichier est une extraction des styles/structure du
+     prototype HTML original (analyse_hippique_v2.html) collé en conversation par le porteur de
+     projet. Le JavaScript de calcul (~400 lignes : lecture des cartes, moteur, rendu des résultats)
+     n'est PAS reproduit ici — non pertinent pour la conception visuelle/UX, déjà couvert par le PRD
+     et le cahier des charges backend. Conservé pour référence : la totalité du prototype vit dans
+     l'historique de conversation de la session PRD du 2026-08-22. -->
+</body>
+</html>

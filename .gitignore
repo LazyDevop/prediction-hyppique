@@ -36,3 +36,6 @@ Thumbs.db
 
 # Claude
 .claude/
+
+# BMad -- installer-managed, personal install answers, regenerated per machine
+_bmad/config.user.toml
