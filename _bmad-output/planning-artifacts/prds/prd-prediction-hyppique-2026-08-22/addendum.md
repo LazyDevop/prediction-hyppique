@@ -53,3 +53,10 @@ Une précédente proposition d'architecture Flutter (générée par un autre out
 ## F. Plans de développement suggérés (source)
 
 Les deux cahiers des charges proposent chacun un plan de développement séquencé (backend §11, mobile §10) : port du moteur d'abord (testable en isolation, sans dépendance réseau), puis stockage local et écrans de saisie manuelle, puis client API une fois le backend disponible, puis import photo en dernier (le plus optionnel en usage trackside), puis calibration une fois un historique réel accumulé. Ces séquences restent la référence pour la planification epics/stories (`bmad-create-epics-and-stories`), le PRD n'en reprend que les capacités (§4), pas l'ordonnancement.
+
+## G. Module Multi — pointeurs (2026-10-17)
+
+- **Spécification normative** : `docs/cahier_des_charges_module_multi.md` (v2) — règles du pari, algorithme de sélection du modèle (amorce par probabilité d'être dans les 4 premiers, puis échanges), bases candidates, choix sous budget, générateur et vérificateur de systèmes réduits, verdict, explications en codes, schéma de journalisation, protocole d'évaluation et pilote, plan de développement en 10 étapes. Le PRD (§4.11) n'en reprend que les capacités.
+- **Décisions de cadrage D0-D7 et alternatives écartées** : `_bmad-output/planning-artifacts/multi/reconcile-cdc-multi-prd.md` — notamment la méthode 1 du document source Multi rétrogradée en comparateur et la méthode 2 sortie du MVP (le modèle décide), la mise exclue du module, la presse exclue du calcul.
+- **Récit d'origine du parcours UJ-4** : `sources/uj-multi-marc-2026-10-17.md` — écrit avant les décisions D0-D7 (Marc y choisit la méthode 1 et importe la presse) ; UJ-4 le réécrit en conservant la séance, la fin et les critères d'acceptation.
+- **Idées du brainstorming mises en attente** (nouveaux critères pour le moteur de scoring, choix du système parmi les équivalents, etc.) : `_bmad-output/brainstorming/brainstorm-module-multi-2026-10-17/tri-angle-decision.md`.

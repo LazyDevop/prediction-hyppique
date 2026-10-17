@@ -1,0 +1,662 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prix du Multi</title>
+<meta name="description" content="Keepsake of the 2026-10-17 brainstorming session on the Multi bet module of prediction-hyppique: 104 ideas from four techniques, five clusters, an impact–effort draw and five insights.">
+<style>
+:root{
+  --paper:#f5efe1; --paper-2:#ece4d0; --card:#fffcf4; --ink:#1c1a16; --muted:#585244;
+  --line:#cfc3a6; --turf:#1d5a37; --turf-2:#2f7a4d; --turf-ink:#ffffff; --rail:#ffffff;
+  --red:#a8231b; --red-ink:#ffffff; --black:#1c1a16; --black-ink:#ffffff; --green0:#1d6b3f;
+  --gold:#8a5a00; --tote-bg:#14110c; --tote-led:#ffb627; --tote-dim:#5a4a26;
+  --shadow:0 1px 0 rgba(0,0,0,.06),0 6px 18px -10px rgba(40,30,10,.35);
+  --lit:#ffd75e; --lit-ink:#1c1a16;
+  --photo-bg:#e9e6dc; --photo-ink:#1c1a16; --photo-line:#a8231b;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#0e1411; --paper-2:#131b16; --card:#18211c; --ink:#ece6d4; --muted:#aaa48f;
+    --line:#2f3c34; --turf:#4fb77c; --turf-2:#3c9a64; --turf-ink:#06140c; --rail:#d9d3c2;
+    --red:#ff7b6b; --red-ink:#1a0603; --black:#e9e3d1; --black-ink:#111; --green0:#5fcf8d;
+    --gold:#f0c060; --tote-bg:#050504; --tote-led:#ffbe3d; --tote-dim:#4a3c1c;
+    --shadow:0 1px 0 rgba(0,0,0,.4),0 8px 22px -12px rgba(0,0,0,.8);
+    --lit:#ffd75e; --lit-ink:#1c1a16;
+    --photo-bg:#1d1f1b; --photo-ink:#ece6d4; --photo-line:#ff7b6b;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"]{
+    --paper:#0e1411; --paper-2:#131b16; --card:#18211c; --ink:#ece6d4; --muted:#aaa48f;
+    --line:#2f3c34; --turf:#4fb77c; --turf-2:#3c9a64; --turf-ink:#06140c; --rail:#d9d3c2;
+    --red:#ff7b6b; --red-ink:#1a0603; --black:#e9e3d1; --black-ink:#111; --green0:#5fcf8d;
+    --gold:#f0c060; --tote-bg:#050504; --tote-led:#ffbe3d; --tote-dim:#4a3c1c;
+    --shadow:0 1px 0 rgba(0,0,0,.4),0 8px 22px -12px rgba(0,0,0,.8);
+    --photo-bg:#1d1f1b; --photo-ink:#ece6d4; --photo-line:#ff7b6b;
+    color-scheme: dark;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--paper);color:var(--ink);
+  font:16px/1.55 "Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
+  overflow-x:hidden}
+.mono{font-family:ui-monospace,"Cascadia Mono","SF Mono",Consolas,"Courier New",monospace}
+.sans{font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif}
+h1,h2,h3{line-height:1.15;margin:0}
+p{margin:.4em 0}
+.wrap{max-width:1120px;margin:0 auto;padding:0 16px}
+section{padding:56px 0;border-top:1px solid var(--line)}
+.kicker{font:600 .74rem/1.2 system-ui,"Segoe UI",sans-serif;letter-spacing:.18em;text-transform:uppercase;color:var(--red)}
+h2{font-size:clamp(1.7rem,4.4vw,2.6rem);margin:.25em 0 .2em;letter-spacing:-.01em}
+.lede{color:var(--muted);max-width:62ch}
+.count-pill{display:inline-block;font:700 .8rem/1 ui-monospace,Consolas,monospace;background:var(--tote-bg);color:var(--tote-led);padding:.4em .6em;border-radius:4px;letter-spacing:.08em;vertical-align:middle}
+button{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
+@media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
+
+/* ---------- HERO / RACECARD ---------- */
+.hero{padding:28px 0 48px;background:
+  repeating-linear-gradient(90deg,transparent 0 46px,rgba(0,0,0,.025) 46px 92px),var(--paper)}
+.rail{height:14px;background:repeating-linear-gradient(90deg,var(--rail) 0 22px,var(--turf) 22px 26px);border-block:2px solid var(--turf)}
+.meeting{display:flex;flex-wrap:wrap;gap:.5rem 1.2rem;justify-content:space-between;align-items:baseline;margin:22px 0 10px;
+  font:600 .8rem/1.3 system-ui,"Segoe UI",sans-serif;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.hero h1{font-size:clamp(2.5rem,9vw,5.6rem);letter-spacing:-.03em;font-weight:700}
+.hero h1 em{font-style:italic;color:var(--red)}
+.hero .sub{font-size:clamp(1.05rem,2.4vw,1.3rem);max-width:60ch;margin-top:.6em}
+.conditions{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;margin-top:26px}
+.cond{background:var(--card);border:1px solid var(--line);border-left:6px solid var(--turf);padding:14px 16px;box-shadow:var(--shadow)}
+.cond h3{font:700 .78rem/1.2 system-ui,"Segoe UI",sans-serif;letter-spacing:.14em;text-transform:uppercase;color:var(--turf);margin-bottom:.4em}
+.cond.red{border-left-color:var(--red)} .cond.red h3{color:var(--red)}
+
+/* tote board */
+.tote{margin-top:30px;background:var(--tote-bg);color:var(--tote-led);border-radius:10px;padding:18px;
+  box-shadow:inset 0 0 0 2px #2a2416,0 10px 30px -14px rgba(0,0,0,.6);font-family:ui-monospace,Consolas,monospace}
+.tote-head{display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px;font-size:.75rem;letter-spacing:.2em;color:#e7d9b5;text-transform:uppercase}
+.tote-grid{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,2fr);gap:18px;margin-top:12px;align-items:center}
+.big{font-size:clamp(4rem,16vw,8.5rem);line-height:.9;font-weight:700;letter-spacing:.04em;
+  text-shadow:0 0 14px rgba(255,182,39,.45);background:repeating-linear-gradient(0deg,transparent 0 3px,rgba(0,0,0,.35) 3px 4px);
+  -webkit-background-clip:text;background-clip:text}
+.big small{display:block;font-size:.8rem;letter-spacing:.25em;color:#e7d9b5;text-shadow:none;margin-top:8px}
+.tote-rows{display:grid;gap:8px}
+.trow{display:grid;grid-template-columns:2.2em minmax(0,1fr) 2.6em;gap:10px;align-items:center;font-size:.85rem}
+.trow .n{background:#2a2416;color:var(--tote-led);text-align:center;border-radius:3px;padding:2px 0}
+.trow .lbl{color:#efe3c4;overflow-wrap:anywhere}
+.bar{grid-column:2/3;height:8px;background:repeating-linear-gradient(90deg,var(--tote-dim) 0 6px,transparent 6px 8px);position:relative}
+.bar i{position:absolute;inset:0 auto 0 0;background:repeating-linear-gradient(90deg,var(--tote-led) 0 6px,transparent 6px 8px);width:0;transition:width 1.4s ease-out}
+.trow .v{text-align:right;font-weight:700}
+.tote-foot{display:flex;flex-wrap:wrap;gap:8px 18px;margin-top:14px;font-size:.78rem;color:#e7d9b5;letter-spacing:.1em;text-transform:uppercase}
+.tote-foot b{color:var(--tote-led)}
+
+/* racecard table */
+.card-table{width:100%;border-collapse:collapse;margin-top:26px;background:var(--card);box-shadow:var(--shadow);font-family:system-ui,"Segoe UI",sans-serif;font-size:.92rem}
+.card-table caption{text-align:left;font:700 .78rem/1.2 system-ui,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);padding-bottom:8px}
+.card-table th,.card-table td{padding:10px 8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:middle}
+.card-table thead th{font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.card-table td.num{font:700 1.1rem/1 ui-monospace,Consolas,monospace;text-align:right}
+.card-table a{color:var(--ink);font-weight:600}
+.cloth{display:inline-grid;place-items:center;width:2rem;height:2rem;font:800 .95rem/1 system-ui,sans-serif;border-radius:3px}
+.c1{background:#c62828;color:#fff}.c2{background:#fff;color:#111;box-shadow:inset 0 0 0 1px #999}.c3{background:#1f4fb0;color:#fff}.c4{background:#f4d03f;color:#111}.c5{background:#1b7a3e;color:#fff}.c6{background:#111;color:#f4d03f}.c7{background:#f08a24;color:#111}.c8{background:#e91e63;color:#fff}.c9{background:#25a8c5;color:#111}
+.silk-mini{width:30px;height:30px}
+@media (max-width:560px){.card-table .hide-s{display:none}}
+
+/* ---------- 1. ASSUMPTION REVERSAL ---------- */
+.ar-tools{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:18px 0 22px}
+.btn{cursor:pointer;border:2px solid var(--ink);background:transparent;padding:.5em 1em;font:700 .82rem/1 system-ui,"Segoe UI",sans-serif;letter-spacing:.08em;text-transform:uppercase;border-radius:999px}
+.btn:hover{background:var(--ink);color:var(--paper)}
+.btn.solid{background:var(--red);color:var(--red-ink);border-color:var(--red)}
+.btn.solid:hover{filter:brightness(1.08);background:var(--red);color:var(--red-ink)}
+.flip-grid{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:16px}
+.flip{display:block;width:100%;padding:0;border:0;background:none;cursor:pointer;perspective:1100px;text-align:left}
+.flip .inner{display:grid;transition:transform .6s cubic-bezier(.2,.7,.2,1);transform-style:preserve-3d}
+.flip[aria-pressed="true"] .inner{transform:rotateY(180deg)}
+.face{grid-area:1/1;display:flex;flex-direction:column;gap:8px;padding:16px 16px 14px;min-height:170px;backface-visibility:hidden;-webkit-backface-visibility:hidden;border-radius:6px;box-shadow:var(--shadow)}
+.face.front{background:var(--card);border:1px solid var(--line);
+  background-image:radial-gradient(circle at 0 50%,var(--paper) 7px,transparent 8px),radial-gradient(circle at 100% 50%,var(--paper) 7px,transparent 8px)}
+.face.back{background:var(--turf);color:var(--turf-ink);transform:rotateY(180deg)}
+.face .tag{font:700 .68rem/1 system-ui,sans-serif;letter-spacing:.16em;text-transform:uppercase}
+.face.front .tag{color:var(--muted)}
+.face .no{font:700 .72rem/1 ui-monospace,Consolas,monospace;opacity:.8;margin-left:auto}
+.face .row{display:flex;align-items:center;gap:8px}
+.face.front .h{font-size:1.18rem;font-style:italic;text-decoration:line-through;text-decoration-color:var(--red);text-decoration-thickness:2px}
+.face.back .h{font:700 1.02rem/1.3 system-ui,"Segoe UI",sans-serif}
+.face .d{font-size:.92rem;line-height:1.45}
+.face .hint{margin-top:auto;font:600 .7rem/1 system-ui,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.face.back .hint{color:inherit;opacity:.85}
+
+/* ---------- 2. MORPHOLOGICAL ---------- */
+.morph{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:22px;margin-top:22px}
+@media (max-width:860px){.morph{grid-template-columns:1fr}}
+.board{background:var(--turf);color:var(--turf-ink);border-radius:10px;padding:16px;box-shadow:var(--shadow);
+  background-image:repeating-linear-gradient(90deg,rgba(255,255,255,.05) 0 40px,transparent 40px 80px)}
+.board h3{font:700 .78rem/1.2 system-ui,sans-serif;letter-spacing:.16em;text-transform:uppercase;margin-bottom:10px}
+.prow{display:grid;grid-template-columns:7.5em minmax(0,1fr);gap:10px;align-items:center;padding:8px 0;border-top:1px dashed rgba(255,255,255,.35)}
+:root[data-theme="dark"] .prow{border-top-color:rgba(0,0,0,.35)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .prow{border-top-color:rgba(0,0,0,.35)}}
+.prow .pn{font:700 .74rem/1.2 system-ui,sans-serif;letter-spacing:.1em;text-transform:uppercase}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font:600 .82rem/1 system-ui,"Segoe UI",sans-serif;padding:.45em .7em;border-radius:4px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.4);transition:background .25s,color .25s,transform .25s}
+:root[data-theme="dark"] .chip{background:rgba(0,0,0,.12);border-color:rgba(0,0,0,.35)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .chip{background:rgba(0,0,0,.12);border-color:rgba(0,0,0,.35)}}
+.chip.lit{background:var(--lit);color:var(--lit-ink);border-color:var(--lit);transform:translateY(-2px);box-shadow:0 3px 0 rgba(0,0,0,.25)}
+.slips{display:grid;gap:10px;align-content:start}
+.slips h3{font:700 .78rem/1.2 system-ui,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
+.slip{cursor:pointer;text-align:left;border:1px solid var(--line);background:var(--card);padding:12px 14px 12px 18px;border-radius:4px;position:relative;box-shadow:var(--shadow);
+  background-image:linear-gradient(90deg,var(--red) 0 5px,transparent 5px)}
+.slip[aria-pressed="true"]{outline:3px solid var(--gold);outline-offset:0}
+.slip b{display:block;font-size:1.02rem}
+.slip span{display:block;font-size:.88rem;color:var(--muted);margin-top:2px}
+.slip .mono{font-size:.72rem;letter-spacing:.1em;color:var(--red)}
+.knobs{margin-top:28px;display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:18px}
+.knob-box{background:var(--card);border:1px solid var(--line);padding:14px 16px;box-shadow:var(--shadow)}
+.knob-box h3{font:700 .78rem/1.2 system-ui,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:var(--turf);margin-bottom:8px}
+.knob-box ul{margin:0;padding:0;list-style:none}
+.knob-box li{padding:7px 0 7px 26px;border-top:1px dotted var(--line);position:relative;font-size:.94rem}
+.knob-box li:first-child{border-top:0}
+.knob-box li::before{content:"";position:absolute;left:2px;top:.75em;width:14px;height:14px;border-radius:50%;
+  background:conic-gradient(var(--turf) 0 70%,var(--line) 70%);box-shadow:inset 0 0 0 3px var(--card)}
+.knob-box li b{font-weight:700}
+
+/* ---------- 3. PERSONA JOURNEY ---------- */
+.legend{display:flex;flex-wrap:wrap;gap:8px 14px;margin:18px 0 8px;font:600 .82rem/1.2 system-ui,sans-serif}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.dot{width:12px;height:12px;border-radius:50%;display:inline-block;flex:none}
+.p-reg{background:#c62828}.p-beg{background:#1f6fd0}.p-grp{background:#d68a00}.p-tip{background:#7b3fb8}.p-skp{background:#2e7d32}.p-all{background:#777}.p-big{background:#00897b}
+.track{position:relative;margin-top:22px;padding:6px 0 0}
+.track::before{content:"";position:absolute;left:22px;top:0;bottom:0;width:30px;border-radius:15px;
+  background:repeating-linear-gradient(180deg,var(--turf) 0 18px,var(--turf-2) 18px 36px);box-shadow:inset 3px 0 0 var(--rail),inset -3px 0 0 var(--rail)}
+.station{position:relative;padding:0 0 26px 76px}
+.station:last-child{padding-bottom:6px}
+.pole{position:absolute;left:12px;top:0;width:50px;height:50px;border-radius:50%;background:var(--card);border:3px solid var(--ink);
+  display:grid;place-items:center;font:800 .68rem/1.05 system-ui,sans-serif;text-align:center;letter-spacing:.04em;text-transform:uppercase;z-index:1}
+.station h3{font-size:1.35rem;padding-top:10px}
+.station h3 small{display:block;font:600 .74rem/1.2 system-ui,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-top:4px}
+.stops{list-style:none;padding:0;margin:12px 0 0;display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px}
+.stop{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:10px 12px;box-shadow:var(--shadow);font-size:.93rem}
+.stop .who{display:flex;align-items:center;gap:6px;font:700 .68rem/1 system-ui,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.stop b{font-weight:700}
+
+/* ---------- 4. CONSTRAINT ROULETTE ---------- */
+.roulette{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:26px;align-items:center;margin-top:22px}
+@media (max-width:820px){.roulette{grid-template-columns:1fr}}
+.wheel-wrap{position:relative;max-width:440px;width:100%;margin:0 auto}
+.wheel-wrap svg{display:block;width:100%;height:auto}
+#wheel{transform-box:view-box;transform-origin:200px 200px;transition:transform 3.6s cubic-bezier(.12,.75,.12,1)}
+.pointer{position:absolute;left:50%;top:-6px;transform:translateX(-50%);width:0;height:0;border-left:13px solid transparent;border-right:13px solid transparent;border-top:24px solid var(--gold);filter:drop-shadow(0 2px 1px rgba(0,0,0,.4));z-index:2}
+.draw{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px;box-shadow:var(--shadow);min-height:220px}
+.draw .lab{font:700 .72rem/1 system-ui,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
+.draw h3{font-size:1.5rem;margin:.35em 0 .5em;display:flex;gap:10px;align-items:center}
+.draw ul{margin:0;padding-left:1.1em}
+.draw li{margin:.35em 0}
+.pocket{display:inline-grid;place-items:center;min-width:2.1rem;height:2.1rem;padding:0 .3em;border-radius:50%;font:800 .9rem/1 ui-monospace,Consolas,monospace;flex:none}
+.pocket.r{background:#b71c1c;color:#fff}.pocket.b{background:#151515;color:#fff;box-shadow:inset 0 0 0 1px #666}.pocket.g{background:#1b6e3d;color:#fff}
+.cgrid{list-style:none;padding:0;margin:30px 0 0;display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px}
+.ccard{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:14px;box-shadow:var(--shadow);transition:transform .3s,box-shadow .3s}
+.ccard.drawn{transform:translateY(-4px);box-shadow:0 0 0 3px var(--gold),var(--shadow)}
+.ccard h3{display:flex;gap:10px;align-items:center;font-size:1.05rem;margin-bottom:8px}
+.ccard ul{margin:0;padding-left:1.05em;font-size:.92rem}
+.ccard li{margin:.3em 0}
+.ccard.free{grid-column:1/-1;border-style:dashed}
+.ccard.free ul{columns:2 280px;column-gap:28px}
+.ccard.free li{break-inside:avoid}
+
+/* ---------- CONVERGENCE ---------- */
+.stables{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;margin-top:22px}
+.stable{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:14px;box-shadow:var(--shadow);text-align:center}
+.stable svg{width:78px;height:78px;display:block;margin:0 auto 6px}
+.stable .L{font:800 .8rem/1 ui-monospace,Consolas,monospace;color:var(--red);letter-spacing:.14em}
+.stable h3{font-size:1.08rem;margin:.3em 0 .45em}
+.stable p{font-size:.86rem;color:var(--muted);margin:0}
+
+.going{margin-top:40px;display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:24px}
+@media (max-width:860px){.going{grid-template-columns:1fr}}
+.field{position:relative;aspect-ratio:4/3;border-radius:14px;overflow:hidden;
+  background:repeating-linear-gradient(90deg,var(--turf) 0 12.5%,var(--turf-2) 12.5% 25%);box-shadow:var(--shadow),inset 0 0 0 4px var(--rail)}
+.field .ax{position:absolute;font:700 .66rem/1.1 system-ui,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.6)}
+:root[data-theme="dark"] .field .ax{color:#06140c;text-shadow:none}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .field .ax{color:#06140c;text-shadow:none}}
+.ax.x{bottom:10px;left:50%;transform:translateX(-50%);white-space:nowrap}
+.ax.y{left:10px;top:50%;transform:translate(-40%,-50%) rotate(-90deg);white-space:nowrap}
+.zone{position:absolute;border:2px dashed rgba(255,255,255,.75);border-radius:10px}
+.zone .zl{position:absolute;top:6px;left:8px;font:800 .7rem/1 system-ui,sans-serif;letter-spacing:.14em;text-transform:uppercase;background:var(--rail);color:#14301f;padding:4px 6px;border-radius:3px}
+:root[data-theme="dark"] .zone{border-color:rgba(0,0,0,.55)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .zone{border-color:rgba(0,0,0,.55)}}
+.horse{position:absolute;transform:translate(-50%,-50%);width:clamp(26px,6vw,36px);height:clamp(26px,6vw,36px);display:grid;place-items:center;
+  font:800 clamp(.72rem,2vw,.92rem)/1 system-ui,sans-serif;border-radius:4px;box-shadow:0 2px 0 rgba(0,0,0,.35)}
+.lists{display:grid;gap:14px;align-content:start}
+.lst{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:12px 14px;box-shadow:var(--shadow)}
+.lst h3{font:800 .76rem/1.2 system-ui,sans-serif;letter-spacing:.16em;text-transform:uppercase;margin-bottom:8px}
+.lst.qw h3{color:var(--turf)} .lst.bb h3{color:var(--red)} .lst.pk h3{color:var(--muted)}
+.lst ol{list-style:none;margin:0;padding:0}
+.lst li{display:grid;grid-template-columns:2rem minmax(0,1fr);gap:10px;align-items:start;padding:6px 0;border-top:1px dotted var(--line);font-size:.92rem}
+.lst li:first-child{border-top:0}
+.lst .cloth{width:1.7rem;height:1.7rem;font-size:.8rem}
+.paddock{margin-top:16px;display:flex;flex-wrap:wrap;gap:8px}
+.stall{border:2px solid var(--line);border-top:8px solid var(--muted);background:var(--paper-2);padding:8px 10px;font:600 .82rem/1.2 system-ui,sans-serif;border-radius:3px}
+
+/* ---------- PHOTO FINISH ---------- */
+.finish{background:var(--photo-bg);color:var(--photo-ink);border-top:0}
+.pf{position:relative;margin-top:26px;border:2px solid var(--photo-ink);border-radius:4px;overflow:hidden;
+  background:repeating-linear-gradient(90deg,transparent 0 3px,rgba(127,127,127,.09) 3px 4px)}
+.pf-head{display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px;padding:8px 12px;border-bottom:2px solid var(--photo-ink);
+  font:700 .72rem/1.2 ui-monospace,Consolas,monospace;letter-spacing:.14em;text-transform:uppercase}
+.lane{position:relative;display:grid;grid-template-columns:minmax(0,1fr) 56px;border-bottom:1px solid rgba(127,127,127,.4)}
+.lane:last-child{border-bottom:0}
+.lane .run{padding:18px 16px 18px 14px;display:grid;grid-template-columns:2.4rem minmax(0,1fr);gap:14px;align-items:start;
+  transform:translateX(-14%);opacity:.0;transition:transform 1.1s cubic-bezier(.15,.8,.2,1),opacity .8s}
+.pf.go .lane .run{transform:none;opacity:1}
+.pf.go .lane:nth-child(3) .run{transition-delay:.08s}.pf.go .lane:nth-child(4) .run{transition-delay:.16s}.pf.go .lane:nth-child(5) .run{transition-delay:.04s}.pf.go .lane:nth-child(6) .run{transition-delay:.12s}
+.lane .cloth{width:2.4rem;height:2.4rem;font-size:1.1rem}
+.lane h3{font-size:1.12rem;margin-bottom:4px}
+.lane p{margin:0;font-size:.97rem}
+.post{border-left:3px solid var(--photo-line);display:grid;place-items:center;font:800 .7rem/1 ui-monospace,Consolas,monospace;letter-spacing:.1em;writing-mode:vertical-rl;color:var(--photo-line)}
+.verdict{margin-top:18px;display:inline-block;font:800 .82rem/1 ui-monospace,Consolas,monospace;letter-spacing:.2em;text-transform:uppercase;border:2px solid var(--photo-line);color:var(--photo-line);padding:.6em .9em;transform:rotate(-2deg)}
+@media (max-width:520px){.lane{grid-template-columns:minmax(0,1fr) 30px}.lane .run{grid-template-columns:2rem minmax(0,1fr);gap:10px;padding:14px 10px}.lane .cloth{width:2rem;height:2rem;font-size:.95rem}}
+@media (prefers-reduced-motion: reduce){.lane .run{transform:none;opacity:1}}
+
+footer{padding:26px 0 40px;border-top:1px solid var(--line);font:600 .8rem/1.4 system-ui,sans-serif;color:var(--muted);text-align:center;letter-spacing:.06em}
+.theme-t{position:fixed;right:12px;bottom:12px;z-index:5;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--ink);padding:.5em .8em;font:700 .74rem/1 system-ui,sans-serif;cursor:pointer;box-shadow:var(--shadow)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="rail" aria-hidden="true"></div>
+  <div class="wrap">
+    <div class="meeting"><span>Réunion du 17 octobre 2026</span><span>prediction-hyppique · brainstorming</span><span>Mode: “Ideate for me”</span></div>
+    <p class="kicker">Today’s support race</p>
+    <h1>Prix du <em>Multi</em></h1>
+    <p class="sub">A brainstorm on the Multi module — M1/M2 selection methods, <i>systèmes réduits</i>, coverage probability — and on making the Multi screen genuinely useful to a punter standing at the rail.</p>
+
+    <div class="conditions">
+      <div class="cond"><h3>Condition 1</h3><p>Find fresh angles missing from the spec: selection strategies, new uses for reduced systems.</p></div>
+      <div class="cond"><h3>Condition 2</h3><p>Make the Multi screen really useful for the <i>turfiste</i> at the trackside or the PMUC kiosk — the user is in Cameroon.</p></div>
+      <div class="cond red"><h3>House rule</h3><p>The tool analyses, reduces and explains. It <strong>never places a bet</strong>.</p></div>
+    </div>
+
+    <div class="tote" role="group" aria-label="Tote board: idea totals">
+      <div class="tote-head"><span>Tote · ideas in the pool</span><span>status: complete · 07:44</span></div>
+      <div class="tote-grid">
+        <div class="big" aria-label="104 ideas"><span id="total" data-to="104">104</span><small>ideas generated</small></div>
+        <div class="tote-rows">
+          <div class="trow"><span class="n">1</span><span class="lbl">Assumption Reversal</span><span class="v">24</span><span class="bar" aria-hidden="true"><i data-w="24"></i></span></div>
+          <div class="trow"><span class="n">2</span><span class="lbl">Morphological Analysis</span><span class="v">22</span><span class="bar" aria-hidden="true"><i data-w="22"></i></span></div>
+          <div class="trow"><span class="n">3</span><span class="lbl">Persona Journey</span><span class="v">22</span><span class="bar" aria-hidden="true"><i data-w="22"></i></span></div>
+          <div class="trow"><span class="n">4</span><span class="lbl">Constraint Roulette</span><span class="v">36</span><span class="bar" aria-hidden="true"><i data-w="36"></i></span></div>
+        </div>
+      </div>
+      <div class="tote-foot"><span>Clusters <b>5</b></span><span>Quick wins <b>5</b></span><span>Big bets <b>4</b></span><span>Parked <b>5</b></span><span>Insights <b>5</b></span></div>
+    </div>
+
+    <table class="card-table">
+      <caption>The racecard — four runners, then the convergence</caption>
+      <thead><tr><th scope="col">No.</th><th scope="col">Technique</th><th scope="col" class="hide-s">Treatment</th><th scope="col" style="text-align:right">Ideas</th></tr></thead>
+      <tbody>
+        <tr><td><span class="cloth c1">1</span></td><td><a href="#ar">Assumption Reversal</a></td><td class="hide-s">Flip the spec’s hidden assumptions</td><td class="num">24</td></tr>
+        <tr><td><span class="cloth c2">2</span></td><td><a href="#ma">Morphological Analysis</a></td><td class="hide-s">Source × size × bases × formula × objective × budget × coverage × play mode</td><td class="num">22</td></tr>
+        <tr><td><span class="cloth c3">3</span></td><td><a href="#pj">Persona Journey</a></td><td class="hide-s">Kiosk regular, beginner, syndicate, tipster, sceptic</td><td class="num">22</td></tr>
+        <tr><td><span class="cloth c4">4</span></td><td><a href="#cr">Constraint Roulette</a></td><td class="hide-s">No network, 90 s to the off, one hand, zero server…</td><td class="num">36</td></tr>
+        <tr><td><span class="cloth c6">★</span></td><td><a href="#cv">Convergence</a> · <a href="#pf">Photo-finish</a></td><td class="hide-s">Affinity clusters, impact–effort, five insights</td><td class="num">—</td></tr>
+      </tbody>
+    </table>
+  </div>
+</header>
+
+<main>
+<!-- ============ 1. ASSUMPTION REVERSAL ============ -->
+<section id="ar" aria-labelledby="ar-h">
+  <div class="wrap">
+    <p class="kicker">Runner 1 · Assumption Reversal · <span class="count-pill">24</span></p>
+    <h2 id="ar-h">Turn the betting slip over</h2>
+    <p class="lede">Each slip carries an assumption hidden in the Multi spec. Flip it to read the reversal the session rebuilt from it.</p>
+    <div class="ar-tools"><button class="btn solid" id="flipAll" type="button" aria-pressed="false">Flip all slips</button><span class="sans" style="color:var(--muted);font-size:.85rem">or tap a slip</span></div>
+    <ul class="flip-grid" id="flips">
+<li><button class="flip" type="button" aria-pressed="false"><span class="inner"><span class="face front"><span class="row"><span class="tag">Assumption</span><span class="no">01</span></span><span class="h">Form = the last finishing position alone.</span><span class="hint">Flip ↻</span></span><span class="face back"><span class="row"><span class="tag">Reversal</span><span class="no">01</span></span><span class="h">M1-trajectory</span><span class="d">Score the slope of the last 3 positions — improving vs declining — instead of the last one.</span></span></span></button></li>
+<li><button class="flip" type="button" aria-pressed="false"><span class="inner"><span class="face front"><span class="row"><span class="tag">Assumption</span><span class="no">02</span></span><span class="h">Only the last race’s prize money matters.</span><span class="hint">Flip ↻</span></span><span class="face back"><span class="row"><span class="tag">Reversal</span><span class="no">02</span></span><span class="h">“Drop in class” signal</span><span class="d">Ratio of today’s allocation to the last race’s: a horse facing weaker opposition.</span></span></span></button></li>
+<li><button class="flip" type="button" aria-pressed="false"><span class="inner"><span class="face front"><span class="row"><span class="tag">Assumption</span><span class="no">03</span></span><span class="h">Finishing position is absolute.</span><span class="hint">Flip ↻</span></span><span class="face back"><span class="row"><span class="tag">Reversal</span><span class="no">03</span></span><span class="h">Position relative to the field</span><span class="d">4th of 8 ≠ 4th of 18 → use a finishing percentile, not the raw rank.</span></span></span></button></li>
+<li><button class="flip" type="button" aria-pressed="false"><span class="inner"><span class="face front"><span class="row"><span class="tag">Assumption</span><span class="no">04</span></span><span class="h">Horses are picked one at a time.</span><span class="hint">Flip ↻</span></span><span class="face back"><span class="row"><span class="tag">Reversal</span><span class="no">04</span></span><span class="h">Correlated pairs &amp; groups</span><span class="d">Select horses sharing a trainer, a stable or a ground profile, rather than isolated horses.</span></span></span></button></li>
+<li><button class="flip" type="button" aria-pressed="false"><span class="inner"><span class="face front"><span class="row"><span class="tag">Assumption</span><span class="no">05</span></span><span class="h">The goal is to capture the top 4.</span><span class="hint">Flip ↻</span></span><span class="face back"><span class="row"><span class="tag">Reversal</span><span class="no">05</span></span><span class="h">Capture an UNPOPULAR top 4</span><span class="d">Anti-favourite strategy: deliberately drop 1–2 heavily backed favourites to aim for big payouts.</span></span></span></button></li>
+<li><button class="flip" type="button" aria-pressed="false"><span class="inner"><span class="face front"><span class="row"><span class="tag">Assumption</span><span class="no">06</span></span><span class="h">The market is the benchmark to beat.</span><span class="hint">Flip ↻</span></span><span class="face back"><span class="row"><span class="tag">Reversal</span><span class="no">06</span></span><span class="h">Contrarian baseline B3</span><span class="d">Internal ranking minus popularity — tests whether the model–market gap carries information.</span></span></span></button></li>
+<li><button class="flip" type="button" aria-pressed="false"><span class="inner"><span class="face front"><span class="row"><span class="tag">Assumption</span><span class="no">07</span></span><span class="h">Selection size is fixed at 12 / 10.</span><span class="hint">Flip ↻</span></span><span class="face back"><span class="row"><span class="tag">Reversal</span><span class="no">07</span></span><span class="h">Size that follows race entropy</span><span class="d">Open race → 14, closed race → 8, driven by a target p_hit.</span></span></span></button></li>
+<li><button class="flip" type="button" aria-pressed="false"><span class="inner"><span class="face front"><span class="row"><span class="tag">Assumption</span><span class="no">08</span></span><span class="h">One method at a time.</span><span class="hint">Flip ↻</span></span><span class="face back"><span class="row"><span class="tag">Reversal</span><span class="no">08</span></span><span class="h">Voting meta-strategy</span><span class="d">Horses picked by M1 AND M2 AND B2 become bases; the union becomes the selection.</span></span></span></button></li>
+<li><button class="flip" type="button" aria-pressed="false"><span class="inner"><span class="face front"><span class="row"><span class="tag">Assumption</span><span class="no">09</span></span><span class="h">The user chooses the bases.</span><span class="hint">Flip ↻</span></span><span class="face back"><span class="row"><span class="tag">Reversal</span><span class="no">09</span></span><span class="h">Auto-suggested bases, with their cost</span><span class="d">Highest Top4_i, plus “if your base fails, you lose X % of coverage”.</span></span></span></button></li>
+<li><button class="flip" type="button" aria-pressed="false"><span class="inner"><span class="face front"><span class="row"><span class="tag">Assumption</span><span class="no">10</span></span><span class="h">100 % coverage is mandatory.</span><span class="hint">Flip ↻</span></span><span class="face back"><span class="row"><span class="tag">Reversal</span><span class="no">10</span></span><span class="h">Probabilistic coverage</span><span class="d">Cover 95 % of the model’s probability mass instead of 100 % of combinations → far fewer tickets.</span></span></span></button></li>
+<li><button class="flip" type="button" aria-pressed="false"><span class="inner"><span class="face front"><span class="row"><span class="tag">Assumption</span><span class="no">11</span></span><span class="h">A system is played in full.</span><span class="hint">Flip ↻</span></span><span class="face back"><span class="row"><span class="tag">Reversal</span><span class="no">11</span></span><span class="h">Budget-truncated system</span><span class="d">Play only the N highest-value tickets; p_hit recomputed and shown honestly.</span></span></span></button></li>
+<li><button class="flip" type="button" aria-pressed="false"><span class="inner"><span class="face front"><span class="row"><span class="tag">Assumption</span><span class="no">12</span></span><span class="h">The payout is unknown before the race.</span><span class="hint">Flip ↻</span></span><span class="face back"><span class="row"><span class="tag">Reversal</span><span class="no">12</span></span><span class="h">Probable payout per finish</span><span class="d">“If 2-5-11-17 comes in, you collect ≈ X €”, estimated via R4_proxy.</span></span></span></button></li>
+<li><button class="flip" type="button" aria-pressed="false"><span class="inner"><span class="face front"><span class="row"><span class="tag">Assumption</span><span class="no">13</span></span><span class="h">M1’s rules are set in stone.</span><span class="hint">Flip ↻</span></span><span class="face back"><span class="row"><span class="tag">Reversal</span><span class="no">13</span></span><span class="h">Generalised M1</span><span class="d">Every criterion parameterised (pool thresholds, horses per pool); the grid backtested with Holm correction.</span></span></span></button></li>
+<li><button class="flip" type="button" aria-pressed="false"><span class="inner"><span class="face front"><span class="row"><span class="tag">Assumption</span><span class="no">14</span></span><span class="h">M2 needs the press.</span><span class="hint">Flip ↻</span></span><span class="face back"><span class="row"><span class="tag">Reversal</span><span class="no">14</span></span><span class="h">Synthetic tips</span><span class="d">Six internal “media” (form, odds, trainer, jockey, distance, ground) each vote for 2 horses → M2 becomes backtestable.</span></span></span></button></li>
+<li><button class="flip" type="button" aria-pressed="false"><span class="inner"><span class="face front"><span class="row"><span class="tag">Assumption</span><span class="no">15</span></span><span class="h">Today’s odds = the final odds.</span><span class="hint">Flip ↻</span></span><span class="face back"><span class="row"><span class="tag">Reversal</span><span class="no">15</span></span><span class="h">Odds movement as a criterion</span><span class="d">Morning → 5 minutes before the off: horses that “shorten” in the market.</span></span></span></button></li>
+<li><button class="flip" type="button" aria-pressed="false"><span class="inner"><span class="face front"><span class="row"><span class="tag">Assumption</span><span class="no">16</span></span><span class="h">A non-runner is something you suffer.</span><span class="hint">Flip ↻</span></span><span class="face back"><span class="row"><span class="tag">Reversal</span><span class="no">16</span></span><span class="h">Pre-emptive simulation</span><span class="d">Show what each ticket becomes if a given horse is scratched (requalified in k−1).</span></span></span></button></li>
+<li><button class="flip" type="button" aria-pressed="false"><span class="inner"><span class="face front"><span class="row"><span class="tag">Assumption</span><span class="no">17</span></span><span class="h">The document’s examples prove something.</span><span class="hint">Flip ↻</span></span><span class="face back"><span class="row"><span class="tag">Reversal</span><span class="no">17</span></span><span class="h">“Museum of failures”</span><span class="d">The app also shows the races each method missed — against survivorship bias.</span></span></span></button></li>
+<li><button class="flip" type="button" aria-pressed="false"><span class="inner"><span class="face front"><span class="row"><span class="tag">Assumption</span><span class="no">18</span></span><span class="h">The Multi crowd is the winning crowd.</span><span class="hint">Flip ↻</span></span><span class="face back"><span class="row"><span class="tag">Reversal</span><span class="no">18</span></span><span class="h">Multi pool bias map</span><span class="d">Learn via rho which saddle numbers and profiles are overbet in the Multi (lucky numbers, favourites).</span></span></span></button></li>
+<li><button class="flip" type="button" aria-pressed="false"><span class="inner"><span class="face front"><span class="row"><span class="tag">Assumption</span><span class="no">19</span></span><span class="h">You play alone.</span><span class="hint">Flip ↻</span></span><span class="face back"><span class="row"><span class="tag">Reversal</span><span class="no">19</span></span><span class="h">Syndicate mode</span><span class="d">One reduced system shared by friends; each pays for their own physical tickets; the winnings split is computed.</span></span></span></button></li>
+<li><button class="flip" type="button" aria-pressed="false"><span class="inner"><span class="face front"><span class="row"><span class="tag">Assumption</span><span class="no">20</span></span><span class="h">Build the selection, then the ticket.</span><span class="hint">Flip ↻</span></span><span class="face back"><span class="row"><span class="tag">Reversal</span><span class="no">20</span></span><span class="h">Inverse optimiser</span><span class="d">Start from the budget (e.g. 30 €) and find the selection + bases + k that maximise p_hit within it.</span></span></span></button></li>
+<li><button class="flip" type="button" aria-pressed="false"><span class="inner"><span class="face front"><span class="row"><span class="tag">Assumption</span><span class="no">21</span></span><span class="h">Evaluation happens after the fact.</span><span class="hint">Flip ↻</span></span><span class="face back"><span class="row"><span class="tag">Reversal</span><span class="no">21</span></span><span class="h">Automatic settlement</span><span class="d">Photograph the played ticket → the app links it to the system and computes winnings at the result.</span></span></span></button></li>
+<li><button class="flip" type="button" aria-pressed="false"><span class="inner"><span class="face front"><span class="row"><span class="tag">Assumption</span><span class="no">22</span></span><span class="h">Optimal designs are unique.</span><span class="hint">Flip ↻</span></span><span class="face back"><span class="row"><span class="tag">Reversal</span><span class="no">22</span></span><span class="h">Break ties by value</span><span class="d">Many equivalent optimal designs exist → choose the one that over-covers high-value combinations.</span></span></span></button></li>
+<li><button class="flip" type="button" aria-pressed="false"><span class="inner"><span class="face front"><span class="row"><span class="tag">Assumption</span><span class="no">23</span></span><span class="h">Relabelling is neutral.</span><span class="hint">Flip ↻</span></span><span class="face back"><span class="row"><span class="tag">Reversal</span><span class="no">23</span></span><span class="h">Smart relabelling</span><span class="d">Among the cached design’s permutations, put the multiple coverings on the most probable / valuable combinations — “free” weighted coverage from V1.5.</span></span></span></button></li>
+<li><button class="flip" type="button" aria-pressed="false"><span class="inner"><span class="face front"><span class="row"><span class="tag">Assumption</span><span class="no">24</span></span><span class="h">Only the selection gives an edge.</span><span class="hint">Flip ↻</span></span><span class="face back"><span class="row"><span class="tag">Reversal</span><span class="no">24</span></span><span class="h">The choice of design matters</span><span class="d">Structure adds no EV on average, but CHOOSING among equivalent designs does → a nuance to write into §5.5.</span></span></span></button></li>
+    </ul>
+  </div>
+</section>
+
+<!-- ============ 2. MORPHOLOGICAL ANALYSIS ============ -->
+<section id="ma" aria-labelledby="ma-h">
+  <div class="wrap">
+    <p class="kicker">Runner 2 · Morphological Analysis · <span class="count-pill">22</span></p>
+    <h2 id="ma-h">The combination board</h2>
+    <p class="lede">Eight parameters — source × size × bases × formula × objective × budget × coverage × play mode. Pick a slip to light up the path it takes across the board.</p>
+    <div class="morph">
+      <div class="board" aria-label="Parameter board">
+        <h3>Parameter board</h3>
+        <div class="prow"><span class="pn">Source</span><span class="chips"><span class="chip" data-k="traj">M1-trajectory</span><span class="chip" data-k="model">Model</span><span class="chip" data-k="market">Market favourite</span><span class="chip" data-k="outs">Outsiders</span></span></div>
+        <div class="prow"><span class="pn">Size</span><span class="chips"><span class="chip" data-k="s8">8</span><span class="chip" data-k="sad">Adaptive</span><span class="chip" data-k="s14">14</span><span class="chip" data-k="s17">All runners (17)</span></span></div>
+        <div class="prow"><span class="pn">Bases</span><span class="chips"><span class="chip" data-k="b0">0</span><span class="chip" data-k="b1">1</span><span class="chip" data-k="b2">2</span><span class="chip" data-k="b3">3</span></span></div>
+        <div class="prow"><span class="pn">Formula k</span><span class="chips"><span class="chip" data-k="k4">4</span><span class="chip" data-k="k5">5</span><span class="chip" data-k="k7">7</span></span></div>
+        <div class="prow"><span class="pn">Objective</span><span class="chips"><span class="chip" data-k="open">Open races</span><span class="chip" data-k="bigpay">Big payouts</span><span class="chip" data-k="champ">Classic “champ”</span><span class="chip" data-k="pop">Popular small system</span></span></div>
+        <div class="prow"><span class="pn">Budget</span><span class="chips"><span class="chip" data-k="e15">15 €</span><span class="chip" data-k="t20">20 tickets</span><span class="chip" data-k="e42">14 tickets · 42 €</span></span></div>
+        <div class="prow"><span class="pn">Coverage</span><span class="chips"><span class="chip" data-k="full">Full</span><span class="chip" data-k="wgt">Value-weighted</span></span></div>
+      </div>
+      <div class="slips" role="group" aria-label="Combination slips">
+        <h3>Six combinations played</h3>
+        <button class="slip" type="button" aria-pressed="false" data-c="traj sad b0 k7 open"><span class="mono">COMBO A</span><b>“Wide net”</b><span>Trajectory + adaptive size + 0 base + k=7, for open races.</span></button>
+        <button class="slip" type="button" aria-pressed="false" data-c="model outs s14 b2 k4 bigpay"><span class="mono">COMBO B</span><b>“2 bases + long tail”</b><span>2 model bases + 14 outsiders + k=4, aiming for big payouts.</span></button>
+        <button class="slip" type="button" aria-pressed="false" data-c="market outs b1"><span class="mono">COMBO C</span><b>“Favourite base + outsiders”</b><span>1 base = the market favourite; selection deliberately avoids the secondary favourites.</span></button>
+        <button class="slip" type="button" aria-pressed="false" data-c="s17 b3 k4 champ e42 full"><span class="mono">COMBO D</span><b>“3-base field”</b><span>3 bases + every runner in tickets of 4 (v=17 → 14 tickets = 42 €) — the classic “champ”.</span></button>
+        <button class="slip" type="button" aria-pressed="false" data-c="wgt e15"><span class="mono">COMBO E</span><b>“Best system for 15 €”</b><span>Weighted coverage + fixed budget.</span></button>
+        <button class="slip" type="button" aria-pressed="false" data-c="s8 k5 b0 pop t20"><span class="mono">COMBO F</span><b>“Popular small system” preset</b><span>8 horses, k=5, 0 base = 20 tickets (the document says 21).</span></button>
+      </div>
+    </div>
+
+    <div class="knobs">
+      <div class="knob-box"><h3>New dials for the selection</h3><ul>
+        <li><b>Bases by press consensus</b> — horses with ≥ 5 of 6 tips become automatic base candidates in M2.</li>
+        <li><b>Bases = M1 ∩ B2; selection = M1 ∪ B2</b> (cut to size) — documentary method fused with the model.</li>
+        <li><b>M1-trot</b> — M1 adapted to trotting, where D (disqualified) means something different (gait) than on the flat.</li>
+        <li><b>Allocation window</b> — average prize money over 3 races, not just the last.</li>
+        <li><b>Stall / rail draw</b> — stall-number bias per racecourse and distance (flat).</li>
+        <li><b>Jockey / driver</b> — switching to a top jockey is a signal.</li>
+        <li><b>Rest</b> — days since the last run (comeback, quick turnaround).</li>
+      </ul></div>
+      <div class="knob-box"><h3>Controls for the punter</h3><ul>
+        <li><b>Progressive guarantee</b> — mixed 5+6 systems shown as a guarantee slider (Multi en 5 guaranteed ↔ Multi en 6 guaranteed).</li>
+        <li><b>“Cautious ↔ bold” slider</b> that drives k and the number of bases instead of exposing technical parameters.</li>
+        <li><b>Budget presets</b> — Mini 15 € / Standard 30 € / Large 60 €, each with p_hit and the count of physical tickets.</li>
+        <li><b>Suggested swap</b> — the user picks; the app proposes 1–2 swaps that gain the most p_hit.</li>
+        <li><b>Per-horse sensitivity</b> — Δp_hit if removed: shows the horses that “carry” the system.</li>
+        <li><b>Systems sized to the physical slip</b> — prefer multiples of 4 bets to fill the paper forms.</li>
+      </ul></div>
+      <div class="knob-box"><h3>Modes &amp; horizons</h3><ul>
+        <li><b>Strategy router</b> — learn which method works in which race type (flat / jumps / trot, handicap, field size) and choose automatically.</li>
+        <li><b>Paper trading</b> — the user logs the systems they would have played; the app tracks results with no money.</li>
+        <li><b>Weekly horizon</b> — spread a budget over a week of support races rather than race by race.</li>
+      </ul></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 3. PERSONA JOURNEY ============ -->
+<section id="pj" aria-labelledby="pj-h">
+  <div class="wrap">
+    <p class="kicker">Runner 3 · Persona Journey · <span class="count-pill">22</span></p>
+    <h2 id="pj-h">A raceday, furlong by furlong</h2>
+    <p class="lede">Five riders took the course — the PMUC kiosk regular, the beginner, the syndicate of contributors, the tipster and the analytical sceptic. Here is what each needed at every pole, from the morning sync to the evening debrief.</p>
+    <div class="legend" aria-label="Persona legend">
+      <span><i class="dot p-reg"></i>Kiosk regular</span><span><i class="dot p-beg"></i>Beginner</span><span><i class="dot p-grp"></i>Syndicate</span><span><i class="dot p-tip"></i>Tipster</span><span><i class="dot p-skp"></i>Sceptic</span><span><i class="dot p-big"></i>High roller</span><span><i class="dot p-all"></i>Everyone</span>
+    </div>
+    <div class="track">
+      <div class="station"><div class="pole" aria-hidden="true">Dawn</div><h3>Morning<small>before leaving home</small></h3><ul class="stops">
+        <li class="stop"><div class="who"><i class="dot p-reg"></i>Kiosk regular</div>Morning notification: <b>“today’s support race: 16 runners, selections ready”</b>.</li>
+        <li class="stop"><div class="who"><i class="dot p-all"></i>Everyone</div>Offline freshness badge, always visible: <b>“morning odds, 9:12”</b>.</li>
+      </ul></div>
+      <div class="station"><div class="pole" aria-hidden="true">Learn</div><h3>Reading the card<small>understanding before choosing</small></h3><ul class="stops">
+        <li class="stop"><div class="who"><i class="dot p-beg"></i>Beginner</div>The Multi explained in <b>3 sentences</b> + a simulator: “if the finish is X, you win Y”.</li>
+        <li class="stop"><div class="who"><i class="dot p-beg"></i>Beginner</div>Illustrated glossary: <b>base, reduced field, coverage guarantee</b>.</li>
+        <li class="stop"><div class="who"><i class="dot p-all"></i>Everyone</div><b>Casaques</b> shown for every horse — instant visual recognition, even for weak readers.</li>
+        <li class="stop"><div class="who"><i class="dot p-all"></i>Everyone</div><b>Musique translator</b>: “1h5s2h” becomes a sentence (“1st over hurdles, 5th in a steeplechase…”).</li>
+      </ul></div>
+      <div class="station"><div class="pole" aria-hidden="true">Kiosk</div><h3>At the PMUC kiosk<small>filling in the slips</small></h3><ul class="stops">
+        <li class="stop"><div class="who"><i class="dot p-reg"></i>Kiosk regular</div><b>Bulletin mode</b>: big grids laid out like the paper slip, boxes ticked off while filling it in.</li>
+        <li class="stop"><div class="who"><i class="dot p-reg"></i>Kiosk regular</div><b>Visual export</b> of the system in slip format, to show the clerk.</li>
+        <li class="stop"><div class="who"><i class="dot p-grp"></i>Syndicate</div><b>Quote-shares</b> computed; winnings tracked per member.</li>
+        <li class="stop"><div class="who"><i class="dot p-grp"></i>Syndicate</div><b>WhatsApp share</b>: a clean image of the system (selection + grids + cost) — the native format on the ground in Cameroon.</li>
+        <li class="stop"><div class="who"><i class="dot p-all"></i>Everyone</div><b>Currency &amp; unit price</b> configurable (FCFA, local PMUC operator): rules.py must support the user’s real operator.</li>
+        <li class="stop"><div class="who"><i class="dot p-all"></i>Everyone</div><b>Lucky numbers</b>: force a horse in — and see the cost of that loyalty in p_hit.</li>
+        <li class="stop"><div class="who"><i class="dot p-big"></i>High roller</div>Spread one budget over <b>several complementary systems</b>.</li>
+        <li class="stop"><div class="who"><i class="dot p-all"></i>Everyone</div><b>Full-sun mode</b>: maximum contrast for outdoor use at the racecourse.</li>
+        <li class="stop"><div class="who"><i class="dot p-all"></i>Everyone</div><b>One-hand mode</b>: big buttons, grid-by-grid thumb scrolling.</li>
+      </ul></div>
+      <div class="station"><div class="pole" aria-hidden="true">Off</div><h3>Before the off<small>the stalls are loading</small></h3><ul class="stops">
+        <li class="stop"><div class="who"><i class="dot p-tip"></i>Tipster</div>A tip card <b>timestamped and hashed BEFORE the off</b> — the immutable log becomes verifiable anti-cheating proof.</li>
+      </ul></div>
+      <div class="station"><div class="pole" aria-hidden="true">Live</div><h3>During the race<small>the final furlong</small></h3><ul class="stops">
+        <li class="stop"><div class="who"><i class="dot p-all"></i>Everyone</div><b>“What you need”</b>: which horses must still finish in the 4 for the system to pay.</li>
+      </ul></div>
+      <div class="station"><div class="pole" aria-hidden="true">Dusk</div><h3>Evening<small>weighed in</small></h3><ul class="stops">
+        <li class="stop"><div class="who"><i class="dot p-all"></i>Everyone</div><b>Post-race debrief</b>: how many horses captured; which M1 criterion found which finisher.</li>
+        <li class="stop"><div class="who"><i class="dot p-all"></i>Everyone</div>Honest <b>personal bankroll history</b>, real ROI.</li>
+        <li class="stop"><div class="who"><i class="dot p-all"></i>Everyone</div><b>Responsible gaming</b>: self-set weekly cap, alert, visible losses counter.</li>
+        <li class="stop"><div class="who"><i class="dot p-all"></i>Everyone</div><b>Counterfactual</b>: “what if you had played B1?” on the user’s own systems.</li>
+        <li class="stop"><div class="who"><i class="dot p-skp"></i>Sceptic</div><b>“Proof” screen</b>: M1/M2 vs B1/B2 with confidence intervals — zero marketing.</li>
+      </ul></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 4. CONSTRAINT ROULETTE ============ -->
+<section id="cr" aria-labelledby="cr-h">
+  <div class="wrap">
+    <p class="kicker">Runner 4 · Constraint Roulette · <span class="count-pill">36</span></p>
+    <h2 id="cr-h">Spin for a constraint</h2>
+    <p class="lede">Eighteen constraints were drawn — no network, 90 seconds to the off, one hand, zero server budget, no odds… Pocket 0 holds the free spins: ideas that came loose once the wheel was turning.</p>
+    <div class="roulette">
+      <div class="wheel-wrap"><div class="pointer" aria-hidden="true"></div><svg id="wheelSvg" viewBox="0 0 400 400" role="img" aria-label="Roulette wheel with 19 pockets: 0 for free spins and 1 to 18 for constraints"><g id="wheel"></g></svg></div>
+      <div>
+        <button class="btn solid" id="spin" type="button">Spin the wheel</button>
+        <div class="draw" id="draw" aria-live="polite" style="margin-top:14px">
+          <p class="lab">Drawn constraint</p>
+          <h3>Faites vos jeux…</h3>
+          <p style="color:var(--muted)">Spin to draw one of the 19 pockets and see what the session built under that constraint.</p>
+        </div>
+      </div>
+    </div>
+    <ul class="cgrid" id="cgrid">
+<li class="ccard" data-p="1"><h3><span class="pocket r">1</span>No network</h3><ul><li>Support-race selections pre-computed during the morning sync.</li><li>Peer-to-peer sharing of the day’s data between phones by QR code at the kiosk.</li></ul></li>
+<li class="ccard" data-p="2"><h3><span class="pocket b">2</span>90 s before the off</h3><ul><li>One button: “today’s recommended system” at the default budget.</li><li>Last-minute non-runner → instant recompute and a “replace this ticket” diff.</li><li>Home-screen widget with the selection.</li></ul></li>
+<li class="ccard" data-p="3"><h3><span class="pocket r">3</span>One hand</h3><ul><li>Grids read aloud (“ticket 3: 2, 5, 11, 17…”).</li><li>Selection by voice dictation.</li></ul></li>
+<li class="ccard" data-p="4"><h3><span class="pocket b">4</span>Zero server budget</h3><ul><li>The whole Multi engine in Dart; the backend reduced to ingestion.</li></ul></li>
+<li class="ccard" data-p="5"><h3><span class="pocket r">5</span>No odds</h3><ul><li>M1 with a documented deterministic tie-break and a “degraded” label.</li></ul></li>
+<li class="ccard" data-p="6"><h3><span class="pocket b">6</span>Only one variable allowed</h3><ul><li>Ablation study of single-criterion strategies → a map of each variable’s predictive power.</li></ul></li>
+<li class="ccard" data-p="7"><h3><span class="pocket r">7</span>A single screen</h3><ul><li>Selection → budget slider → grids on one card; the budget slider is the main interaction.</li></ul></li>
+<li class="ccard" data-p="8"><h3><span class="pocket b">8</span>User doesn’t read French</h3><ul><li>Pictograms and casaque colours instead of text.</li></ul></li>
+<li class="ccard" data-p="9"><h3><span class="pocket r">9</span>No PMU data</h3><ul><li>Enter the race programme by photographing the newspaper (vision already planned).</li></ul></li>
+<li class="ccard" data-p="10"><h3><span class="pocket b">10</span>Prove value in 30 days</h3><ul><li>Measure capture on every race with ≥ 14 runners; validation table visible in the app.</li></ul></li>
+<li class="ccard" data-p="11"><h3><span class="pocket b">11</span>Forbidden to show a payout</h3><ul><li>Central metric = “price of a coverage point” (€ per point of p_hit).</li></ul></li>
+<li class="ccard" data-p="12"><h3><span class="pocket r">12</span>The Multi disappears tomorrow</h3><ul><li>A generic reduced-system engine for any “k of n, any order” bet (2sur4, Quinté in any order…).</li></ul></li>
+<li class="ccard" data-p="13"><h3><span class="pocket b">13</span>A single slip (4 bets)</h3><ul><li>Maximise p_hit under a 4-tickets-of-7 constraint — the “single ticket”.</li></ul></li>
+<li class="ccard" data-p="14"><h3><span class="pocket r">14</span>Outsiders only (odds &gt; 10)</h3><ul><li>“Multi des délaissés”: frequency vs average payout, measured.</li></ul></li>
+<li class="ccard" data-p="15"><h3><span class="pocket b">15</span>It must be fun</h3><ul><li>A money-free league among friends, weekly ranking by horses captured.</li></ul></li>
+<li class="ccard" data-p="16"><h3><span class="pocket r">16</span>The AI may only explain</h3><ul><li>Coach mode: the user selects; the app comments each choice with the M1/M2 criteria for and against.</li></ul></li>
+<li class="ccard" data-p="17"><h3><span class="pocket b">17</span>Total transparency imposed</h3><ul><li>A public, versioned method sheet (changelog of every strategy_version) in the app.</li></ul></li>
+<li class="ccard" data-p="18"><h3><span class="pocket r">18</span>Only one number</h3><ul><li>Race thermometer (entropy) → “race too open for your budget — sit this one out”.</li></ul></li>
+<li class="ccard free" data-p="0"><h3><span class="pocket g">0</span>Free spins — ideas that rolled out of the wheel</h3><ul>
+  <li><b>Commercial-system checker</b>: paste a newspaper or tipster system → does it really cover, and is there a smaller one? (“you pay for 42 grids, 41 suffice”).</li>
+  <li><b>Coverage heatmap</b>: which combinations are covered 1×, 2×, 3×.</li>
+  <li><b>Quiz on past races</b>: “make your selection, then we reveal the finish” — learning plus a source of human selections.</li>
+  <li><b>Internal wisdom of the crowd</b>: users’ aggregated selections tested as strategy U against B1.</li>
+  <li><b>Trap-race detector</b>: fragile favourites flagged (comeback, change of distance or ground).</li>
+  <li><b>Narrowly beaten</b>: use the margin in lengths at the last race when available.</li>
+  <li><b>Model / market divergence per horse</b>: “what the model sees that the public doesn’t”.</li>
+  <li><b>Monte-Carlo year of bankroll</b> for a standard system — educational, shows the risk of ruin.</li>
+  <li><b>Personal system notebook</b>: save and reuse favourite configurations.</li>
+  <li><b>Anti-collision between users</b>: if many app users play the same system they share the pool → diversify relabellings / recommended systems per user.</li>
+  <li><b>Countdown</b> to betting close for the support race, built into the Multi screen.</li>
+  <li><b>Degradation warnings in plain words</b> (“no odds for the 7: we treated it as a rank outsider”).</li>
+  <li><b>Playability calendar</b>: spot the days and support-race types historically least open.</li>
+  <li><b>Replay a past system</b> on a similar race (“what if I’d played Tuesday’s config”).</li>
+</ul></li>
+    </ul>
+  </div>
+</section>
+
+<!-- ============ CONVERGENCE ============ -->
+<section id="cv" aria-labelledby="cv-h">
+  <div class="wrap">
+    <p class="kicker">Weighing room · Convergence</p>
+    <h2 id="cv-h">Five stables</h2>
+    <p class="lede">Affinity clustering sorted the 104 ideas into five stables, each racing in its own colours. (Examples are illustrative picks from the field.)</p>
+    <div class="stables">
+      <article class="stable"><svg viewBox="0 0 80 80" aria-hidden="true"><defs><pattern id="sA" width="10" height="10" patternUnits="userSpaceOnUse"><rect width="10" height="10" fill="#1f4fb0"/><rect width="5" height="10" fill="#f4d03f"/></pattern></defs><path d="M22 18 L32 10 H48 L58 18 L72 30 L64 40 L58 34 V70 H22 V34 L16 40 L8 30 Z" fill="url(#sA)" stroke="#111" stroke-width="2"/></svg><div class="L">STABLE A</div><h3>Smart system design</h3><p>e.g. value-weighted relabelling, probabilistic coverage, inverse budget optimiser.</p></article>
+      <article class="stable"><svg viewBox="0 0 80 80" aria-hidden="true"><defs><pattern id="sB" width="14" height="14" patternUnits="userSpaceOnUse"><rect width="14" height="14" fill="#c62828"/><circle cx="7" cy="7" r="3.5" fill="#fff"/></pattern></defs><path d="M22 18 L32 10 H48 L58 18 L72 30 L64 40 L58 34 V70 H22 V34 L16 40 L8 30 Z" fill="url(#sB)" stroke="#111" stroke-width="2"/></svg><div class="L">STABLE B</div><h3>New testable strategies</h3><p>e.g. M1-trajectory, synthetic tips, contrarian B3, strategy router.</p></article>
+      <article class="stable"><svg viewBox="0 0 80 80" aria-hidden="true"><defs><pattern id="sC" width="16" height="16" patternUnits="userSpaceOnUse"><rect width="16" height="16" fill="#fff"/><rect width="8" height="8" fill="#1b7a3e"/><rect x="8" y="8" width="8" height="8" fill="#1b7a3e"/></pattern></defs><path d="M22 18 L32 10 H48 L58 18 L72 30 L64 40 L58 34 V70 H22 V34 L16 40 L8 30 Z" fill="url(#sC)" stroke="#111" stroke-width="2"/></svg><div class="L">STABLE C</div><h3>Trust &amp; proof</h3><p>e.g. hashed pre-race timestamps, museum of failures, proof screen.</p></article>
+      <article class="stable"><svg viewBox="0 0 80 80" aria-hidden="true"><defs><pattern id="sD" width="12" height="12" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="12" height="12" fill="#f08a24"/><rect width="5" height="12" fill="#111"/></pattern></defs><path d="M22 18 L32 10 H48 L58 18 L72 30 L64 40 L58 34 V70 H22 V34 L16 40 L8 30 Z" fill="url(#sD)" stroke="#111" stroke-width="2"/></svg><div class="L">STABLE D</div><h3>Trackside &amp; kiosk</h3><p>e.g. bulletin mode, WhatsApp share, offline morning sync, PMUC / FCFA.</p></article>
+      <article class="stable"><svg viewBox="0 0 80 80" aria-hidden="true"><path d="M22 18 L32 10 H48 L58 18 L72 30 L64 40 L58 34 V70 H22 V34 L16 40 L8 30 Z" fill="#7b3fb8" stroke="#111" stroke-width="2"/><path d="M22 34 H58 V46 H22 Z" fill="#fff"/><path d="M8 30 L16 40 L22 34 Z M72 30 L64 40 L58 34 Z" fill="#fff"/></svg><div class="L">STABLE E</div><h3>To play or not · responsible gaming</h3><p>e.g. race thermometer, price per coverage point, weekly cap.</p></article>
+    </div>
+
+    <h2 style="margin-top:56px">The going chart</h2>
+    <p class="lede">Impact–effort, read as ground conditions: the further right, the heavier the going (more effort); the higher, the bigger the impact. Parked runners stay in the paddock.</p>
+    <div class="going">
+      <div>
+        <div class="field" role="img" aria-label="Impact–effort chart: five quick wins at high impact and light going, four big bets at high impact and heavy going; five ideas parked in the paddock. Details in the lists alongside.">
+          <div class="zone" style="left:7%;top:6%;width:40%;height:52%"><span class="zl">Quick wins</span></div>
+          <div class="zone" style="left:52%;top:6%;width:42%;height:52%"><span class="zl">Big bets</span></div>
+          <span class="ax x">Effort → light to heavy going</span>
+          <span class="ax y">Impact ↑</span>
+          <span class="horse c1" style="left:16%;top:30%">1</span>
+          <span class="horse c2" style="left:25%;top:22%">2</span>
+          <span class="horse c3" style="left:34%;top:38%">3</span>
+          <span class="horse c4" style="left:22%;top:46%">4</span>
+          <span class="horse c5" style="left:39%;top:26%">5</span>
+          <span class="horse c6" style="left:84%;top:20%">6</span>
+          <span class="horse c7" style="left:66%;top:34%">7</span>
+          <span class="horse c8" style="left:76%;top:44%">8</span>
+          <span class="horse c9" style="left:62%;top:22%">9</span>
+        </div>
+        <p class="sans" style="font-size:.8rem;color:var(--muted);margin-top:8px">Positions inside each zone are illustrative; the session decided zones, not exact coordinates.</p>
+        <div class="paddock" aria-label="Parked ideas">
+          <span class="stall">Voice features</span><span class="stall">P2P QR sharing</span><span class="stall">Widget</span><span class="stall">Monte-Carlo bankroll</span><span class="stall">Mixed systems (already V2)</span>
+        </div>
+      </div>
+      <div class="lists">
+        <div class="lst qw"><h3>Quick wins · high impact, low effort</h3><ol>
+          <li><span class="cloth c1">1</span><span>Commercial-system checker.</span></li>
+          <li><span class="cloth c2">2</span><span>Configurable operator / currency / price (PMUC, FCFA).</span></li>
+          <li><span class="cloth c3">3</span><span>WhatsApp share + bulletin mode.</span></li>
+          <li><span class="cloth c4">4</span><span>Hashed timestamp of selections before the off.</span></li>
+          <li><span class="cloth c5">5</span><span>Price of a coverage point + race thermometer.</span></li>
+        </ol></div>
+        <div class="lst bb"><h3>Big bets · high impact, medium/high effort</h3><ol>
+          <li><span class="cloth c6">6</span><span>Value-weighted relabelling, then probabilistic coverage / inverse budget optimiser.</span></li>
+          <li><span class="cloth c7">7</span><span>Synthetic tips (backtestable M2).</span></li>
+          <li><span class="cloth c8">8</span><span>Paper trading + money-free league as the data engine.</span></li>
+          <li><span class="cloth c9">9</span><span>Strategy router by race type.</span></li>
+        </ol></div>
+        <div class="lst pk"><h3>Parked · in the paddock</h3><p style="margin:0;font-size:.92rem">Voice, P2P QR, widget, Monte-Carlo bankroll, mixed systems (already planned for V2).</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ PHOTO FINISH ============ -->
+<section id="pf" class="finish" aria-labelledby="pf-h">
+  <div class="wrap">
+    <p class="kicker">Judges’ stand</p>
+    <h2 id="pf-h">Photo-finish: five insights</h2>
+    <p class="lede" style="color:inherit;opacity:.85">The camera at the post caught five noses on the line. The judges could not separate them.</p>
+    <div class="pf" id="pfBox">
+      <div class="pf-head"><span>Prix du Multi · 17.10.2026</span><span>Finish camera · 1/10000 s</span></div>
+      <div class="lane"><div class="run"><span class="cloth c1">1</span><div><h3>The free lever hidden in §5.5</h3><p>The spec says ticket structure adds no EV. True on average — but choosing <em>among</em> equivalent optimal designs, and how they are relabelled, is a free value lever. Build it into the cache from V1.5.</p></div></div><div class="post" aria-hidden="true">POST</div></div>
+      <div class="lane"><div class="run"><span class="cloth c2">2</span><div><h3>App users share one pool</h3><p>An unseen tension: every app user bets into the same Multi pool, so one system recommended to all dilutes their winnings. Diversify per user — still deterministic if the seed is (race, user).</p></div></div><div class="post" aria-hidden="true">POST</div></div>
+      <div class="lane"><div class="run"><span class="cloth c3">3</span><div><h3>The protocol is the pitch</h3><p>The immutable log is not just a scientific tool: it is the trust product — timestamped proof, museum of failures, proof screen. The validation protocol IS the app’s argument.</p></div></div><div class="post" aria-hidden="true">POST</div></div>
+      <div class="lane"><div class="run"><span class="cloth c4">4</span><div><h3>PMUC Cameroon, not PMU France</h3><p>The underlying risk: the user bets through the local operator. rules.py must be indexed by operator (price, currency, rules), or the whole financial side is wrong.</p></div></div><div class="post" aria-hidden="true">POST</div></div>
+      <div class="lane"><div class="run"><span class="cloth c5">5</span><div><h3>Human selections, no money</h3><p>Paper trading + league + quiz yield human selections without stakes → a strategy U and faster validation data, in line with the principle “the tool never bets”.</p></div></div><div class="post" aria-hidden="true">POST</div></div>
+    </div>
+    <p class="verdict">Result: dead heat ×5</p>
+  </div>
+</section>
+</main>
+
+<footer><div class="wrap">Brainstorm session · prediction-hyppique · 2026-10-17 · generated from .memlog.md</div></footer>
+<button class="theme-t" id="themeT" type="button" aria-label="Toggle light or dark theme">◐ Theme</button>
+
+<script>
+(function(){
+  var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* theme toggle */
+  var root=document.documentElement;
+  try{var saved=localStorage.getItem('pm-theme'); if(saved) root.setAttribute('data-theme',saved);}catch(e){}
+  document.getElementById('themeT').addEventListener('click',function(){
+    var cur=root.getAttribute('data-theme');
+    if(!cur){cur=(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');}
+    var next=cur==='dark'?'light':'dark'; root.setAttribute('data-theme',next);
+    try{localStorage.setItem('pm-theme',next);}catch(e){}
+  });
+
+  /* tote bars + counter */
+  var bars=document.querySelectorAll('.bar i');
+  setTimeout(function(){bars.forEach(function(b){b.style.width=(b.dataset.w/36*100)+'%';});},150);
+  var tot=document.getElementById('total');
+  if(!reduce){var n=0,to=+tot.dataset.to;tot.textContent='000';var t=setInterval(function(){n+=3;if(n>=to){n=to;clearInterval(t);}tot.textContent=String(n).padStart(3,'0');},18);}
+
+  /* flip cards */
+  var flips=[].slice.call(document.querySelectorAll('.flip'));
+  flips.forEach(function(f){f.addEventListener('click',function(){f.setAttribute('aria-pressed',f.getAttribute('aria-pressed')==='true'?'false':'true');});});
+  var fa=document.getElementById('flipAll');
+  fa.addEventListener('click',function(){var on=fa.getAttribute('aria-pressed')!=='true';fa.setAttribute('aria-pressed',on);fa.textContent=on?'Turn all back':'Flip all slips';
+    flips.forEach(function(f,i){setTimeout(function(){f.setAttribute('aria-pressed',on);},reduce?0:i*35);});});
+
+  /* morphological */
+  var slips=[].slice.call(document.querySelectorAll('.slip')), chips=[].slice.call(document.querySelectorAll('.chip'));
+  function pick(s){slips.forEach(function(x){x.setAttribute('aria-pressed',x===s);});var keys=s.dataset.c.split(' ');
+    chips.forEach(function(c){c.classList.toggle('lit',keys.indexOf(c.dataset.k)>-1);});}
+  slips.forEach(function(s){s.addEventListener('click',function(){pick(s);});});
+  pick(slips[0]);
+
+  /* roulette */
+  var N=19, seg=360/N, g=document.getElementById('wheel'), NS='http://www.w3.org/2000/svg', cx=200, cy=200, R=192, r2=118;
+  var reds=[1,3,5,7,9,12,14,16,18];
+  function pt(a,rad){var t=(a-90)*Math.PI/180;return [cx+rad*Math.cos(t),cy+rad*Math.sin(t)];}
+  var rim=document.createElementNS(NS,'circle');rim.setAttribute('cx',cx);rim.setAttribute('cy',cy);rim.setAttribute('r',R+6);rim.setAttribute('fill','#5b3a1a');g.appendChild(rim);
+  for(var i=0;i<N;i++){
+    var a0=i*seg,a1=a0+seg,p0=pt(a0,R),p1=pt(a1,R),q1=pt(a1,r2),q0=pt(a0,r2);
+    var path=document.createElementNS(NS,'path');
+    path.setAttribute('d','M'+p0+' A'+R+' '+R+' 0 0 1 '+p1+' L'+q1+' A'+r2+' '+r2+' 0 0 0 '+q0+' Z');
+    path.setAttribute('fill',i===0?'#1b6e3d':(reds.indexOf(i)>-1?'#b71c1c':'#151515'));
+    path.setAttribute('stroke','#d8c38a');path.setAttribute('stroke-width','1.5');g.appendChild(path);
+    var mid=a0+seg/2,tp=pt(mid,R-24),tx=document.createElementNS(NS,'text');
+    tx.setAttribute('x',tp[0]);tx.setAttribute('y',tp[1]);tx.setAttribute('fill','#fff');tx.setAttribute('font-size','17');tx.setAttribute('font-weight','800');
+    tx.setAttribute('font-family','system-ui,Segoe UI,sans-serif');tx.setAttribute('text-anchor','middle');tx.setAttribute('dominant-baseline','central');
+    tx.setAttribute('transform','rotate('+mid+' '+tp[0]+' '+tp[1]+')');tx.textContent=i;g.appendChild(tx);
+  }
+  var hub=document.createElementNS(NS,'circle');hub.setAttribute('cx',cx);hub.setAttribute('cy',cy);hub.setAttribute('r',r2);hub.setAttribute('fill','#7a5124');g.appendChild(hub);
+  [96,60].forEach(function(rr,k){var c=document.createElementNS(NS,'circle');c.setAttribute('cx',cx);c.setAttribute('cy',cy);c.setAttribute('r',rr);c.setAttribute('fill',k?'#d8c38a':'#5b3a1a');g.appendChild(c);});
+  var lab=document.createElementNS(NS,'text');lab.setAttribute('x',cx);lab.setAttribute('y',cy);lab.setAttribute('text-anchor','middle');lab.setAttribute('dominant-baseline','central');
+  lab.setAttribute('font-size','20');lab.setAttribute('font-weight','800');lab.setAttribute('fill','#3b2410');lab.setAttribute('font-family','Georgia,serif');lab.textContent='MULTI';g.appendChild(lab);
+
+  var rot=0, spinning=false, last=-1, btn=document.getElementById('spin'), draw=document.getElementById('draw'), cards=[].slice.call(document.querySelectorAll('.ccard'));
+  function reveal(p){
+    cards.forEach(function(c){c.classList.toggle('drawn',+c.dataset.p===p);});
+    var card=cards.filter(function(c){return +c.dataset.p===p;})[0];
+    var h=card.querySelector('h3').cloneNode(true), ul=card.querySelector('ul').cloneNode(true);
+    draw.innerHTML='<p class="lab">Drawn constraint · pocket '+p+'</p>';draw.appendChild(h);draw.appendChild(ul);
+    spinning=false;btn.disabled=false;btn.textContent='Spin again';
+  }
+  btn.addEventListener('click',function(){
+    if(spinning)return; spinning=true; btn.disabled=true; btn.textContent='Rien ne va plus…';
+    var p; do{p=Math.floor(Math.random()*N);}while(p===last); last=p;
+    var center=p*seg+seg/2, target=(360-center)%360, base=Math.ceil(rot/360)*360;
+    rot=base+(reduce?0:360*5)+target;
+    g.style.transform='rotate('+rot+'deg)';
+    setTimeout(function(){reveal(p);},reduce?50:3700);
+  });
+
+  /* photo finish */
+  var pf=document.getElementById('pfBox');
+  if(reduce||!('IntersectionObserver' in window)){pf.classList.add('go');}
+  else{var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){pf.classList.add('go');io.disconnect();}});},{threshold:.2});io.observe(pf);}
+})();
+</script>
+</body>
+</html>
