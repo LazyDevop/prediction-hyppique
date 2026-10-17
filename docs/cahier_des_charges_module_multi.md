@@ -14,6 +14,11 @@
 > proposées** (4.2), de la **taille choisie sous budget** (4.3) et des
 > **explications** (6.5) ; M2 reporté hors V1 ; pas de mise recommandée ; nommage
 > français ; MVP en français, explications en codes pour préparer l'anglais.
+>
+> **Architecture (2026-10-17).** Pour l'organisation technique (où sont produits,
+> stockés et lus les systèmes, les règles, les codes, le jeu retenu, les tables et
+> les migrations), la spine d'architecture fait foi (AD-6 à AD-13) :
+> `_bmad-output/planning-artifacts/architecture/architecture-prediction-hyppique-2026-09-04/ARCHITECTURE-SPINE.md`. Ce cahier a été aligné sur elle.
 
 ## 0. Contexte et principe directeur
 
@@ -88,9 +93,12 @@ France et PMUC (PRD §5).
 
 ## 2. Règles du Multi (source : document, 2001-2002 — À VÉRIFIER sur pmu.fr)
 
-Toutes ces constantes vivent dans **un seul module** `engine/multi/regles.py`, avec un
-commentaire de provenance et une date de dernière vérification. Aucune ne doit être
-dispersée dans le code.
+Toutes ces constantes ont **une seule source de référence**, le fichier
+`fixtures/multi_regles.json`, avec leur provenance et une **date de vérification
+obligatoire** (sans elle, aucun coût n'est affiché). `engine/multi/regles.py` et
+`regles.dart` sont validés contre ce fichier par les tests ; aucune constante n'est
+dispersée dans le code. Toute modification entraîne la regénération du catalogue
+de systèmes (5.2). (Spine AD-7.)
 
 ```python
 MISE_UNITAIRE_EUR = 3.0         # 20 F à l'origine ; 3 € dès le 01/01/2002. Vérifier la valeur actuelle.
@@ -231,8 +239,10 @@ sorties), **pure** (pas de lecture de base ni de réseau), **sans doublon**,
 en français ; l'anglais, au choix de l'utilisateur, viendra après le MVP pour toute
 l'application. Pour que son ajout ne touche pas au moteur, toute explication,
 raison ou avertissement est transmis comme `Explication(code, params)` et rendu par
-l'application à partir d'un catalogue de libellés (français dans le MVP). Aucune phrase n'est écrite
-en dur dans le moteur ni dans l'API.
+l'application. Les codes et leurs paramètres sont déclarés dans le registre
+`fixtures/multi_codes.json` ; dans le MVP, l'app les rend par une simple table Dart
+code → phrase française (spine AD-8). Aucune phrase n'est écrite en dur dans le
+moteur ni dans l'API.
 
 ### 4.1 Stratégie `modele` — la recommandation (D1)
 
@@ -336,7 +346,7 @@ validées ») et journalisés pour la section 8. Jamais proposés par défaut.
 
 | id | Définition | Statut |
 |---|---|---|
-| `B0` | `taille` chevaux tirés au hasard (graine fixée par `course_id` → reproductible) | V1 |
+| `B0` | `taille` chevaux tirés au hasard (graine fixée par la clé de course → reproductible) ; **backend seulement**, journalisé, jamais affiché ni porté en Dart | V1 |
 | `B1` | les `taille` chevaux de **cote la plus basse** (le marché) | V1 |
 | `M1` | méthode 1 du document (4.6) | V1 |
 | `M2` | méthode 2 du document (4.7) | **Reportée (D2)** |
@@ -460,8 +470,14 @@ Paliers, appliqués dans l'ordre :
    (La Jolla Covering Repository, DOI Zenodo 10.5281/zenodo.10779736).
    **Licence non précisée sur la page consultée** : vérifier avant de redistribuer.
 
-Le générateur est **lourd** : il tourne côté backend (et hors ligne, pour produire
-le catalogue de 11.3), jamais dans le chemin d'une requête utilisateur sans cache.
+Le générateur est **lourd** : il tourne **uniquement sur la machine de
+développement**, en script autonome (`scripts/generer_catalogue_multi.py`, dépendances
+épinglées, lancé par `uv`), jamais sur le serveur ni sur l'appareil. Il écrit le
+**catalogue de référence** `fixtures/multi_catalogue.json` (en-tête : version = sha256
+des entrées, empreinte des règles utilisées, versions SciPy/HiGHS ; entrées par
+`(v', k', t')`, blocs sur les indices `0..v'-1`, tous vérifiés), puis le copie à
+l'identique dans `backend/app/engine/multi/` et `mobile/assets/`. À l'exécution,
+rien ne génère de système (spine AD-7).
 
 **Vérificateur (obligatoire, jamais contourné)** :
 
@@ -476,9 +492,12 @@ def verifier_couverture(selection, bases, tickets) -> PreuveCouverture:
 Un système n'est **jamais** renvoyé avec `nb_non_couverts > 0`. `C(20, 4) = 4 845` :
 la vérification est instantanée, y compris sur l'appareil.
 
-**Cache** : table `multi_systeme_cache` (section 7), lue et écrite **uniquement via
-`data/repository.py`** (AD-1). Le système est calculé une fois sur les indices
-`0..v'-1`, puis **relabellé** sur les dossards.
+**Relabellement** : une seule correspondance, identique en Python et en Dart — les
+chevaux non-bases de la sélection, triés par `top4` décroissant, puis `p_gagnant`
+décroissant, puis dossard croissant, prennent les indices `0..v'-1` ; chaque ticket
+est formé des bases et du bloc correspondant. Tout système relabellé est revérifié
+avant affichage. Une forme absente du catalogue ne reçoit aucun système
+(avertissement `systeme_absent_du_catalogue`). Il n'y a **pas** de table de cache.
 
 **Vérification d'un système saisi** : l'utilisateur peut saisir un système trouvé
 ailleurs (journal, site) ; le module le passe au vérificateur, indique la couverture
@@ -679,29 +698,36 @@ observé** (médiane et quartiles sur l'historique des courses support en base) 
 ## 7. Données, schéma et journalisation
 
 Nouvelles tables (SQLAlchemy, mêmes conventions que 6.3, accès uniquement via
-`data/repository.py`) :
+`data/repository.py`, un seul écrivain par table, migrations **Alembic** — spine
+AD-10, AD-13). Une course est identifiée par sa clé PMU (date, réunion, course) ;
+toute heure est en UTC avec décalage (spine AD-12) :
 
 ```
-multi_course
+multi_course                        -- écrivain : job d'ingestion/finalisation
   course_id (FK, unique), est_course_support (bool), nb_partants_declares,
   rapport_en4, rapport_en5, rapport_en6, rapport_en7   (NULLABLE, en centimes pour 3 €)
   arrivee_json  (top-5 avec ex-aequo), source_rapports, finalisee
 
-recommandation_multi                -- une ligne par sélection journalisée (modèle ou comparateur)
+recommandation_multi                -- une ligne par sélection journalisée (modèle ou comparateur) ; écrivain : job de journalisation
   id, course_id (FK), strategie, version_strategie, parametres_json,
   donnees_a (timestamp UTC : instant des données utilisées — AVANT le départ),
   selection_json (choix ordonnés avec rôle et explications), bases_json, taille,
   verdict (NULLABLE : seulement pour "modele"), budget_eur (NULLABLE),
-  empreinte_entrees (sha256 des entrées), mode ("live" | "backfill"),
+  empreinte_entrees (sha256 des entrées), version_catalogue, empreinte_regles,
+  version_moteur_multi (fixtures/multi_versions.json), mode ("live" | "backfill"),
   degrade (bool), cree_le
   UNIQUE (course_id, strategie, version_strategie, mode, budget_eur)
 
-resultat_recommandation             -- rempli à la finalisation de la course
+echec_journal_multi                 -- écrivain : job de journalisation
+  id, course_id (FK), raison, survenu_le
+
+resultat_recommandation             -- rempli à la finalisation de la course ; écrivain : job de finalisation
   recommandation_id (FK, unique), nb_captures (0..4), couverte (bool),
   couts_json, gains_json               -- par k, avec règles de la section 2
 
-multi_systeme_cache
-  v_prime, k_prime, t_prime, blocs_json, solveur, optimal_prouve, cree_le
+performance_strategie               -- écrivain : commande d'import du backtest
+  id, strategie, version_strategie, periode_debut, periode_fin, effectif,
+  metriques_json, constantes_figees_le, importe_le
 ```
 
 **Règles** :
@@ -796,7 +822,10 @@ développement, pour (1) mesurer la variance et fixer la taille d'échantillon,
 (6.4), `seuil_donnees_fragiles`, les budgets de référence de la journalisation
 `live` et l'effectif minimal au-delà duquel les performances des comparateurs
 s'affichent (toujours avec effectif et intervalle). Ces valeurs sont alors gelées
-pour la période de test. **Ordre imposé** : backtest et pilote → seuils et budgets
+pour la période de test, dans `fixtures/multi_parametres_pilote.json` (lu par les deux
+moteurs et le job de journalisation — spine AD-11). Le harnais tourne d'abord sur la
+machine de développement, sur une copie de la base ; ses résultats sont exportés
+puis importés en production (`performance_strategie`). **Ordre imposé** : backtest et pilote → seuils et budgets
 de référence → journalisation `live`. Le pilote ne dépend pas de la journalisation
 `live`.
 
@@ -820,8 +849,11 @@ tolérance 1e-9 sur les probabilités.
    contient les deux → 2 × rapport.
 5. **Arrivée dégradée** : les 4 combinaisons de repli dans l'ordre, puis
    remboursement.
-6. **Générateur** : pour chaque entrée de l'annexe A : `nb_non_couverts == 0` et
-   `len(tickets) <= N_document` ; et 3 bases + 14 (v = 17) → exactement 14.
+6. **Catalogue** (sans SciPy) : pour chaque entrée de l'annexe A, le catalogue
+   contient un système vérifié (`nb_non_couverts == 0`) avec `len(tickets) <= N_document`
+   (sauf coquilles documentées) ; 3 bases + 14 (v = 17) → exactement 14 ; les copies
+   backend et mobile sont identiques octet à octet à l'original ; le relabellement
+   donne les mêmes listes de tickets en Python et en Dart.
 7. **Vérificateur** : un système auquel on retire un ticket doit échouer ;
    une sélection plus petite que `k` renvoie une erreur explicite ; un système saisi
    non valide est signalé avec ses combinaisons manquantes.
@@ -845,7 +877,8 @@ tolérance 1e-9 sur les probabilités.
 14. **Absence de fuite** : une recommandation `backfill` dont `donnees_a` précède la
     course ne change pas si l'on supprime de la base toute donnée postérieure.
 15. **Déterminisme** : `selectionner` et la recommandation appelées 2 fois →
-    résultat identique (y compris `B0`).
+    résultat identique (y compris `B0`, côté backend) ; Python et Dart donnent la même
+    recommandation sur les cas partagés (probabilités quantifiées à 1e-9).
 16. **Langue** : aucune chaîne de libellé dans les sorties du moteur et de l'API ;
     chaque code d'explication a un libellé français dans le catalogue de l'app
     (l'anglais s'y ajoutera après le MVP sans modifier le moteur).
@@ -861,7 +894,7 @@ tolérance 1e-9 sur les probabilités.
 | POST | `/multi/evaluer` | sélection quelconque (dont celle de l'utilisateur) → `p_couverture`, distribution de `X`, contributions, échanges suggérés |
 | POST | `/multi/comparateur` | applique `M1` / `B0` / `B1` → choix + explications, libellé « hypothèse non validée » |
 | GET | `/multi/performance` | métriques par stratégie (8.2), filtrables par période |
-| POST | `/multi/backtest` | lance un job de backtest (stratégies, période, `min_partants`) |
+| POST | `/multi/backtest` | lance un backtest — **construit seulement quand le harnais passe sur un serveur** ; d'ici là, le harnais tourne sur la machine de développement (8.4) |
 
 **`POST /multi/recommandation`**
 
@@ -946,18 +979,24 @@ Un seul écran, de haut en bas :
 Le MVP est **en français**. L'affichage en anglais, au choix de l'utilisateur, est
 une exigence transverse de **toute l'application**, planifiée **après le MVP**
 (PRD §6.2, §8). Dès le MVP, les explications arrivent du moteur sous forme de
-codes (6.5) et sont rendues par le catalogue de libellés de l'app, pour que
-l'ajout de l'anglais ne demande pas de reprendre le moteur.
+codes (6.5), déclarés dans `fixtures/multi_codes.json`, et sont rendues par une
+simple table Dart code → phrase française ; elle migrera vers l'outillage de
+traduction de Flutter quand l'anglais arrivera, sans reprendre le moteur.
 
 ### 11.3 Hors ligne (hippodrome)
 
 La recommandation complète (4.1-4.3), `p_couverture`, le verdict, les explications,
 le vérificateur et les règles sont des **fonctions pures portées en Dart**
 (`mobile/lib/engine/multi/`), à parité avec Python par `fixtures/multi_cases.json`.
-Le générateur, lourd, ne tourne pas sur l'appareil : le backend exporte un
-**catalogue précalculé** (`assets/multi_catalog.json`, script
-`scripts/export_multi_catalog.py`) pour `v' ≤ 20`, `k' ∈ [1, 7]`, `t' ∈ [1, 4]`,
-chaque entrée **vérifiée**. L'application relabelle et revérifie localement. Si une
+Le générateur ne tourne pas sur l'appareil : l'app embarque la copie
+`mobile/assets/multi_catalogue.json` du catalogue de référence (5.2), pour
+`v' ≤ 20`, `k' ∈ [1, 7]`, `t' ∈ [1, 4]`, chaque entrée **vérifiée**. L'application
+relabelle et revérifie localement. Elle calcule **toujours** la recommandation
+elle-même, avec le contexte Multi de la course (éligibilité, R7 médian, état de
+l'évaluation, seuils provisoires) reçu du backend avec les partants et mis en
+cache ; elle n'appelle pas `/multi/recommandation`. Le jeu retenu et la
+recommandation consultée sont stockés dans `hippique_cache.db` (version 2, tables
+`jeu_retenu` et `recommandation_consultee`) et conservés **90 jours** (spine AD-6, AD-9). Si une
 combinaison manque au catalogue, elle est exclue des options (et non calculée à la
 volée), avec l'avertissement `systeme_absent_du_catalogue`.
 
@@ -986,7 +1025,8 @@ dater dans `regles.py` avant toute autre étape.
 
 1. **`engine/multi/regles.py` + tests 1-5** (pur, sans données).
 2. **Vérificateur + générateur** (formes closes → MILP → glouton/recuit), tests 6-7,
-   rapport d'écart avec l'annexe A ; **catalogue** exporté.
+   rapport d'écart avec l'annexe A ; **catalogue** généré hors ligne, versionné dans
+   `fixtures/`, puis copié à l'identique dans le backend et l'app.
 3. **`p_couverture` exacte, distribution de `X`, entropie** + test 8, fixtures
    partagées Python/Dart.
 4. **Recommandation `modele`** : sélection (4.1), bases (4.2), choix sous budget
@@ -994,10 +1034,11 @@ dater dans `regles.py` avant toute autre étape.
    Dart.
 5. **Écran mobile** (11.1-11.3), hors ligne, débrief local.
 6. **Comparateurs** M1, B0, B1 + test 13.
-7. **Schéma** (section 7), ingestion des rapports.
+7. **Schéma** (section 7) par migrations Alembic, ingestion des rapports.
 8. **API** (section 10) ; les endpoints de l'incrément 1 sont livrés avec lui.
-9. **Harnais de backtest** (section 8) + test 14 ; **pilote** (8.4) ; puis mode
-   `live` en **écriture seule**.
+9. **Harnais de backtest** (section 8) + test 14, sur la machine de développement ;
+   **pilote** (8.4) et import des résultats en production ; puis mode `live` en
+   **écriture seule**. `/multi/backtest` attend le passage du harnais sur un serveur.
 10. **Rapport d'évaluation** : stratégies testées, période gelée, résultats, décision.
 
 Les étapes 1 à 5 ne dépendent d'**aucune donnée nouvelle** : elles livrent une

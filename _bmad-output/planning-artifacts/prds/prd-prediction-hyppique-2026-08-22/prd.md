@@ -335,7 +335,7 @@ L'utilisateur voit, pour une course, si elle est éligible au Multi (course supp
 **Consequences (testable):**
 - Une course non éligible affiche la raison (pas course support, moins de 14 partants) au lieu d'une recommandation.
 - Si le marqueur « course support » est introuvable dans la source (Open Question 9), les courses de ≥ 14 partants restent accessibles en mode « exploration — rapports Multi indisponibles ».
-- Les règles du pari (prix unitaire, formules, non-partants, ex-aequo, arrivée dégradée) sont regroupées dans un seul module avec leur provenance et une date de dernière vérification sur pmu.fr ; sans cette date, aucun coût n'est affiché (§9.5).
+- Les règles du pari (prix unitaire, formules, non-partants, ex-aequo, arrivée dégradée) ont une seule source de référence, partagée par le backend et l'application, avec leur provenance et une date de dernière vérification sur pmu.fr ; sans cette date, aucun coût n'est affiché (§9.5).
 - Les partants déclarés mais non analysés sont signalés (« N partants non analysés, non sélectionnables ») ; l'utilisateur peut les analyser (FR-6) pour les rendre sélectionnables.
 
 #### FR-23: Recommandation du modèle sous budget
@@ -414,7 +414,7 @@ L'utilisateur voit l'évaluation de la sélection ; les recommandations sont jou
 - L'évaluation affiche la probabilité de couverture, la distribution du nombre de chevaux capturés (0 à 4), un indice de valeur marqué « hypothèse », et le rapport « Multi en 7 » historique médian quand au moins 30 courses support sont en base (sinon « rapports réels inconnus »).
 - Chaque jour, avant le départ, le backend journalise la recommandation du modèle aux budgets de référence fixés par le pilote, et les comparateurs, avec l'heure des données utilisées ; une entrée journalisée n'est jamais modifiée. Un échec de journalisation est lui-même journalisé (« non journalisé », avec la raison) et la course est exclue de l'évaluation ; l'exclusion est comptée. Un non-partant survenu après la journalisation est traité par les règles de requalification, sans réécrire l'entrée.
 - Une recommandation reconstituée sur l'historique (backtest) n'utilise aucune donnée postérieure à l'heure de ses données ; toute constante dérivée des données (quantiles de niveau, réglages) est figée avant la période de test, et sa date figure dans le rapport d'évaluation. L'heure des cotes du comparateur marché est alignée sur celle du modèle, ou l'écart est déclaré.
-- Le jeu retenu par l'utilisateur (FR-28) est conservé sur l'appareil avec l'heure des données utilisées, sans compte ni envoi au serveur (V1 mono-utilisateur).
+- Le jeu retenu par l'utilisateur (FR-28) est conservé sur l'appareil avec l'heure des données utilisées, pendant 90 jours, sans compte ni envoi au serveur (V1 mono-utilisateur).
 - Après finalisation de la course (FR-17), l'app affiche, pour la recommandation du modèle et pour le jeu retenu, le nombre de chevaux capturés et si la sélection contenait une arrivée payable (« oui / non »), sans embellissement ; les ex-aequo et l'arrivée dégradée suivent les règles du pari, et une correction de l'arrivée après finalisation met le débrief à jour avec une mention.
 
 **Feature-specific NFRs:**
@@ -440,7 +440,7 @@ L'utilisateur voit l'évaluation de la sélection ; les recommandations sont jou
 - Export/partage du classement calculé (texte ou JSON au minimum ; export PDF en bonus, pas requis).
 - Module Multi (§4.11), livré **après le cœur du MVP déjà construit** (§4.1 à §4.10), en deux incréments. Arbitrage assumé : le module Multi pèse à lui seul autant que le reste du MVP ; il ne retarde pas ce qui est livré, et le premier incrément rend le module utile avant que l'évaluation existe.
   - **Incrément Multi 1 — décider** : vérification des règles du pari (§9.5), écran Multi, recommandation, bases, systèmes vérifiés et catalogue précalculé, verdict en « seuils provisoires », explications, choix de l'utilisateur, calcul hors ligne, jeu retenu et débrief sur l'appareil ; endpoints `/courses/{id}/multi/eligibilite`, `/multi/recommandation`, `/multi/systemes`, `/multi/verifier`, `/multi/evaluer` (à la racine de l'API, sauf l'éligibilité).
-  - **Incrément Multi 2 — évaluer** : comparateurs, ingestion des rapports Multi, harnais de backtest et pilote (qui fixe les seuils par défaut du verdict, les budgets de référence et l'effectif minimal d'affichage), puis journalisation quotidienne avant départ ; endpoints `/multi/comparateur`, `/multi/performance`, `/multi/backtest`. Ordre imposé : backtest et pilote → seuils et budgets de référence → journalisation quotidienne.
+  - **Incrément Multi 2 — évaluer** : comparateurs, ingestion des rapports Multi, harnais de backtest et pilote (qui fixe les seuils par défaut du verdict, les budgets de référence et l'effectif minimal d'affichage), exécutés d'abord sur la machine de développement avec import des résultats en production, puis journalisation quotidienne avant départ ; endpoints `/multi/comparateur`, `/multi/performance`. L'endpoint `/multi/backtest` n'est construit que lorsque le harnais passe sur un serveur. Ordre imposé : backtest et pilote → seuils et budgets de référence → journalisation quotidienne.
 - Rappel de jeu responsable visible sur chaque écran de résultats.
 - Usage mono-utilisateur, sans compte ni authentification.
 
