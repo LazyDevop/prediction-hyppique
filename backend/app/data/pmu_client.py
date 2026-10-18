@@ -131,6 +131,7 @@ class PerformancePassee:
     rang: Optional[int]
     incident: Optional[str]
     terrain: Optional[str] = None
+    rang_impute: bool = False
 
 
 def get_programme(target_date: date, pays_filter: Optional[str] = "FRA") -> List[CourseInfo]:
@@ -199,6 +200,24 @@ def get_participants(target_date: date, reunion: int, course: int) -> List[Parta
     return partants
 
 
+def _rang_impute_non_place(course_passee: Dict[str, Any]) -> Optional[int]:
+    """NON_PLACE sans rang : le cheval a fini après la dernière place
+    affichée, à une position inconnue. Le noter 0 l'assimilait à un dernier ;
+    on retient le milieu de la zone non placée, arrondi vers le haut (côté
+    prudent)."""
+    nb_participants = course_passee.get("nbParticipants")
+    if not nb_participants:
+        return None
+    places_affichees = [
+        (p.get("place") or {}).get("place")
+        for p in course_passee.get("participants", [])
+        if not p.get("itsHim")
+    ]
+    premiere_non_affichee = max((n for n in places_affichees if isinstance(n, int)), default=0) + 1
+    premiere_non_affichee = min(premiere_non_affichee, nb_participants)
+    return (premiere_non_affichee + nb_participants + 1) // 2
+
+
 def get_historique(target_date: date, reunion: int, course: int) -> Dict[int, List[PerformancePassee]]:
     endpoint = f"{BASE_URL}/{target_date.strftime('%d%m%Y')}/R{reunion}/C{course}/performances-detaillees/pretty"
     data = _get(endpoint)
@@ -214,6 +233,11 @@ def get_historique(target_date: date, reunion: int, course: int) -> Dict[int, Li
             )
             place_info = (propre_ligne or {}).get("place", {}) or {}
             status_arrivee = place_info.get("statusArrivee")
+            rang = place_info.get("place")
+            rang_impute = False
+            if rang is None and status_arrivee == "NON_PLACE":
+                rang = _rang_impute_non_place(course_passee)
+                rang_impute = rang is not None
             discipline_brute = course_passee.get("discipline", "")
             performances.append(PerformancePassee(
                 date=_epoch_ms_to_date(course_passee.get("date")),
@@ -222,9 +246,10 @@ def get_historique(target_date: date, reunion: int, course: int) -> Dict[int, Li
                 allocation=course_passee.get("allocation"),
                 distance=course_passee.get("distance"),
                 nb_participants=course_passee.get("nbParticipants"),
-                rang=place_info.get("place"),
+                rang=rang,
                 incident=STATUS_TO_INCIDENT.get(status_arrivee),
                 terrain=normaliser_terrain(course_passee.get("etatTerrain")),
+                rang_impute=rang_impute,
             ))
         if num_pmu is not None:
             results[num_pmu] = performances

@@ -269,6 +269,20 @@ def test_save_historique_persiste_le_terrain(repo):
     assert horses[0].performances[0].terrain == terrain_coefficient("Bon souple")
 
 
+def test_save_historique_persiste_le_rang_impute_et_son_marqueur(repo):
+    course = repo.upsert_course(make_course_info())
+    repo.save_partants(course.id, [make_partant_info(num_pmu=5, nom="Bucephale")])
+
+    repo.save_historique(course.id, {5: [
+        make_performance_passee(date=date(2025, 12, 1), rang=11, rang_impute=True),
+        make_performance_passee(date=date(2025, 11, 1), rang=2),
+    ]})
+
+    with Session(repo.engine) as session:
+        lignes = session.query(PerformanceHistorique).order_by(PerformanceHistorique.date_course).all()
+    assert [(l.rang, l.rang_impute) for l in lignes] == [(2, False), (11, True)]
+
+
 def test_save_historique_num_pmu_sans_participation_correspondante_est_ignore(repo):
     # repository.py:232-234 : si le num_pmu de l'historique ne correspond à
     # aucune participation de la course (feuille de départ désynchronisée du

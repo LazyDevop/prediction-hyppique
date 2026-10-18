@@ -98,6 +98,9 @@ class PerformanceHistorique(Base):
     distance: Mapped[Optional[float]] = mapped_column(Float)
     nb_participants: Mapped[Optional[int]] = mapped_column(Integer)
     rang: Mapped[Optional[int]] = mapped_column(Integer)
+    # Vrai quand `rang` est une estimation (NON_PLACE sans position connue),
+    # pas une place officielle.
+    rang_impute: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False, server_default="0")
     terrain: Mapped[Optional[str]] = mapped_column(String(64))
     incident: Mapped[Optional[str]] = mapped_column(String(16))
     source: Mapped[str] = mapped_column(String(16), default="pmu")

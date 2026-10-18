@@ -40,6 +40,7 @@ class PerformanceHistoriqueOut(BaseModel):
     distance: Optional[float]
     nb_participants: Optional[int]
     rang: Optional[int]
+    rang_impute: bool = False
     terrain: Optional[str]
     incident: Optional[str]
 

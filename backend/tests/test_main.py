@@ -64,3 +64,33 @@ def test_routes_chevaux_est_bien_cablee():
     response = client.post("/chevaux/999999/backfill")
     assert response.status_code == 404
     assert response.json()["detail"] == "Cheval introuvable"
+
+
+def test_partants_expose_le_marqueur_de_rang_impute():
+    from datetime import date
+
+    from app.api import routes_courses
+    from app.data.pmu_client import CourseInfo, PartantInfo, PerformancePassee
+
+    repo = routes_courses.repository
+    course = repo.upsert_course(CourseInfo(
+        date=date(2099, 1, 2), numero_reunion=1, numero_course=1, hippodrome="Deauville",
+        pays="FRA", libelle="Prix Test", discipline="plat", discipline_brute="PLAT",
+        distance=1600.0, allocation=20000.0, corde=None, nb_partants_declares=1,
+        arrivee_definitive=False, heure_depart=None,
+    ))
+    repo.save_partants(course.id, [PartantInfo(
+        num_pmu=1, nom="Rang Impute Test", age=4, sexe=None, statut="PARTANT", driver_jockey=None,
+        entraineur=None, musique=None, nombre_courses=1, inedit=False, handicap_poids=None,
+        cote_reference=None, cote_direct=None, ordre_arrivee=None, incident=None,
+    )])
+    repo.save_historique(course.id, {1: [PerformancePassee(
+        date=date(2098, 12, 1), hippodrome="Deauville", discipline="plat", allocation=None,
+        distance=1600.0, nb_participants=16, rang=11, incident=None, rang_impute=True,
+    )]})
+
+    response = client.get(f"/courses/{course.id}/partants")
+
+    assert response.status_code == 200
+    perf = response.json()[0]["performances"][0]
+    assert (perf["rang"], perf["rang_impute"]) == (11, True)

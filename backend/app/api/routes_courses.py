@@ -73,6 +73,7 @@ def get_partants(course_id: int):
                     distance=perf.distance,
                     nb_participants=perf.nb_participants,
                     rang=perf.rang,
+                    rang_impute=perf.rang_impute,
                     terrain=perf.terrain,
                     incident=perf.incident,
                 )

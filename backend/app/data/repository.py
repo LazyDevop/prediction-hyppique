@@ -94,6 +94,13 @@ class Repository:
                     ON performances_historiques (cheval_id, date_course, hippodrome)
                 """))
 
+        perf_columns = {col["name"] for col in inspect(self.engine).get_columns("performances_historiques")}
+        if "rang_impute" not in perf_columns:
+            with self.engine.begin() as conn:
+                conn.execute(text(
+                    "ALTER TABLE performances_historiques ADD COLUMN rang_impute BOOLEAN NOT NULL DEFAULT 0"
+                ))
+
     def list_courses_for_date(self, target_date: date) -> List[Course]:
         with Session(self.engine) as session:
             return session.query(Course).filter(Course.date == target_date).all()
@@ -250,6 +257,7 @@ class Repository:
                         "distance": perf.distance,
                         "nb_participants": perf.nb_participants,
                         "rang": perf.rang,
+                        "rang_impute": perf.rang_impute,
                         "terrain": perf.terrain,
                         "incident": perf.incident,
                         "source": "pmu",

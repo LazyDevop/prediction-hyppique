@@ -116,3 +116,51 @@ def test_normaliser_terrain_psf_sans_etat_est_silencieux(caplog):
     with caplog.at_level("WARNING", logger=pmu_client.__name__):
         assert pmu_client.normaliser_terrain("PSF") is None
     assert caplog.text == ""
+
+
+def test_get_historique_non_place_sans_rang_impute_au_milieu_de_la_zone_non_placee(monkeypatch, no_network):
+    monkeypatch.setattr(pmu_client, "_get", lambda endpoint: _load("performances_15012022_R1_C1.json"))
+
+    historique = pmu_client.get_historique(pmu_client.date(2022, 1, 15), 1, 1)
+
+    # Places 1-5 affichées : zone non placée = 6..partants, milieu arrondi
+    # vers le haut (le plus prudent) -> 16 partants : 11 ; 14 : 10 ; 15 : 11.
+    imputes = {num: [(p.nb_participants, p.rang) for p in perfs if p.rang_impute]
+               for num, perfs in historique.items()}
+    assert imputes[9] == [(16, 11)]
+    assert sorted(imputes[10]) == [(14, 10), (14, 10), (15, 11)]
+    assert imputes[12] == [(14, 10)]
+    assert all(not p.rang_impute for p in historique[1] if p.rang is not None and p.incident is None)
+
+
+def _course_passee(nb_participants, places_affichees, ma_place):
+    autres = [{"itsHim": False, "place": {"place": n, "statusArrivee": "PLACE"}} for n in places_affichees]
+    moi = {"itsHim": True, "place": ma_place}
+    return {"participants": [{"numPmu": 1, "coursesCourues": [
+        {"date": 1767225600000, "hippodrome": "X", "discipline": "PLAT",
+         "nbParticipants": nb_participants, "participants": autres + [moi]},
+    ]}]}
+
+
+@pytest.mark.parametrize("nb_participants, places_affichees, attendu", [
+    (12, [], 7),          # aucune place affichée : zone 1..12
+    (6, [1, 2, 3, 4, 5], 6),  # seule place restante
+    (None, [1, 2, 3], None),  # partants inconnus : pas d'imputation
+])
+def test_get_historique_non_place_cas_limites(monkeypatch, no_network, nb_participants, places_affichees, attendu):
+    data = _course_passee(nb_participants, places_affichees, {"statusArrivee": "NON_PLACE"})
+    monkeypatch.setattr(pmu_client, "_get", lambda endpoint: data)
+
+    perf = pmu_client.get_historique(pmu_client.date(2026, 1, 1), 1, 1)[1][0]
+
+    assert perf.rang == attendu
+    assert perf.rang_impute is (attendu is not None)
+
+
+def test_get_historique_non_place_avec_rang_connu_n_est_pas_impute(monkeypatch, no_network):
+    data = _course_passee(16, [1, 2, 3, 4, 5], {"place": 9, "statusArrivee": "NON_PLACE"})
+    monkeypatch.setattr(pmu_client, "_get", lambda endpoint: data)
+
+    perf = pmu_client.get_historique(pmu_client.date(2026, 1, 1), 1, 1)[1][0]
+
+    assert (perf.rang, perf.rang_impute) == (9, False)
