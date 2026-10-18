@@ -25,12 +25,24 @@ DISCIPLINE_MAP = {
     "CROSS": "obstacle",
 }
 
-# DISQUALIFIE is the only statusArrivee value confirmed to represent a real
-# incident (section 4.3 of the cahier des charges). NON_PLACE only means the
-# horse finished outside the ~5-6 displayed positions - not an incident.
+# statusArrivee -> engine incident code (INCIDENTS in engine/constants.py),
+# from a survey of 6,014 real arrivals. PLACE and NON_PLACE are not
+# incidents: NON_PLACE only means the horse finished outside the displayed
+# positions. A distanced horse is eliminated from the result, hence "D".
 STATUS_TO_INCIDENT = {
     "DISQUALIFIE": "D",
+    "DISQUALIFIE_POUR_ALLURE_IRREGULIERE": "D",
+    "DISQUALIFIE_POTEAU_GALOP": "D",
+    "DISTANCE": "D",
+    "ARRETE": "A",
+    "TOMBE": "T",
 }
+# TOMBE covers two raw codes: TB (horse fell) and TJ (jockey fell, seen even
+# on the flat), which the engine scores as unseated.
+RAW_VALUE_TO_INCIDENT = {
+    "TJ": "U",
+}
+STATUTS_SANS_INCIDENT = {"PLACE", "NON_PLACE"}
 
 
 # etatTerrain arrive en libellé texte, alors que le moteur indexe ses
@@ -238,6 +250,11 @@ def get_historique(target_date: date, reunion: int, course: int) -> Dict[int, Li
             if rang is None and status_arrivee == "NON_PLACE":
                 rang = _rang_impute_non_place(course_passee)
                 rang_impute = rang is not None
+            incident = RAW_VALUE_TO_INCIDENT.get(place_info.get("rawValue")) or STATUS_TO_INCIDENT.get(status_arrivee)
+            if rang is None and incident is None and status_arrivee not in STATUTS_SANS_INCIDENT:
+                # Sans rang ni incident, le moteur note la course 0 : un
+                # nouveau statut doit être vu, pas absorbé en silence.
+                logger.warning("statusArrivee non traduit : %r (rawValue %r)", status_arrivee, place_info.get("rawValue"))
             discipline_brute = course_passee.get("discipline", "")
             performances.append(PerformancePassee(
                 date=_epoch_ms_to_date(course_passee.get("date")),
@@ -247,7 +264,7 @@ def get_historique(target_date: date, reunion: int, course: int) -> Dict[int, Li
                 distance=course_passee.get("distance"),
                 nb_participants=course_passee.get("nbParticipants"),
                 rang=rang,
-                incident=STATUS_TO_INCIDENT.get(status_arrivee),
+                incident=incident,
                 terrain=normaliser_terrain(course_passee.get("etatTerrain")),
                 rang_impute=rang_impute,
             ))

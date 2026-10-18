@@ -164,3 +164,33 @@ def test_get_historique_non_place_avec_rang_connu_n_est_pas_impute(monkeypatch, 
     perf = pmu_client.get_historique(pmu_client.date(2026, 1, 1), 1, 1)[1][0]
 
     assert (perf.rang, perf.rang_impute) == (9, False)
+
+
+# Statuts relevés sur 6 014 arrivées réelles (courses des 18-19/10/2026).
+@pytest.mark.parametrize("status, raw, incident", [
+    ("DISQUALIFIE_POUR_ALLURE_IRREGULIERE", "AI", "D"),
+    ("DISQUALIFIE_POTEAU_GALOP", "PG", "D"),
+    ("DISTANCE", "DX", "D"),
+    ("ARRETE", "AR", "A"),
+    ("TOMBE", "TB", "T"),
+    ("TOMBE", "TJ", "U"),
+    ("DISQUALIFIE", None, "D"),
+])
+def test_get_historique_traduit_les_statuts_d_arrivee_en_incidents(monkeypatch, no_network, status, raw, incident):
+    data = _course_passee(14, [1, 2, 3, 4, 5], {"statusArrivee": status, "rawValue": raw})
+    monkeypatch.setattr(pmu_client, "_get", lambda endpoint: data)
+
+    perf = pmu_client.get_historique(pmu_client.date(2026, 1, 1), 1, 1)[1][0]
+
+    assert (perf.incident, perf.rang, perf.rang_impute) == (incident, None, False)
+
+
+def test_get_historique_statut_sans_rang_inconnu_est_journalise(monkeypatch, no_network, caplog):
+    data = _course_passee(14, [1, 2, 3, 4, 5], {"statusArrivee": "NOUVEAU_STATUT", "rawValue": "NS"})
+    monkeypatch.setattr(pmu_client, "_get", lambda endpoint: data)
+
+    with caplog.at_level("WARNING", logger=pmu_client.__name__):
+        perf = pmu_client.get_historique(pmu_client.date(2026, 1, 1), 1, 1)[1][0]
+
+    assert (perf.incident, perf.rang) == (None, None)
+    assert "NOUVEAU_STATUT" in caplog.text
