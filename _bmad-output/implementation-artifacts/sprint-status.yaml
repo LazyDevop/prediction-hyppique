@@ -1,0 +1,97 @@
+# STATUS DEFINITIONS:
+# ==================
+# Epic Status:
+#   - backlog: Epic not yet started
+#   - in-progress: Epic actively being worked on
+#   - done: All stories in epic completed
+
+# Story Status:
+#   - backlog: Story only exists in epic file
+#   - ready-for-dev: Story file created, ready for development
+#   - in-progress: Developer actively working on implementation
+#   - review: Implementation complete, ready for review
+#   - done: Story completed
+
+# Retrospective Status:
+#   - optional: Can be completed but not required
+#   - done: Retrospective has been completed
+
+# Action Item Status:
+#   - open: Committed during a retrospective, not yet addressed
+#   - in-progress: Actively being worked on
+#   - done: Completed
+
+# WORKFLOW NOTES:
+# ===============
+# - Epic transitions to 'in-progress' automatically when its first story starts (via build's sprint sync)
+# - Stories can be worked in parallel if team capacity allows
+# - Developer typically creates the next story after the previous one is 'done' to incorporate learnings
+# - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
+# - Retrospective appends its action items to action_items; the status view surfaces open ones
+generated: 10-18-2026 12:00
+last_updated: 10-18-2026 12:00
+project: prediction-hyppique
+project_key: NOKEY
+tracking_system: file-system
+story_location: _bmad-output/implementation-artifacts
+development_status:
+  epic-1: done
+  epic-1-retrospective: optional
+
+  epic-2: done
+  epic-2-retrospective: optional
+
+  epic-3: done
+  epic-3-retrospective: optional
+
+  epic-4: done
+  epic-4-retrospective: optional
+
+  epic-5: backlog
+  5-1-règles-du-pari-vérifiées-et-datées: backlog
+  5-2-heures-de-départ-fiables-utc: backlog
+  5-3-cartes-plus-lisibles-dans-toute-l-app-line-card-3-1-on-gold: backlog
+  5-4-mises-à-jour-du-serveur-sans-perte-de-données-alembic: backlog
+  5-5-savoir-si-une-course-est-éligible-au-multi: backlog
+  5-6-catalogue-de-systèmes-vérifié: backlog
+  5-7-moteur-multi-python-couverture-sélection-pour-une-taille-che: backlog
+  5-8-indice-de-confiance-et-explications-python-registre-multi_co: backlog
+  5-9-api-du-pronostic-multi-éligibilité-recommandation-systèmes-v: backlog
+  5-10-moteur-multi-en-dart-à-parité-couverture-sélection-bases-sys: backlog
+  5-11-confiance-et-explications-en-dart-table-de-libellés-fr: backlog
+  5-12-écran-multi-pronostic-accès-depuis-résultats-taille-confianc: backlog
+  5-13-écran-multi-grilles-formules-feuille-des-grilles-copie-vérif: backlog
+  5-14-retoucher-sa-sélection-et-gérer-les-non-partants: backlog
+  5-15-retenir-son-pronostic-même-hors-ligne-sqflite-v2-gel-au-dépa: backlog
+  5-16-le-débrief-du-lendemain-mes-pronostics-multi-arrivée-corrigé: backlog
+  epic-5-retrospective: optional
+
+  epic-6: backlog
+  6-1-données-de-la-dernière-course-pour-la-méthode-1-allocation-r: backlog
+  6-2-comparateurs-méthode-1-et-marché-en-python-et-dart-b0-python: backlog
+  6-3-section-autres-méthodes-à-l-écran: backlog
+  6-4-backtest-sur-la-machine-de-dev-sans-fuite-constantes-figées: backlog
+  6-5-pilote-et-import-en-production-multi_parametres_pilote-json: backlog
+  6-6-journalisation-quotidienne-avant-le-départ-immuable-échecs-r: backlog
+  6-7-performances-et-statut-du-modèle-affichés-seuils-définitifs: backlog
+  epic-6-retrospective: optional
+
+# Action items from the implementation readiness gate (2026-10-18, verdict CONCERNS)
+# Full report: _bmad-output/planning-artifacts/implementation-readiness.md
+action_items:
+  - epic: 5
+    action: "Story 5.1 est une tâche humaine : vérifier sur pmu.fr les règles actuelles du Multi (et du Mini Multi), dater fixtures/multi_regles.json ; aucune autre story Multi avant."
+    owner: "Lazyd"
+    status: open
+  - epic: 5
+    action: "Correction de cap (bmad-correct-course) avant de confier les stories non prêtes (5.4, 5.5, 5.7, 5.8, 5.12, 5.14, 5.15, 5.16, 6.1, 6.5, 6.6, 6.7) : findings élevés F1 à F7 du rapport de préparation."
+    owner: "Lazyd"
+    status: open
+  - epic: 5
+    action: "F1 : le MULTI est proposé sur ~19 courses/jour (fixture 15/01/2022) et le MINI_MULTI existe (10-13 partants) — décider l'éligibilité et le périmètre Mini Multi."
+    owner: "Lazyd"
+    status: open
+  - epic: 5
+    action: "F6 : remplacer la règle provisoire des seuils de confiance (2x/3x le hasard), qui classe presque tout pronostic à 4 chevaux en « confiance élevée »."
+    owner: "Lazyd"
+    status: open
