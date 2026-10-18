@@ -1,4 +1,4 @@
-# Cahier des charges — Module « Multi » (recommandation, systèmes réduits, évaluation)
+# Cahier des charges — Module « Multi » (pronostic, systèmes réduits, évaluation)
 
 > Addendum au **cahier des charges backend** (sections 6.3, 7.10, 7.12, 8, 9, 11) et au
 > **cahier des charges mobile** (section 7). À lire avec eux ; ne les remplace pas.
@@ -6,6 +6,22 @@
 > en trois PDF). Ses règles du pari (section 2) et ses systèmes réduits (section 5)
 > sont repris ; ses méthodes de sélection (M1, M2) deviennent des **comparateurs**,
 > pas la recommandation.
+>
+> **Version 3 — 2026-10-18. Le Multi devient un pronostic, sans argent.** Recadrage
+> du porteur de projet (section « D ter » de
+> `_bmad-output/planning-artifacts/multi/reconcile-cdc-multi-prd.md`, qui remplace
+> D0, D3 et D5 et précise D4) : « pas de mise ni de gain, juste un pronostic sur les
+> chevaux qui peuvent constituer l'arrivée du Multi ». Changements par rapport à la
+> v2 : plus aucun budget, coût, multiplicateur, mise, gain, rapport, seuil de
+> rentabilité ni « prix du point de couverture » ; la **taille de la sélection est
+> choisie par l'utilisateur** (4 à 20, par défaut la dernière utilisée, sinon 10) et
+> le modèle choisit les chevaux par le même algorithme ; les **bases** deviennent
+> 3 « chevaux les plus probables » candidats, activables ; les **systèmes réduits** sont listés
+> pour toutes les formules, sans coût ; le **verdict** est remplacé par un **indice
+> de confiance** (élevée / moyenne / faible) ; l'**indice de valeur** est abandonné
+> (annexe E) ; les **rapports Multi** ne sont plus ingérés ni évalués ; le « jeu
+> retenu » devient le « **pronostic retenu** ». Règles, générateur, vérificateur,
+> catalogue, relabellement, M1, B0, B1 et annexes sont inchangés.
 >
 > **Version 2 — 2026-10-17.** Réalignée sur le PRD et l'architecture après
 > réconciliation (`_bmad-output/planning-artifacts/multi/reconcile-cdc-multi-prd.md`,
@@ -15,20 +31,25 @@
 > **explications** (6.5) ; M2 reporté hors V1 ; pas de mise recommandée ; nommage
 > français ; MVP en français, explications en codes pour préparer l'anglais.
 >
-> **Architecture (2026-10-17).** Pour l'organisation technique (où sont produits,
-> stockés et lus les systèmes, les règles, les codes, le jeu retenu, les tables et
-> les migrations), la spine d'architecture fait foi (AD-6 à AD-13) :
+> **Architecture (2026-10-17, mise à jour 2026-10-18).** Pour l'organisation
+> technique (où sont produits, stockés et lus les systèmes, les règles, les codes,
+> le pronostic retenu, les tables et les migrations), la spine d'architecture fait
+> foi (AD-6 à AD-13) :
 > `_bmad-output/planning-artifacts/architecture/architecture-prediction-hyppique-2026-09-04/ARCHITECTURE-SPINE.md`. Ce cahier a été aligné sur elle.
 
 ## 0. Contexte et principe directeur
 
 ### 0.1 Angle du module
 
-> **Pour cette course, le modèle me dit si je joue le Multi, avec quelle sélection
-> et quelles bases, quel système, et pourquoi.**
+> **Pour cette course et pour la taille de sélection que je choisis, le modèle me
+> dit quels chevaux peuvent constituer l'arrivée du Multi, quels sont les chevaux
+> les plus probables (bases), quels systèmes réduits les couvrent, avec quelle confiance, et
+> pourquoi.**
 
-Cinq questions, une seule autorité : **le modèle** du produit (Plackett-Luce /
-Harville, cahier backend 7.9-7.10). Toute exigence de ce cahier sert l'une de ces
+Cinq questions (sélection, bases, systèmes, confiance, pourquoi), une seule
+autorité : **le modèle** du produit (Plackett-Luce / Harville, cahier backend
+7.9-7.10). C'est un **pronostic**, comme le reste de l'application : il ne dit ni
+combien jouer, ni combien gagner. Toute exigence de ce cahier sert l'une de ces
 cinq questions, ou l'évaluation de la qualité des réponses (section 8).
 
 ### 0.2 Ce que contient le document source
@@ -44,25 +65,28 @@ cinq questions, ou l'évaluation de la qualité des réponses (section 8).
 
 ### 0.3 Principes (à ne jamais dériver)
 
-- L'outil **analyse et recommande** ; il ne place **jamais** de pari. Aucune
+- L'outil **analyse et pronostique** ; il ne place **jamais** de pari. Aucune
   fonctionnalité d'achat de ticket, quelle que soit la version.
-- **Le modèle décide** (D1). M1, M2 et les références B0/B1 sont des
-  **comparateurs** : consultables à part, avec le libellé « **hypothèse non
-  validée** » tant que le protocole de la section 8 ne conclut pas.
-- **Aucune mise n'est recommandée** (D0). Le module affiche le **coût** de chaque
-  système ; le multiplicateur de mise est une saisie de l'utilisateur.
+- **Aucune notion d'argent** (D ter) : ni budget, ni coût, ni multiplicateur, ni
+  mise, ni gain, ni rapport, ni seuil de rentabilité, ni indice de valeur, ni « prix
+  du point de couverture » — ni dans le moteur, ni dans l'API, ni à l'écran.
+- **L'utilisateur choisit la taille, le modèle choisit les chevaux** (D1, D ter).
+  M1, M2 et les références B0/B1 sont des **comparateurs** : consultables à part,
+  avec le libellé « **hypothèse non validée** » tant que le protocole de la
+  section 8 ne conclut pas.
 - Le mot « garantie » du document est un **abus de langage commercial** : la
   « garantie 4/4 » est une **garantie de couverture** (si les 4 premiers sont dans
   la sélection, au moins un ticket les contient), **pas une garantie de gain**.
   Libellé obligatoire dans l'UI : « Couverture garantie — pas un gain garanti ».
-- **La structure du ticket ne crée pas d'avantage moyen.** Voir 5.5 : sous la règle
-  de prix documentée, une réduction ne change que le budget et la variance. Tout
-  avantage doit venir de la **sélection**, mesurée contre des références (section 8).
+- **La qualité du pronostic vient de la sélection, pas du système.** Un système
+  réduit ne fait que couvrir la même sélection avec moins de tickets (5.5) ; tout
+  avantage doit venir de la **sélection**, mesurée contre des références
+  (section 8).
 - **Pas de presse dans le calcul** (PRD §5) : aucune donnée de presse ou de
-  consensus n'entre dans la recommandation.
-- **Rien n'est inventé** : aucun seuil de verdict, aucune retenue, aucun rapport
-  n'est codé « à l'estime ». Les valeurs par défaut des seuils sont fixées par le
-  pilote (section 8.4) et affichées « provisoires » jusque-là.
+  consensus n'entre dans le pronostic.
+- **Rien n'est inventé** : aucun seuil de l'indice de confiance n'est codé « à
+  l'estime ». Les valeurs par défaut des seuils sont fixées par le pilote
+  (section 8.4) et affichées « provisoires » jusque-là.
 
 ### 0.4 Constats vérifiés pendant la lecture du document (à connaître)
 
@@ -75,27 +99,31 @@ cinq questions, ou l'évaluation de la qualité des réponses (section 8).
 
 ## 1. Périmètre
 
-**Dans le périmètre V1** : règles du Multi ; **recommandation du modèle** (verdict,
-sélection, bases, système, explications) ; générateur et vérificateur de systèmes
-réduits ; vérification d'un système saisi par l'utilisateur ; calcul exact de la
-probabilité de couverture ; comparateurs M1, B0, B1 ; schéma de données ;
-journalisation des recommandations et des rapports réels ; protocole de backtest
-et de test prospectif ; API ; écran mobile ; débrief après course.
+**Dans le périmètre V1** : règles du Multi ; **pronostic du modèle** à la taille
+choisie par l'utilisateur (sélection, bases candidates, systèmes réduits pour
+toutes les formules, indice de confiance, explications) ; générateur et
+vérificateur de systèmes réduits ; vérification d'un système saisi par
+l'utilisateur ; calcul exact de la probabilité de couverture ; comparateurs M1,
+B0, B1 ; schéma de données ; journalisation des pronostics et des arrivées ;
+protocole de backtest et de test prospectif ; API ; écran mobile ; débrief après
+course.
 
 **Reporté (hors V1)** : méthode M2 et tout ce qui la sert (`/extraction/presse`,
 fournisseurs de citations et de liste de forme, captures presse) — D2 ; systèmes
-mixtes ; recouvrement pondéré par la valeur ; indice de valeur dans le verdict.
+mixtes ; choix du système parmi les équivalents (5.5).
 
-**Hors périmètre** : placement de paris ; recommandation de mise ; collecte
-automatisée de contenus propriétaires (Paris Turf, 3615 Turf, Geny…) ; paris autres
-que le Multi (couverts par le backend 7.12) ; Flexi (voir section 12) ; courses hors
-France et PMUC (PRD §5).
+**Hors périmètre** : placement de paris ; **tout aspect financier** (mise, budget,
+coût, multiplicateur, gain, rapports, rentabilité, indice de valeur — annexe E) ;
+ingestion des rapports Multi et évaluation financière ; collecte automatisée de
+contenus propriétaires (Paris Turf, 3615 Turf, Geny…) ; paris autres que le Multi
+(couverts par le backend 7.12) ; Flexi (voir section 12) ; courses hors France et
+PMUC (PRD §5).
 
 ## 2. Règles du Multi (source : document, 2001-2002 — À VÉRIFIER sur pmu.fr)
 
 Toutes ces constantes ont **une seule source de référence**, le fichier
 `fixtures/multi_regles.json`, avec leur provenance et une **date de vérification
-obligatoire** (sans elle, aucun coût n'est affiché). `engine/multi/regles.py` et
+obligatoire** (sans elle, aucune grille n'est affichée). `engine/multi/regles.py` et
 `regles.dart` sont validés contre ce fichier par les tests ; aucune constante n'est
 dispersée dans le code. Toute modification entraîne la regénération du catalogue
 de systèmes (5.2). (Spine AD-7.)
@@ -117,13 +145,18 @@ from math import comb
 COEF_R7 = {k: comb(7, 4) / comb(k, 4) for k in FORMULES}   # {4:35, 5:7, 6:7/3, 7:1}
 ```
 
+Depuis la v3, les constantes monétaires (`MISE_UNITAIRE_EUR`, `MULTIPLICATEUR_MAX`,
+`RAPPORT_MIN`, `COEF_R7`) restent dans le fichier de règles pour qu'il décrive le
+pari complet et pour les tests de cohérence (test 1), mais **aucune n'est utilisée
+par le pronostic ni affichée**.
+
 **Éligibilité d'une course support.** Une course par jour, 14 partants déclarés au
 minimum. Les jours de Quinté+ (document : mar, mer, jeu, sam, dim) c'est une autre
 course de la réunion du Quinté+ ; les jours sans Quinté+ (lun, ven) c'est la course
 du 2sur4. **À vérifier** : ces jours ont pu changer depuis 2002. Le backend détecte
 la course support par la liste `paris` de la course (champ exact à confirmer en
 phase de découverte) ; à défaut, il propose « courses de ≥ 14 partants » en mode
-exploration (sans rapport Multi disponible).
+exploration (mention « course non support du Multi »).
 
 **Non-partants.** Un ticket en k chevaux avec m non-partants est requalifié en
 `k − m` si `k − m ≥ 4`, sinon remboursé :
@@ -150,11 +183,13 @@ remboursés.
 - `requalifier(ticket, non_partants) -> (k_effectif | None)`
 - `combinaisons_payables(arrivee_avec_ex_aequo) -> list[frozenset]` (inclut
   l'arrivée dégradée)
-- `regler(tickets, arrivee, r7, non_partants) -> {gain, touches, remboursements}`
+- `regler(tickets, arrivee, non_partants) -> {touches, remboursements}` (tickets
+  qui contiennent une combinaison payable, avec leur formule effective après
+  requalification ; aucun montant)
 
 ## 3. Données d'entrée et sources
 
-**Recommandation (sections 4.1 à 4.4)** : elle n'utilise **que** ce que le moteur
+**Pronostic (sections 4.1 à 4.4)** : elle n'utilise **que** ce que le moteur
 utilise déjà — scores, probabilités Plackett-Luce, Top1-Top4 Harville, cotes du jour,
 partants virtuels, indicateurs de transparence. Aucune donnée nouvelle n'est requise.
 
@@ -166,8 +201,10 @@ partants virtuels, indicateurs de transparence. Aucune donnée nouvelle n'est re
 | Allocation de la dernière course | `performances-detaillees` → `coursesCourues[0].allocation` | `allocation` | **Existant dans l'API mais absent du schéma 6.3** → ajouter la colonne | M1 |
 | Cote du jour | `Participation.cote_reference` / `cote_direct` | `dernierRapportReference` | Existant | M1 (départage), B1 |
 | Partants déclarés, non-partants | Course PMU | `statut` | Existant | tout |
-| Rapports Multi définitifs (4 rapports) | Endpoint des rapports définitifs de la course | à confirmer | **À découvrir** | évaluation financière |
-| Arrivée avec ex-aequo | `ordreArrivee` des participants | — | Existant | évaluation |
+| Arrivée avec ex-aequo | `ordreArrivee` des participants | — | Existant | débrief, évaluation |
+
+Les **rapports Multi** ne sont plus nécessaires (v3) : ni ingérés, ni affichés, ni
+évalués.
 
 **Piège sur le rang.** Le backend 4.3 note que `NON_PLACE` signifie « hors des
 ~5-6 premiers affichés ». Si seuls 5 sont affichés, un 6ᵉ est indiscernable d'un
@@ -179,8 +216,8 @@ est ajouté. Valider le décodeur de musique sur des chaînes réelles (annexe D
 **Cote « non cotée ».** Pour M1 : une cote manquante est traitée comme **la plus
 délaissée possible** (+∞) pour le critère « plus délaissé », et comme **la plus
 haute** pour « cote la plus basse » (donc jamais choisie). Hypothèse notée dans les
-avertissements. Pour la recommandation : sans effet (le modèle ne lit la cote que
-pour la value, affichée à part).
+avertissements. Pour le pronostic : sans effet (le modèle ne lit la cote que pour
+la value du moteur, non affichée dans le Multi ; elle reste sur l'écran Résultats).
 
 **Schéma : champs à ajouter** (compléter 6.3) :
 
@@ -189,7 +226,7 @@ Performance_historique : + allocation (int, NULLABLE), + rang_brut (str: '1'..'9
 Participation          : + cote_reference_decimale (float, NULLABLE)  # si pas déjà dérivé
 ```
 
-## 4. Recommandation du modèle et comparateurs
+## 4. Pronostic du modèle et comparateurs
 
 ### 4.0 Interface commune
 
@@ -200,7 +237,7 @@ class ChevalMulti:
     p_gagnant: float               # probabilité Plackett-Luce (moteur 7.9)
     top4: float                    # P(dans les 4 premiers), Harville (moteur 7.10)
     cote: float | None             # cote du jour ; None = non cotée
-    value: float | None            # moteur 7.11 ; None si cote manquante
+    value: float | None            # moteur 7.11 ; None si cote manquante ; non affichée dans le Multi
     drapeaux: tuple[str, ...]      # indicateurs de transparence (PRD FR-4) : "historique_court", "inedit", ...
     dernier_rang: str | None       # pour M1 uniquement
     derniere_allocation: int | None  # pour M1 uniquement
@@ -244,11 +281,18 @@ l'application. Les codes et leurs paramètres sont déclarés dans le registre
 code → phrase française (spine AD-8). Aucune phrase n'est écrite en dur dans le
 moteur ni dans l'API.
 
-### 4.1 Stratégie `modele` — la recommandation (D1)
+### 4.1 Stratégie `modele` — le pronostic (D1, D ter)
 
-**Objectif** : pour une taille `v`, des bases `B` et une formule `k`, trouver la
+**Taille de la sélection** : `v` est **choisie par l'utilisateur**, de 4 à
+`min(SELECTION_MAX, nb_partants_reels)` (soit 20 au plus). Valeur par défaut : la
+dernière taille utilisée (réglage de l'appareil), sinon **10**. Le
+modèle ne choisit jamais la taille.
+
+**Objectif** : pour la taille `v` et les bases actives `B` (4.2), trouver la
 sélection `S` (|S| = v, `B ⊆ S`) qui maximise la **probabilité de couverture**
-`p_couverture(S, B)` (section 6.1).
+`p_couverture(S, B)` (section 6.1). Sans base active, c'est la probabilité que
+l'arrivée (les 4 premiers) soit dans la sélection. La sélection ne dépend pas de la
+formule `k`.
 
 **Algorithme (déterministe)** :
 
@@ -264,80 +308,74 @@ sélection `S` (|S| = v, `B ⊆ S`) qui maximise la **probabilité de couverture
 Les partants virtuels du moteur (cahier backend 7.8) **entrent dans le champ** de
 l'énumération (ils peuvent finir dans les 4) mais ne sont **jamais** sélectionnables.
 
-**Coût de calcul (exécution sur téléphone, 11.3)** : les probabilités `P_ens(A)` de
+**Temps de calcul (exécution sur téléphone, 11.3)** : les probabilités `P_ens(A)` de
 tous les ensembles de 4 chevaux du champ sont calculées **une seule fois** par course
 (≤ 4 845 valeurs) ; `p_couverture(S, B)` n'est alors qu'une somme sur les
-sous-ensembles de `S`. La sélection ne dépend pas de `k` : en 4.3, elle est calculée
-une fois par couple `(b, v)` (≤ 4 × 17), et seuls le nombre de tickets et le coût
-varient avec `k`. Le temps de la recommandation complète est mesuré sur l'appareil
-cible (PRD §11, question ouverte 1) ; s'il ne paraît pas instantané, l'étape 3 est
-limitée en nombre d'itérations et l'avertissement `optimisation_tronquee` est ajouté.
+sous-ensembles de `S`. La sélection est calculée une fois sans base (pour les bases
+candidates, 4.2) et une fois avec les bases actives ; seuls les tickets varient avec
+`k` (4.3). Le temps du pronostic complet est mesuré sur l'appareil cible (PRD §11,
+question ouverte 1) ; s'il ne paraît pas instantané, l'étape 3 est limitée en
+nombre d'itérations et l'avertissement `optimisation_tronquee` est ajouté.
 
 **Pourquoi pas un simple tri par `top4`** : le Multi paie quand **les 4 premiers
 ensemble** sont dans `S` ; `Σ top4_i` maximal ne donne pas toujours `p_couverture`
 maximale. L'étape 3 corrige ce cas ; un test le vérifie (section 9).
 
-### 4.2 Bases proposées (D4)
+### 4.2 Bases proposées — les « chevaux les plus probables » (D4, D ter)
 
 Le modèle propose **3 bases candidates** (moins si la sélection compte moins de 3
-chevaux). Elles sont calculées sur la sélection **sans base** (`b = 0`) construite
-par 4.1 à la taille de l'option recommandée : ce sont ses 3 chevaux de `top4` le
-plus élevé (égalité → `p_gagnant`, puis dossard). Pour chaque base candidate,
-l'écran affiche :
+chevaux). Elles sont calculées sur la sélection **sans base** construite par 4.1 à
+la taille choisie : ce sont ses 3 chevaux de `top4` le plus élevé (égalité →
+`p_gagnant`, puis dossard), c'est-à-dire les chevaux que le modèle estime les plus
+probables dans les 4 premiers. Pour chaque base candidate, l'écran affiche :
 
 - `top4` du cheval, présenté comme une estimation (« estimé à X % d'être dans les
   4 premiers ») ;
-- le **coût économisé** en la prenant comme base, à taille et **formule de l'option
-  recommandée** ;
+- les **tickets économisés** en l'activant, formule par formule (différence du
+  nombre de tickets du système, à taille égale, avec et sans cette base en plus des
+  bases déjà actives) ;
 - la **couverture perdue** : `p_couverture(S, B) − p_couverture(S, B ∪ {base})`.
 
-La recommandation (4.3) retient de **0 à 3** de ces bases, dans l'ordre proposé.
-L'utilisateur peut **activer** (= imposer comme base) ou **désactiver** (= interdire
-comme base) chaque candidate ; tout changement relance le calcul (4.3, 6.4) sur
-l'appareil.
+L'utilisateur **active** (= impose comme base) ou **désactive** chaque candidate ;
+**aucune n'est active au premier affichage** — sans argent en jeu, activer
+une base ne fait que réduire le nombre de tickets au prix d'une couverture plus
+faible, ce que l'écran montre. Tout changement relance le calcul (4.1, 4.3, 6.4)
+sur l'appareil.
 
-### 4.3 Choix de la taille, des bases et de la formule sous budget (D5)
+### 4.3 Systèmes réduits de la sélection — toutes les formules, sans coût (D ter)
 
-Entrées : `budget_eur` (saisi par l'utilisateur, > 0), `multiplicateur` (saisi,
-1 à `MULTIPLICATEUR_MAX`, défaut 1), bases imposées / interdites, chevaux imposés
-éventuels. Le multiplicateur multiplie le coût **et** les gains ; à budget fixé, il
-réduit les options accessibles et peut donc changer la recommandation.
+Il n'y a plus de choix sous budget : le module ne choisit ni la taille, ni le
+nombre de bases, ni la formule. Pour la sélection `S` de 4.1 et les bases actives
+`B` (`b = |B|`), il renvoie **un système par formule** `k ∈ FORMULES` avec
+`k ≤ v`, tiré du catalogue (5.2), relabellé puis **vérifié** :
 
-1. Pour chaque `b ∈ {0, 1, 2, 3}` (bases = les `b` premières candidates de 4.2, ou
-   celles imposées), chaque `v ∈ [max(4, b+1) .. min(SELECTION_MAX, nb_partants_reels)]`
-   et chaque `k ∈ FORMULES` avec `k ≤ v` : construire `S` par 4.1, obtenir le
-   nombre de tickets `N` du système vérifié (section 5), et le coût
-   `N × MISE_UNITAIRE_EUR × multiplicateur`.
-2. Marquer `depasse_budget = true` toute option de coût > `budget_eur`. Ces options
-   ne sont **jamais supprimées** : elles restent consultables, signalées
-   « dépasse le budget ».
-3. **Recommandée** : parmi les options **dans le budget**, celle de `p_couverture`
-   maximale ; égalité → coût le plus bas, puis `k` le plus grand, puis `b` le plus
-   petit. Deux options dont les `p_couverture` diffèrent de moins de 1e-9 sont
-   considérées égales (mêmes règles de départage en Python et en Dart). Si aucune
-   option ne tient dans le budget, il n'y a pas de recommandée : avertissement
-   `budget_insuffisant` avec le coût du plus petit système, et verdict 6.4.
-4. **Alternatives** : jusqu'à 3 options affichées en plus (dans le budget), plus,
-   le cas échéant, l'option qui fonde un verdict `jouable_avec_budget` (marquée
-   « dépasse le budget ») — la meilleure avec un
-   autre nombre de bases, la meilleure avec une autre formule, et, **toujours**, la
-   moins chère à moins de 2 points de `p_couverture` de la recommandée. Chacune avec son coût,
-   son « prix du point de couverture » (coût / `p_couverture` en points) et sa
-   garantie.
+- nombre de tickets et de tickets physiques ;
+- garantie de couverture (« Multi en k ») ;
+- `p_couverture(S, B)` — identique pour toutes les formules, puisque chaque
+  système valide couvre les mêmes combinaisons ;
+- grilles en dossards et preuve du vérificateur.
+
+Les formules sont listées par `k` décroissant (le moins de tickets d'abord). Aucune
+n'est « recommandée » : le pronostic, c'est la sélection et ses bases ; les
+systèmes sont des façons de la couvrir. Une forme absente du catalogue est omise
+avec l'avertissement `systeme_absent_du_catalogue`. Aucun coût, aucun prix, aucun
+multiplicateur n'est calculé ni affiché.
 
 **Chevaux imposés** : l'utilisateur peut forcer l'inclusion de chevaux (ses
 convictions). Ils sont ajoutés à `S` avant l'étape 2 de 4.1 ; l'écran affiche
-le coût de ce choix en `p_couverture` (différence avec la recommandation libre).
+la perte de `p_couverture` due à ce choix (différence avec le pronostic libre à la
+même taille).
 
 **Sélection personnelle** : l'utilisateur peut aussi saisir sa propre sélection ;
 le modèle l'évalue (6.1) et propose les **1 à 2 échanges** qui augmentent le plus
 `p_couverture`.
 
-### 4.4 Ce que la recommandation ne fait pas
+### 4.4 Ce que le pronostic ne fait pas
 
-- Elle ne recommande **aucune mise** (D0) : le multiplicateur est une saisie.
-- Elle n'utilise **pas** l'indice de valeur (6.3) tant qu'il n'est pas calibré.
-- Elle n'utilise **aucune** donnée de presse ni de consensus.
+- Il ne parle **pas d'argent** : ni mise, ni budget, ni coût, ni gain, ni rapport.
+- Il ne choisit **pas** la taille de la sélection : c'est l'utilisateur.
+- Il n'utilise **aucun** indice de valeur (abandonné, annexe E).
+- Il n'utilise **aucune** donnée de presse ni de consensus.
 
 ### 4.5 Comparateurs (évaluation uniquement)
 
@@ -528,26 +566,26 @@ La littérature récente établit `C(12, 6, 4) = 41` (arXiv:2607.23766, 25 juill
 
 ### 5.4 Options de systèmes
 
-Pour une sélection `S`, des bases `B` et un multiplicateur `m ≤ 200` saisi par
-l'utilisateur, le module renvoie **toutes** les formules valides, pas une seule :
+Pour une sélection `S` et des bases `B`, le module renvoie **toutes** les formules
+valides (`k ≤ v`), pas une seule, sans aucun champ monétaire :
 
 | Champ | Sens |
 |---|---|
 | `k` | taille des tickets (4 = intégrale en combinaisons) |
 | `nb_tickets`, `nb_tickets_physiques` | `⌈nb_tickets / 4⌉` tickets physiques |
-| `cout_eur` | `nb_tickets × MISE_UNITAIRE_EUR × m` |
-| `garantie` | niveau garanti « Multi en k » + `coef_r7 = COEF_R7[k]` |
+| `garantie` | niveau garanti « Multi en k » |
 | `p_couverture` | probabilité de couverture (section 6) |
-| `prix_point_couverture` | `cout_eur / (100 × p_couverture)` |
-| `tickets_payants_moyens_si_couvert` | nombre moyen de tickets payants si couvert |
-| `r7_seuil_eur` | rapport R7 (en € par mise unitaire) nécessaire pour ne pas perdre, cas où le ticket garanti est le seul payant — **affichage obligatoire** (« pour ne pas perdre, il faut un rapport Multi en k d'au moins X € »), à côté du R7 historique médian ou de la mention « rapports réels inconnus » |
-| `tickets` | liste de listes de dossards |
+| `tickets` | grilles : liste de listes de dossards |
 | `preuve` | sortie du vérificateur |
 
-Texte d'UI pour `garantie` : « Si les 4 premiers sont dans votre sélection, au moins
-un ticket paie au moins le rapport Multi en **k**. »
+Texte d'UI pour `garantie` : « Si les 4 premiers sont dans votre sélection (bases
+comprises), au moins un ticket de **k** chevaux les contient tous les quatre. »
 
 ### 5.5 Ce que la réduction change — et ne change pas
+
+> Contexte théorique conservé de la v2. Depuis la v3, rien de financier n'est
+> calculé ni affiché ; la conclusion utile reste : **un système réduit ne rend pas
+> le pronostic meilleur**, il couvre la même sélection avec moins de tickets.
 
 Sous la règle de prix documentée (2), un ticket en `k` paie `R4(w) / C(k, 4)` pour
 chaque combinaison `w` qu'il contient, et coûte `MISE_UNITAIRE_EUR`. Donc, par
@@ -565,8 +603,8 @@ formule. Conséquences :
   une seule. Plusieurs systèmes optimaux de même taille existent souvent ; choisir
   celui (et le relabelling) qui place les recouvrements multiples sur les
   combinaisons les plus probables selon le modèle est un **levier sans coût de
-  taille**. **V1.5** (après la V1), puis le recouvrement pondéré par la valeur en
-  **V2** (section 12).
+  taille**. **V1.5** (après la V1, section 12). Le recouvrement pondéré par la
+  valeur est abandonné avec l'indice de valeur (annexe E).
 
 ### 5.6 Systèmes mixtes (tickets de 5 et de 6) — V2
 
@@ -575,7 +613,7 @@ Le document propose des systèmes mixtes (ex. 8 chevaux : 10 tickets de 5 + 3 de
 niveau de garantie (« toute combinaison couverte par un ticket de taille ≤ g ») et
 le générateur à plusieurs tailles de blocs.
 
-## 6. Évaluation, verdict et explications
+## 6. Évaluation, indice de confiance et explications
 
 ### 6.1 Probabilité de couverture et distribution du nombre de chevaux capturés
 
@@ -602,128 +640,126 @@ On note `X = |top4 ∩ S|`, le nombre des 4 premiers présents dans `S`.
 
 `H = −Σ_i p_gagnant_i · ln(p_gagnant_i)` sur le champ complet, normalisée par
 `ln(n)` → `H_norm ∈ [0, 1]` (0 : un seul cheval concentre tout ; 1 : course
-totalement ouverte). Affichée comme « course fermée / ouverte » et utilisée comme
-raison du verdict.
+totalement ouverte). Affichée comme « course fermée / ouverte » et utilisée par
+l'indice de confiance (6.4).
 
-### 6.3 Indice de valeur — **indicatif, hors verdict**
+### 6.3 Indice de valeur — **abandonné (v3)**
 
-Hypothèse : le rapport « Multi en 4 » d'une arrivée `w` est proche de la mise
-divisée par la probabilité que le **public** attribue à `w`, à la retenue près.
+Retiré du module avec toute notion d'argent (D ter) : il reposait sur les rapports
+Multi et sur une retenue inconnue. La définition de la v2 est conservée pour mémoire
+en **annexe E** ; rien n'en est calculé, journalisé ni affiché.
 
-```
-R4_proxy(w) = (1 − τ) · MISE_UNITAIRE_EUR / P_marche_ens(w)
-P_marche_ens : même énumération (6.1), appliquée aux probabilités implicites des cotes
-               du jour, overround retiré (backend 7.11).
-indice_valeur(S, tickets) = Σ_w  P_modele(w) · n(w) / (C(k,4) · N)  ·  1 / P_marche_ens(w)
-```
+### 6.4 Indice de confiance du pronostic (D ter — remplace le verdict de la v2)
 
-- `n(w)` = nombre de tickets contenant `w` ; `N` = nombre de tickets.
-- `τ` (retenue) est **inconnu** : **ne pas le coder en dur.** On affiche
-  `indice_valeur` seul (« 1,00 = équivalent au marché »), et on **estime `τ_eff`**
-  à partir des rapports réels journalisés (section 7).
-- Le public du Multi ne mise pas comme le public du gagnant : l'indicateur n'est
-  utile que **calibré** sur nos rapports réels. Libellé : « indice de valeur estimé
-  (hypothèse) ». **Il n'entre ni dans la recommandation ni dans le verdict** (D0,
-  4.4) tant que cette calibration n'est pas faite.
+L'indice qualifie le pronostic ; il ne dit **pas** de jouer ou de passer.
 
-### 6.4 Verdict par course (D3)
+Entrées :
 
-Entrées : la recommandation de 4.3 pour le budget saisi, `H_norm`, les seuils.
+- `p = p_couverture(S, B)` du pronostic (taille choisie, bases actives) ; sans base
+  active, c'est la probabilité que l'arrivée soit dans la sélection ;
+- `H_norm` (6.2) ;
+- la **fragilité des données** : proportion `f` des chevaux de `S` inédits ou à
+  historique court, et présence d'un favori fragile (meilleur `p_gagnant` avec
+  drapeau `historique_court`, `inedit` ou terrain inconnu majoritaire).
 
-| Verdict | Condition |
+Calcul, en trois temps :
+
+| Étape | Règle |
 |---|---|
-| `jouer` | la recommandation existe et `p_couverture ≥ seuil_couverture` |
-| `jouable_avec_budget` | `p_couverture < seuil_couverture` pour le budget saisi, mais une option atteint le seuil pour un budget ≤ `facteur_budget_max × budget_eur` → on affiche ce budget minimal |
-| `passer` | aucune des deux conditions, ou course non éligible (section 2) |
+| 1. Niveau de départ | `elevee` si `p ≥ seuil_confiance_elevee[v]` ; `moyenne` si `p ≥ seuil_confiance_moyenne[v]` ; sinon `faible` |
+| 2. Course ouverte | si `H_norm ≥ seuil_course_ouverte` : niveau abaissé d'un cran |
+| 3. Données fragiles | si `f ≥ seuil_donnees_fragiles` ou favori fragile : niveau abaissé d'un cran, avertissement fort |
 
-- **Le verdict informe, il ne décide pas du budget** : `jouable_avec_budget`
-  affiche le budget minimal et l'option correspondante (marquée « dépasse le
-  budget ») ; il ne remplace jamais le budget saisi, et la recommandée reste dans
-  le budget.
-- **Seuils** (`seuil_couverture`, `facteur_budget_max`) : paramètres réglables par
-  l'utilisateur dans les réglages, comme les autres paramètres du moteur (PRD
-  FR-20), persistés et réinitialisables. **Valeurs par défaut fixées par le
-  pilote** (8.4), affichées « provisoires » jusque-là.
-- **Raisons** (codes, D6) jointes à tout verdict : `p_couverture`, coût,
-  `r7_seuil_eur` face au R7 historique médian (ou « rapports réels inconnus »),
+Le niveau ne descend jamais sous `faible`. Libellés d'écran : « confiance élevée /
+moyenne / faible ».
+
+- **Seuils par taille.** `p_couverture` croît mécaniquement avec la taille : une
+  sélection de 18 chevaux sur 18 partants contient toujours l'arrivée. Les seuils
+  de probabilité sont donc donnés **par taille `v`** (une valeur pour chaque taille
+  de 4 à 20) ; sans cela, une grande sélection serait toujours en confiance
+  élevée. Le niveau est toujours affiché avec la taille.
+- **Seuils réglables** (`seuil_confiance_elevee`, `seuil_confiance_moyenne`,
+  `seuil_course_ouverte`, `seuil_donnees_fragiles`) : paramètres de l'utilisateur
+  dans les réglages, comme les autres paramètres du moteur (PRD FR-20), persistés
+  et réinitialisables. **Valeurs par défaut fixées par le pilote** (8.4), affichées
+  « provisoires » jusque-là.
+- **Raisons** (codes, D6) jointes à tout indice : `p_couverture` et taille,
   `H_norm` (« course ouverte »), nombre de chevaux à historique court ou inédits
-  dans la sélection (« données fragiles »), partants non analysés, favoris fragiles
-  (meilleur `p_gagnant` avec drapeau `historique_court`, `inedit` ou terrain inconnu
-  majoritaire). Au-delà d'une proportion réglable (`seuil_donnees_fragiles`) de
-  chevaux inédits ou à historique court, un avertissement fort est ajouté.
-- **Budget insuffisant** : sans option dans le budget, le verdict est
-  `jouable_avec_budget` si une option atteint `seuil_couverture` sous
-  `facteur_budget_max × budget_eur`, sinon `passer`.
+  dans la sélection (« données fragiles »), partants non analysés, favori fragile.
+- **Course non éligible** (section 2) : pas d'indice ; en mode exploration, l'indice
+  est calculé avec la mention « course non support du Multi ».
 - **Garde-fou** (PRD SM-C3) : on ne règle jamais les seuils pour produire plus de
-  verdicts `jouer`. Seule la calibration de `p_couverture` (8.2, PRD SM-4), qui fonde
-  le verdict, juge.
+  « confiance élevée ». Seule la calibration de `p_couverture` (8.2, PRD SM-4), qui
+  fonde l'indice, juge.
 
 ### 6.5 Explications (le « pourquoi »)
 
-Chaque élément de la recommandation porte ses explications (`Explication(code,
-params)`, rendues en FR ou EN) :
+Chaque élément du pronostic porte ses explications (`Explication(code, params)`,
+rendues en FR, puis EN après le MVP) :
 
 | Élément | Exemples de codes | Paramètres |
 |---|---|---|
-| Cheval retenu | `retenu_top4`, `retenu_par_echange` | `top4`, rang modèle, gain de `p_couverture` |
+| Cheval retenu | `retenu_top4`, `retenu_par_echange` | `top4`, rang modèle, hausse de `p_couverture` |
 | Cheval écarté (les 3 plus proches de la sélection) | `ecarte_top4_faible`, `ecarte_donnees_fragiles` | `top4`, drapeaux de transparence |
-| Cheval retenu sous-coté / sur-coté | `value_positive`, `value_negative` | `value`, cote |
-| Base candidate | `base_candidate` | `top4`, coût économisé, couverture perdue |
-| Choix du système | `systeme_retenu` | `k`, `nb_tickets`, `cout_eur`, prix du point |
+| Base candidate | `base_candidate` | `top4`, tickets économisés par formule, couverture perdue |
+| Système d'une formule | `systeme_formule` | `k`, `nb_tickets`, `nb_tickets_physiques` |
 | Contribution d'un cheval | `contribution` | baisse de `p_couverture` si on le retire |
-| Verdict | voir 6.4 | — |
+| Indice de confiance | voir 6.4 (`couverture`, `course_ouverte`, `donnees_fragiles`, `favori_fragile`, …) | — |
 | Données | `cote_manquante`, `cotes_du`, `allocation_manquante` | heure des cotes, dossard |
 
 La **contribution** de chaque cheval de la sélection (baisse de `p_couverture` s'il
-est retiré) est calculée et affichée : elle montre quels chevaux « portent » la
-recommandation. Une **carte de couverture** (combinaisons couvertes 1×, 2×, 3×)
-est disponible pour le système retenu.
+est retiré) est calculée et affichée : elle montre quels chevaux « portent » le
+pronostic. Une **carte de couverture** (combinaisons couvertes 1×, 2×, 3×) est
+disponible pour chaque système.
 
 ### 6.6 Simulation de non-partant
 
 Pour chaque cheval de la sélection : ce que devient chaque ticket s'il est déclaré
 non-partant (requalification, section 2), et la nouvelle `p_couverture`. En cas de
-non-partant réel de dernière minute, la recommandation est **recalculée sur
+non-partant réel de dernière minute, le pronostic est **recalculé sur
 l'appareil** et l'écran indique ce qui change.
 
 ### 6.7 Sorties de l'évaluation
 
-Verdict et raisons ; recommandation (sélection, bases, système) ; alternatives ;
-`p_couverture` ; distribution de `X` (0 à 4) ; `H_norm` ; contributions ;
-`indice_valeur` (hypothèse) ; pour chaque option : coût, prix du point,
-`r7_seuil_eur`, `tickets_payants_moyens_si_couvert`. Pour contexte : **rapport R7
-observé** (médiane et quartiles sur l'historique des courses support en base) quand
-≥ 30 courses sont disponibles.
+Taille ; indice de confiance (niveau, raisons, seuils provisoires ou non) ;
+pronostic (sélection, bases candidates et bases actives) ; `p_couverture` ;
+distribution de `X` (chevaux capturés, 0 à 4) ; `H_norm` ; contributions ; chevaux
+écartés ; pour chaque formule : nombre de tickets, tickets physiques, garantie,
+grilles et preuve. Aucun montant, aucun rapport.
 
 ## 7. Données, schéma et journalisation
 
 Nouvelles tables (SQLAlchemy, mêmes conventions que 6.3, accès uniquement via
 `data/repository.py`, un seul écrivain par table, migrations **Alembic** — spine
 AD-10, AD-13). Une course est identifiée par sa clé PMU (date, réunion, course) ;
-toute heure est en UTC avec décalage (spine AD-12) :
+toute heure est en UTC avec décalage (spine AD-12). Les noms techniques
+`recommandation_multi`, `resultat_recommandation`, `recommandation_consultee` et la
+route `/multi/recommandation` sont conservés ; ils désignent le pronostic. Seule la
+table locale du pronostic retenu est renommée (`pronostic_retenu`) :
 
 ```
 multi_course                        -- écrivain : job d'ingestion/finalisation
   course_id (FK, unique), est_course_support (bool), nb_partants_declares,
-  rapport_en4, rapport_en5, rapport_en6, rapport_en7   (NULLABLE, en centimes pour 3 €)
-  arrivee_json  (top-5 avec ex-aequo), source_rapports, finalisee
+  arrivee_json  (top-5 avec ex-aequo, NULLABLE tant que non finalisée), finalisee
+  -- v3 : plus de colonnes de rapports (ni rapport_en4..en7, ni source_rapports)
 
-recommandation_multi                -- une ligne par sélection journalisée (modèle ou comparateur) ; écrivain : job de journalisation
+recommandation_multi                -- une ligne par pronostic journalisé (modèle ou comparateur) ; écrivain : job de journalisation
   id, course_id (FK), strategie, version_strategie, parametres_json,
   donnees_a (timestamp UTC : instant des données utilisées — AVANT le départ),
   selection_json (choix ordonnés avec rôle et explications), bases_json, taille,
-  verdict (NULLABLE : seulement pour "modele"), budget_eur (NULLABLE),
+  confiance (NULLABLE : "elevee" | "moyenne" | "faible", seulement pour "modele"),
+  seuils_provisoires (bool),
   empreinte_entrees (sha256 des entrées), version_catalogue, empreinte_regles,
   version_moteur_multi (fixtures/multi_versions.json), mode ("live" | "backfill"),
   degrade (bool), cree_le
-  UNIQUE (course_id, strategie, version_strategie, mode, budget_eur)
+  UNIQUE (course_id, strategie, version_strategie, mode, taille)   -- taille = une des tailles de référence
 
 echec_journal_multi                 -- écrivain : job de journalisation
   id, course_id (FK), raison, survenu_le
 
 resultat_recommandation             -- rempli à la finalisation de la course ; écrivain : job de finalisation
-  recommandation_id (FK, unique), nb_captures (0..4), couverte (bool),
-  couts_json, gains_json               -- par k, avec règles de la section 2
+  recommandation_id (FK, unique), nb_captures (0..4),
+  arrivee_dans_selection (bool)        -- selon la section 2 (ex-aequo, arrivée dégradée) ; aucun coût ni gain
 
 performance_strategie               -- écrivain : commande d'import du backtest
   id, strategie, version_strategie, periode_debut, periode_fin, effectif,
@@ -738,12 +774,13 @@ performance_strategie               -- écrivain : commande d'import du backtest
   les données **antérieures** à `donnees_a` (historique du cheval jusqu'à la veille
   de la course, cotes finales seulement si le mode les déclare disponibles). Un test
   automatique le vérifie (9, test 14).
-- **Ingestion des rapports** : idempotente ; `NULL` tant que la course n'est pas
-  finalisée (PRD FR-17) ; ne jamais inventer un rapport. Les appels supplémentaires
-  à la source PMU entrent dans le même arbitrage de fréquence que l'ingestion
-  quotidienne (PRD §9.3, question ouverte 6).
+- **Ingestion de l'arrivée** : idempotente ; `NULL` tant que la course n'est pas
+  finalisée (PRD FR-17) ; ne jamais inventer une arrivée. Les **rapports Multi ne
+  sont pas ingérés** (v3). Les appels supplémentaires à la source PMU entrent dans
+  le même arbitrage de fréquence que l'ingestion quotidienne (PRD §9.3, question
+  ouverte 6).
 - Mode `live` : le job quotidien journalise, pour la course support, la
-  recommandation `modele` (à des budgets de référence fixés au pilote) et les
+  pronostic `modele` (aux **tailles de référence** fixées au pilote) et les
   comparateurs `M1`, `B0`, `B1`, **avant** le départ. Il ne démarre qu'**après** le
   pilote (8.4). Un échec (source indisponible, course support introuvable, départ
   décalé) est journalisé comme tel (`non_journalise`, raison) et la course est
@@ -755,15 +792,17 @@ performance_strategie               -- écrivain : commande d'import du backtest
   rapport d'évaluation. L'heure des cotes du comparateur `B1` est alignée sur celle
   du modèle, ou l'écart est déclaré.
 - **Sur l'appareil** (V1 mono-utilisateur, sans compte, rien n'est envoyé au
-  serveur) : l'action **« Je retiens ce jeu »** (une par course, remplaçable jusqu'à
-  l'heure de départ, figée ensuite) enregistre dans le cache local la
-  recommandation du modèle **et** le jeu retenu, recommandé ou modifié (bases,
-  système, heure des données). L'export des grilles propose de retenir le jeu sans
-  le faire à la place de l'utilisateur. Après finalisation de la course, le
-  **débrief** affiche pour les deux le nombre de chevaux capturés et si la sélection
-  contenait une arrivée payable (oui / non), selon les règles du pari (ex-aequo,
-  arrivée dégradée) ; une correction de l'arrivée après finalisation met le débrief
-  à jour avec une mention. Sans embellissement.
+  serveur) : l'action **« Je retiens ce pronostic »** (une par course, remplaçable
+  jusqu'à l'heure de départ, figée ensuite) enregistre dans le cache local
+  (table `pronostic_retenu`, ex-`jeu_retenu`, et `recommandation_consultee`) le
+  pronostic du modèle **et** le pronostic retenu, tel quel ou modifié (taille,
+  sélection, bases actives, formule consultée, heure des données), conservés
+  **90 jours**. L'export des grilles propose de retenir le pronostic sans le faire
+  à la place de l'utilisateur. Après finalisation de la course, le **débrief**
+  affiche pour les deux « N chevaux capturés sur 4 » et « arrivée dans la
+  sélection : oui / non », selon les règles du pari (ex-aequo, arrivée dégradée) ;
+  une correction de l'arrivée après finalisation met le débrief à jour avec une
+  mention. Sans embellissement, sans aucun montant.
 
 ## 8. Protocole d'évaluation
 
@@ -779,8 +818,8 @@ performance_strategie               -- écrivain : commande d'import du backtest
 
 **Courses utilisables pour la couverture** : toute course avec ≥ 14 partants (pas
 seulement la course support) → des dizaines de milliers de courses en historique.
-Les **rapports Multi** n'existent que pour les courses support (~365 par an) : le
-volet financier s'accumule beaucoup plus lentement que le volet « capture ».
+Seule l'arrivée (avec ex-aequo) est nécessaire ; il n'y a plus de volet financier
+(v3).
 
 ### 8.2 Métriques
 
@@ -789,18 +828,19 @@ volet financier s'accumule beaucoup plus lentement que le volet « capture ».
   probabilités implicites du marché.
 - **Capture** : `nb_captures` moyen (0 à 4) par stratégie, **différence appariée par
   course** contre `B1`, intervalle de confiance bootstrap 95 %, à taille égale.
-- `couverte` (4/4) en proportion, intervalle de Wilson, comparée à la loi
-  hypergéométrique attendue pour une sélection aléatoire de même taille.
-- **Financière (directionnelle uniquement)** : retour par euro sur les courses
-  support avec rapports réels, **toujours accompagné du nombre de courses**
-  (PRD SM-2).
+- `arrivee_dans_selection` (4/4) en proportion, intervalle de Wilson, comparée à
+  la loi hypergéométrique attendue pour une sélection aléatoire de même taille.
+- **Indice de confiance** : proportion d'arrivées dans la sélection par niveau
+  (élevée / moyenne / faible) et par taille ; les niveaux doivent être ordonnés
+  (élevée > moyenne > faible), sinon les seuils sont revus au pilote suivant, jamais
+  pendant la période de test.
 - **Ablation** : `modele` sans l'étape d'échanges (tri par `top4` seul) vs `modele`
   complet — dit si l'optimisation exacte apporte quelque chose.
 
 ### 8.3 Règle de décision (aucun seuil d'effet inventé)
 
 Le libellé « hypothèse non validée » d'un comparateur, et la mention « modèle en
-cours d'évaluation » de la recommandation, ne sont levés que si, sur la **période de
+cours d'évaluation » du pronostic, ne sont levés que si, sur la **période de
 test gelée**, l'intervalle de confiance à 95 % concerné **exclut 0** du bon côté.
 Taille minimale : à fixer **après** le pilote qui mesure la variance.
 
@@ -818,15 +858,16 @@ Taille minimale : à fixer **après** le pilote qui mesure la variance.
 
 Avant toute période de test : un pilote en mode `backfill` sur une période de
 développement, pour (1) mesurer la variance et fixer la taille d'échantillon,
-(2) fixer les **valeurs par défaut** de `seuil_couverture` et `facteur_budget_max`
-(6.4), `seuil_donnees_fragiles`, les budgets de référence de la journalisation
-`live` et l'effectif minimal au-delà duquel les performances des comparateurs
+(2) fixer les **valeurs par défaut** des seuils de l'indice de confiance (6.4 :
+`seuil_confiance_elevee[v]` et `seuil_confiance_moyenne[v]` par taille,
+`seuil_course_ouverte`, `seuil_donnees_fragiles`), les **tailles de référence**
+de la journalisation `live` et l'effectif minimal au-delà duquel les performances des comparateurs
 s'affichent (toujours avec effectif et intervalle). Ces valeurs sont alors gelées
 pour la période de test, dans `fixtures/multi_parametres_pilote.json` (lu par les deux
 moteurs et le job de journalisation — spine AD-11). Le harnais tourne d'abord sur la
 machine de développement, sur une copie de la base ; ses résultats sont exportés
-puis importés en production (`performance_strategie`). **Ordre imposé** : backtest et pilote → seuils et budgets
-de référence → journalisation `live`. Le pilote ne dépend pas de la journalisation
+puis importés en production (`performance_strategie`). **Ordre imposé** : backtest
+et pilote → seuils et tailles de référence → journalisation `live`. Le pilote ne dépend pas de la journalisation
 `live`.
 
 **Cotes manquantes** : `B1` et la référence marché de SM-4 ne sont pas calculés pour
@@ -835,15 +876,16 @@ est comptée dans le rapport.
 
 ## 9. Tests (à porter avec le module)
 
-Tous les tests de `regles`, des stratégies et de la recommandation sont purs (sans
+Tous les tests de `regles`, des stratégies et du pronostic sont purs (sans
 réseau ni base). Les cas à entrée/sortie fixes vivent dans
 **`fixtures/multi_cases.json`**, chargé par les tests Python **et** Dart (AD-2) ;
 tolérance 1e-9 sur les probabilités.
 
-1. **Rapports** : `COEF_R7 == {4: 35, 5: 7, 6: 7/3, 7: 1}` ; les 4 jeux de rapports
-   de l'annexe B vérifient `r4/r7 == 35`, `r5/r7 == 7`, `r6/r7 == 7/3` à 1e-3.
+1. **Cohérence du fichier de règles** : `COEF_R7 == {4: 35, 5: 7, 6: 7/3, 7: 1}` ;
+   les 4 jeux de rapports de l'annexe B vérifient `r4/r7 == 35`, `r5/r7 == 7`,
+   `r6/r7 == 7/3` à 1e-3 (contrôle du document ; rien de monétaire n'est exposé).
 2. **Formule intégrale** : `C(n,4)` pour n = 4..19 → 1, 5, 15, 35, 70, 126, 210,
-   330, 495, 715, 1001, 1365, 1820, 2380, 3060, 3876 ; coût = `× 3 €`.
+   330, 495, 715, 1001, 1365, 1820, 2380, 3060, 3876 tickets.
 3. **Non-partants** : toute la table de requalification de la section 2.
 4. **Dead-heat** : ex-aequo 4ᵉ → 2 combinaisons payables, 1 rapport ; ticket qui
    contient les deux → 2 × rapport.
@@ -860,25 +902,33 @@ tolérance 1e-9 sur les probabilités.
 8. **Probabilités** : `Σ_A P_ens(A) = 1` ; `E[X] = Σ top4_i` ; forces égales →
    loi hypergéométrique à 1e-9 ; les partants virtuels entrent dans le champ mais
    jamais dans une sélection.
-9. **Recommandation — optimalité** : sur des champs de ≤ 10 chevaux, la sélection de
+9. **Pronostic — optimalité** : sur des champs de ≤ 10 chevaux, la sélection de
    4.1 a la même `p_couverture` que l'optimum obtenu par énumération exhaustive ;
    au moins un cas où le tri par `top4` seul n'est pas optimal et où l'étape
    d'échanges le corrige.
-10. **Recommandation — budget** : coût de l'option recommandée ≤ budget ; `p_couverture`
-    recommandée non décroissante quand le budget augmente ; budget insuffisant pour
-    la plus petite option → verdict `passer` ou `jouable_avec_budget` avec le budget
-    minimal correct.
+10. **Taille et systèmes** : la sélection compte exactement `v` chevaux pour
+    chaque `v` de 4 à `min(20, nb_partants_reels)` ; `v < 4`, `v > 20` ou
+    `v > nb_partants_reels` → erreur explicite ; `p_couverture` du pronostic non
+    décroissante quand `v` augmente ; taille par défaut = dernière utilisée, sinon
+    10 ; un système vérifié est listé pour chaque formule `k ≤ v` présente au
+    catalogue, avec la même `p_couverture` ; aucune clé monétaire (`cout`, `budget`,
+    `multiplicateur`, `mise`, `gain`, `rapport`, `prix`) dans les sorties du moteur
+    ni de l'API.
 11. **Bases** : toujours 3 candidates (si la sélection a ≥ 3 chevaux), ordonnées par
-    `top4` ; couverture perdue ≥ 0 ; coût économisé ≥ 0.
-12. **Verdict** : chaque branche de 6.4 atteinte par un cas de fixture ; toute
-    sortie porte au moins une raison.
+    `top4` ; aucune active par défaut ; couverture perdue ≥ 0 ; tickets économisés
+    ≥ 0 pour chaque formule.
+12. **Indice de confiance** : chaque niveau (élevée, moyenne, faible) et chaque
+    abaissement (course ouverte, données fragiles, favori fragile) atteint par un
+    cas de fixture ; le niveau ne descend jamais sous `faible` ; seuils lus par
+    taille ; course non éligible → pas d'indice ; toute sortie porte au moins une
+    raison et l'état « provisoire » des seuils.
 13. **M1 — exemples** : annexe B.1 et B.3 réconciliée, sélection attendue exacte par
     créneau ; B.3 brute → écart détecté.
 14. **Absence de fuite** : une recommandation `backfill` dont `donnees_a` précède la
     course ne change pas si l'on supprime de la base toute donnée postérieure.
-15. **Déterminisme** : `selectionner` et la recommandation appelées 2 fois →
-    résultat identique (y compris `B0`, côté backend) ; Python et Dart donnent la même
-    recommandation sur les cas partagés (probabilités quantifiées à 1e-9).
+15. **Déterminisme** : `selectionner` et le pronostic appelés 2 fois →
+    résultat identique (y compris `B0`, côté backend) ; Python et Dart donnent le même
+    pronostic et le même indice de confiance sur les cas partagés (probabilités quantifiées à 1e-9).
 16. **Langue** : aucune chaîne de libellé dans les sorties du moteur et de l'API ;
     chaque code d'explication a un libellé français dans le catalogue de l'app
     (l'anglais s'y ajoutera après le MVP sans modifier le moteur).
@@ -888,90 +938,114 @@ tolérance 1e-9 sur les probabilités.
 | Méthode | Route | Rôle |
 |---|---|---|
 | GET | `/courses/{id}/multi/eligibilite` | course support ? nb de partants, non-partants |
-| POST | `/multi/recommandation` | **la recommandation** : verdict, sélection, bases candidates, système, alternatives, explications |
-| POST | `/multi/systemes` | sélection + bases + multiplicateur → options de systèmes vérifiés (5.4) |
+| POST | `/multi/recommandation` | **le pronostic** à la taille demandée : indice de confiance, sélection, bases candidates, systèmes de toutes les formules, explications |
+| POST | `/multi/systemes` | sélection + bases → systèmes vérifiés de toutes les formules (5.4) |
 | POST | `/multi/verifier` | système saisi par l'utilisateur → preuve de couverture, système plus petit éventuel |
 | POST | `/multi/evaluer` | sélection quelconque (dont celle de l'utilisateur) → `p_couverture`, distribution de `X`, contributions, échanges suggérés |
 | POST | `/multi/comparateur` | applique `M1` / `B0` / `B1` → choix + explications, libellé « hypothèse non validée » |
 | GET | `/multi/performance` | métriques par stratégie (8.2), filtrables par période |
 | POST | `/multi/backtest` | lance un backtest — **construit seulement quand le harnais passe sur un serveur** ; d'ici là, le harnais tourne sur la machine de développement (8.4) |
 
+Aucune route ne reçoit ni ne renvoie de champ monétaire (budget, multiplicateur,
+coût, mise, gain, rapport, prix).
+
 **`POST /multi/recommandation`**
 
 ```json
 { "course_id": "20261016-R1-C5",
-  "budget_eur": 35,
-  "multiplicateur": 1,
-  "bases_imposees": [],
+  "taille": 12,
+  "bases_actives": [11],
   "chevaux_imposes": [],
-  "seuils": { "seuil_couverture": null, "facteur_budget_max": null } }
+  "seuils": { "seuil_confiance_elevee": null, "seuil_confiance_moyenne": null,
+              "seuil_course_ouverte": null, "seuil_donnees_fragiles": null } }
 ```
 
-(`seuils` à `null` → valeurs par défaut en vigueur. Comme `/analyse`, le corps
-accepte aussi une liste de chevaux saisis à la place de `course_id`.)
+(`taille` obligatoire, de 4 à 20 ; l'application envoie la dernière taille utilisée,
+sinon 10. `seuils` à `null` → valeurs par défaut en vigueur pour cette taille.
+Comme `/analyse`, le corps accepte aussi une liste de chevaux saisis à la place de
+`course_id`.)
 
 ```json
-{ "verdict": "jouer",
-  "raisons": [ {"code": "couverture", "params": {"p_couverture": 0.31}},
-               {"code": "course_ouverte", "params": {"h_norm": 0.82}} ],
-  "recommandee": {
+{ "taille": 12,
+  "confiance": {
+    "niveau": "moyenne",
+    "raisons": [ {"code": "couverture", "params": {"p_couverture": 0.31, "taille": 12}},
+                 {"code": "course_ouverte", "params": {"h_norm": 0.82}} ] },
+  "pronostic": {
     "selection": [
       { "num": 11, "role": "base",
         "explications": [{"code": "base_candidate", "params": {"top4": 0.78}}] },
       { "num": 2, "role": "selection",
-        "explications": [{"code": "retenu_top4", "params": {"top4": 0.41, "rang_modele": 3}},
-                         {"code": "value_positive", "params": {"value": 0.12, "cote": 6.5}}] } ],
-    "k": 7, "nb_tickets": 11, "nb_tickets_physiques": 3, "cout_eur": 33.0,
-    "p_couverture": 0.31, "prix_point_couverture": 1.06, "garantie": "multi_en_7",
-    "tickets": [[11, 2, 5, 8, 14, 17, 3], "…"],
-    "preuve": { "nb_requis": 165, "nb_non_couverts": 0 } },
+        "explications": [{"code": "retenu_top4", "params": {"top4": 0.41, "rang_modele": 3}}] } ],
+    "p_couverture": 0.31,
+    "distribution_captures": [0.01, 0.06, 0.21, 0.41, 0.31],
+    "h_norm": 0.82 },
   "bases_candidates": [
-    { "num": 11, "top4": 0.78, "cout_economise_eur": 9.0, "couverture_perdue": 0.04, "retenue": true },
-    { "num": 2,  "top4": 0.41, "cout_economise_eur": 6.0, "couverture_perdue": 0.11, "retenue": false },
-    { "num": 5,  "top4": 0.37, "cout_economise_eur": 6.0, "couverture_perdue": 0.13, "retenue": false } ],
-  "alternatives": [ "…" ],
+    { "num": 11, "top4": 0.78, "active": true,
+      "tickets_economises": {"4": 330, "5": 66, "6": 20, "7": 16}, "couverture_perdue": 0.04 },
+    { "num": 2,  "top4": 0.41, "active": false,
+      "tickets_economises": {"4": 120, "5": 30, "6": 12, "7": 4}, "couverture_perdue": 0.11 },
+    { "num": 5,  "top4": 0.37, "active": false,
+      "tickets_economises": {"4": 120, "5": 30, "6": 12, "7": 4}, "couverture_perdue": 0.13 } ],
+  "systemes": [
+    { "k": 7, "nb_tickets": 11, "nb_tickets_physiques": 3, "garantie": "multi_en_7",
+      "p_couverture": 0.31, "tickets": [[11, 2, 5, 8, 14, 17, 3], "…"],
+      "preuve": { "nb_requis": 165, "nb_non_couverts": 0 } },
+    { "k": 6, "nb_tickets": 22, "nb_tickets_physiques": 6, "garantie": "multi_en_6", "…": "…" },
+    { "k": 5, "nb_tickets": 47, "nb_tickets_physiques": 12, "garantie": "multi_en_5", "…": "…" },
+    { "k": 4, "nb_tickets": 165, "nb_tickets_physiques": 42, "garantie": "multi_en_4", "…": "…" } ],
   "ecartes": [ { "num": 9, "explications": [{"code": "ecarte_top4_faible", "params": {"top4": 0.06}}] } ],
   "statut_modele": "en_cours_d_evaluation",
   "seuils_provisoires": true }
 ```
 
-Les valeurs ci-dessus sont **illustratives** (format), pas des résultats. Le système
-montré est cohérent avec l'annexe A : 1 base + 11 autres chevaux (v = 12), tickets de
-7 → 11 tickets, `C(11, 3) = 165` combinaisons requises.
+Les valeurs ci-dessus sont **illustratives** (format), pas des résultats. Les
+systèmes montrés reprennent les tailles de l'annexe A (le catalogue peut faire
+mieux) : 1 base active + 11 autres chevaux (v = 12) → 11 tickets de 7, 22 de 6,
+47 de 5, `C(11, 3) = 165` de 4 ; `C(11, 3) = 165` combinaisons requises dans tous
+les cas. Les tickets économisés comparent, à v = 12, la sélection sans base (27, 42,
+113, 495 tickets) à 1 base pour la base active, et 1 base à 2 bases (7, 10, 17,
+45 tickets) pour les candidates inactives.
 
-**Erreurs** : `422` si `bases ⊄ selection`, `|bases| > 3`, `|selection| > 20`,
-`multiplicateur > 200`, dossard inconnu, `k < 4`, `k > 7`, `budget_eur ≤ 0`.
-Réponses typées par schéma Pydantic (AD-4), jamais `__dict__`.
+**Erreurs** : `422` si `taille < 4`, `taille > 20` ou `taille > nb_partants_reels`,
+`bases ⊄ selection`, `|bases| > 3`, `|selection| > 20`, dossard inconnu, `k < 4`,
+`k > 7`. Réponses typées par schéma Pydantic (AD-4), jamais `__dict__`.
 
 ## 11. Application mobile (compléments à la section 7 du cahier mobile)
 
 ### 11.1 Écran « Multi » (accessible depuis une course éligible)
 
-Un seul écran, de haut en bas :
+Un seul écran, de haut en bas, sans aucun montant :
 
-1. **Budget** : saisie en € (le multiplicateur est un réglage secondaire, défaut 1).
-   Toute modification relance le calcul sur l'appareil.
-2. **Verdict** : `jouer` / `jouable avec un budget de X €` / `passer`, avec ses
-   raisons. Mention « seuils provisoires » tant que le pilote n'a pas fixé les
-   valeurs par défaut, et « modèle en cours d'évaluation » tant que la section 8 ne
-   conclut pas.
-3. **Sélection recommandée** : chaque cheval avec son dossard, sa probabilité d'être
-   dans les 4, sa contribution, sa value (si cote connue) et ses explications ;
-   les 3 chevaux écartés les plus proches, avec la raison.
-4. **Bases** : les 3 bases candidates proposées par le modèle, chacune avec coût
-   économisé et couverture perdue, activables/désactivables.
-5. **Système** : l'option recommandée (formule, nombre de tickets et de tickets
-   physiques, coût, prix du point de couverture, garantie) et ses alternatives ;
-   les grilles **en dossards** ; export texte copiable (PRD FR-21) ; carte de
-   couverture.
-6. **Mes choix** : imposer des chevaux, **marquer un non-partant** (hors ligne
+1. **Taille de la sélection** : sélecteur de 4 à 20 (borné au nombre de partants
+   réels), par défaut la dernière taille utilisée, sinon 10. Toute modification
+   relance le calcul sur l'appareil et mémorise la taille.
+2. **Indice de confiance** : « confiance élevée / moyenne / faible » pour cette
+   taille, avec ses raisons. Mention « seuils provisoires » tant que le pilote n'a
+   pas fixé les valeurs par défaut, et « modèle en cours d'évaluation » tant que la
+   section 8 ne conclut pas.
+3. **Sélection** : chaque cheval avec son dossard, sa probabilité d'être dans les
+   4, sa contribution et ses explications (aucun badge de value : la value reste
+   sur l'écran Résultats) ; les 3
+   chevaux écartés les plus proches, avec la raison.
+4. **Bases (chevaux les plus probables)** : les 3 bases candidates proposées par le modèle,
+   chacune avec sa probabilité d'être dans les 4, les tickets économisés et la
+   couverture perdue, activables/désactivables (aucune active au premier affichage).
+5. **Systèmes et grilles** : pour la sélection et ses bases actives, toutes les
+   formules (tickets de 7 à 4) avec nombre de tickets, tickets physiques et
+   garantie ; formule affichée par défaut : Multi en 7 ; les grilles **en dossards** ; export texte copiable (PRD FR-21) ;
+   carte de couverture.
+6. **Évaluation** : probabilité que l'arrivée soit dans la sélection
+   (`p_couverture`), distribution du nombre de chevaux capturés (0 à 4), course
+   ouverte / fermée.
+7. **Mes choix** : imposer des chevaux, **marquer un non-partant** (hors ligne
    compris), saisir sa propre sélection (évaluée, avec échanges suggérés), ou
-   saisir un système trouvé ailleurs (vérifié) ; bouton **« Je retiens ce jeu »**.
-   Après un non-partant, l'écran montre à part ce que deviennent les tickets du jeu
-   déjà retenu (requalification).
-7. **Autres méthodes** (repliée par défaut) : M1, B1 — « hypothèses non validées »,
+   saisir un système trouvé ailleurs (vérifié) ; bouton **« Je retiens ce
+   pronostic »**. Après un non-partant, l'écran montre à part ce que deviennent les
+   tickets du pronostic déjà retenu (requalification).
+8. **Autres méthodes** (repliée par défaut) : M1, B1 — « hypothèses non validées »,
    avec leurs performances mesurées dès qu'il y en a.
-8. **Mentions obligatoires** : « Couverture garantie — pas un gain garanti » ;
+9. **Mentions obligatoires** : « Couverture garantie — pas un gain garanti » ;
    « L'outil ne place aucun pari » ; rappel de jeu responsable (PRD §5).
 
 ### 11.2 Langue (D6)
@@ -985,18 +1059,20 @@ traduction de Flutter quand l'anglais arrivera, sans reprendre le moteur.
 
 ### 11.3 Hors ligne (hippodrome)
 
-La recommandation complète (4.1-4.3), `p_couverture`, le verdict, les explications,
+Le pronostic complet (4.1-4.3), `p_couverture`, l'indice de confiance, les explications,
 le vérificateur et les règles sont des **fonctions pures portées en Dart**
 (`mobile/lib/engine/multi/`), à parité avec Python par `fixtures/multi_cases.json`.
 Le générateur ne tourne pas sur l'appareil : l'app embarque la copie
 `mobile/assets/multi_catalogue.json` du catalogue de référence (5.2), pour
 `v' ≤ 20`, `k' ∈ [1, 7]`, `t' ∈ [1, 4]`, chaque entrée **vérifiée**. L'application
-relabelle et revérifie localement. Elle calcule **toujours** la recommandation
-elle-même, avec le contexte Multi de la course (éligibilité, R7 médian, état de
-l'évaluation, seuils provisoires) reçu du backend avec les partants et mis en
-cache ; elle n'appelle pas `/multi/recommandation`. Le jeu retenu et la
-recommandation consultée sont stockés dans `hippique_cache.db` (version 2, tables
-`jeu_retenu` et `recommandation_consultee`) et conservés **90 jours** (spine AD-6, AD-9). Si une
+relabelle et revérifie localement. Elle calcule **toujours** le pronostic
+elle-même, avec le contexte Multi de la course (éligibilité, état de l'évaluation,
+seuils provisoires ou non) reçu du backend avec les partants et mis en cache ; elle
+n'appelle pas `/multi/recommandation`. Le pronostic retenu et le pronostic du modèle
+consulté sont stockés dans `hippique_cache.db` (version 2, tables
+`pronostic_retenu` et `recommandation_consultee`) et conservés **90 jours** ; la
+dernière taille utilisée et les seuils de l'indice sont des réglages
+(`shared_preferences`) (spine AD-6, AD-9). Si une
 combinaison manque au catalogue, elle est exclue des options (et non calculée à la
 volée), avec l'avertissement `systeme_absent_du_catalogue`.
 
@@ -1004,16 +1080,18 @@ volée), avec l'avertissement `systeme_absent_du_catalogue`.
 
 | # | Sujet | Statut |
 |---|---|---|
-| 1 | Prix unitaire, jours de Quinté+, seuil de 14 partants, rapports minimums, règle des non-partants : le document date de 2001-2002 | **Vérifier sur pmu.fr avant de figer `regles.py`** |
+| 1 | Formules, jours de Quinté+, seuil de 14 partants, règle des non-partants, arrivée dégradée (prix unitaire et rapports : non affichés) : le document date de 2001-2002 | **Vérifier sur pmu.fr avant de figer `regles.py`** |
 | 2 | Mécanique du **Flexi** absente du document | À documenter depuis la règle PMU actuelle ; hors V1 |
-| 3 | Endpoint des rapports définitifs Multi et champ « course support » | À découvrir dans `pmu_client.py` |
+| 3 | Champ « course support » et arrivée avec ex-aequo dans la source PMU (les rapports Multi ne sont plus nécessaires) | À découvrir dans `pmu_client.py` |
 | 4 | Source des **cotes historiques** pour le backtest (sémantique de `cotes` dans open-pmu-api inconnue) | Tant que non clarifié : B1 et le départage M1 sont `degrade` en backfill ; sans effet sur `modele` |
 | 5 | Contenus Paris Turf / Geny : **propriétaires** | Rien n'est automatisé ni redistribué ; M2 reportée |
 | 6 | « long champ » / « Longchamp » : notion citée par l'utilisateur, **absente du document** | À définir avant d'être spécifiée |
-| 7 | Valeurs par défaut des seuils du verdict | Fixées par le pilote (8.4) |
+| 7 | Valeurs par défaut des seuils de l'indice de confiance (par taille) et tailles de référence de la journalisation | Fixées par le pilote (8.4) |
 | 8 | Affichage en anglais (D6) — toute l'application, **après le MVP** | Calendrier à fixer (PRD question ouverte 11) ; le module Multi y est prêt dès le MVP (codes d'explication) |
 | 9 | Choix du système parmi les équivalents (5.5) ; systèmes mixtes (5.6) ; M2 | V1.5 / V2 |
 | 10 | Licence du dépôt de couvertures | Vérifier avant d'embarquer des fichiers tiers |
+| 11 | Hypothèses de la v3 : taille par défaut 10 (sinon la dernière utilisée) ; aucune base active au premier affichage ; libellés « confiance élevée / moyenne / faible » ; seuils de probabilité par taille, provisoires jusqu'au pilote ; formule affichée par défaut Multi en 7 ; bases nommées « chevaux les plus probables » | **Confirmé par le porteur de projet le 2026-10-18** ; reste `[ASSUMPTION]` : indice calculé sur `p_couverture(S, B)` avec les bases actives |
+| 12 | `value` du moteur affichée par cheval dans la sélection ? | **Tranché par le porteur de projet le 2026-10-18** : aucun badge de value dans le Multi, qui ne parle que de la probabilité d'être dans les 4 premiers ; la value reste sur l'écran Résultats |
 
 ## 13. Plan de développement
 
@@ -1029,20 +1107,21 @@ dater dans `regles.py` avant toute autre étape.
    `fixtures/`, puis copié à l'identique dans le backend et l'app.
 3. **`p_couverture` exacte, distribution de `X`, entropie** + test 8, fixtures
    partagées Python/Dart.
-4. **Recommandation `modele`** : sélection (4.1), bases (4.2), choix sous budget
-   (4.3), verdict (6.4), explications (6.5) + tests 9-12, 15-16 — en Python **et** en
-   Dart.
-5. **Écran mobile** (11.1-11.3), hors ligne, débrief local.
+4. **Pronostic `modele`** : sélection à la taille choisie (4.1), bases candidates
+   (4.2), systèmes de toutes les formules (4.3), indice de confiance (6.4),
+   explications (6.5) + tests 9-12, 15-16 — en Python **et** en Dart.
+5. **Écran mobile** (11.1-11.3), hors ligne, pronostic retenu et débrief local.
 6. **Comparateurs** M1, B0, B1 + test 13.
-7. **Schéma** (section 7) par migrations Alembic, ingestion des rapports.
+7. **Schéma** (section 7) par migrations Alembic, ingestion de l'arrivée (pas des
+   rapports).
 8. **API** (section 10) ; les endpoints de l'incrément 1 sont livrés avec lui.
 9. **Harnais de backtest** (section 8) + test 14, sur la machine de développement ;
    **pilote** (8.4) et import des résultats en production ; puis mode `live` en
    **écriture seule**. `/multi/backtest` attend le passage du harnais sur un serveur.
 10. **Rapport d'évaluation** : stratégies testées, période gelée, résultats, décision.
 
-Les étapes 1 à 5 ne dépendent d'**aucune donnée nouvelle** : elles livrent une
-recommandation utilisable à partir de ce que le moteur calcule déjà.
+Les étapes 1 à 5 ne dépendent d'**aucune donnée nouvelle** : elles livrent un
+pronostic utilisable à partir de ce que le moteur calcule déjà.
 
 ---
 
@@ -1297,3 +1376,28 @@ def m2_selectionner(citations, liste_forme, taille=10, complement="zero_puis_tou
   de recoupement.
 - Le même décodeur sert à afficher la musique en clair dans les explications
   (« 1er en haies, 5e en steeple… »), en FR ou EN.
+
+## Annexe E — Indice de valeur (v2) — **abandonné**
+
+> Abandonné en v3 (D ter) avec toute notion d'argent : il dépendait des rapports
+> Multi réels (qui ne sont plus ingérés) et d'une retenue inconnue. Conservé pour
+> mémoire ; **rien n'en est calculé, journalisé ni affiché**. Texte de la v2 :
+
+Hypothèse : le rapport « Multi en 4 » d'une arrivée `w` est proche de la mise
+divisée par la probabilité que le **public** attribue à `w`, à la retenue près.
+
+```
+R4_proxy(w) = (1 − τ) · MISE_UNITAIRE_EUR / P_marche_ens(w)
+P_marche_ens : même énumération (6.1), appliquée aux probabilités implicites des cotes
+               du jour, overround retiré (backend 7.11).
+indice_valeur(S, tickets) = Σ_w  P_modele(w) · n(w) / (C(k,4) · N)  ·  1 / P_marche_ens(w)
+```
+
+- `n(w)` = nombre de tickets contenant `w` ; `N` = nombre de tickets.
+- `τ` (retenue) est **inconnu** : **ne pas le coder en dur.** On affiche
+  `indice_valeur` seul (« 1,00 = équivalent au marché »), et on **estime `τ_eff`**
+  à partir des rapports réels journalisés (section 7).
+- Le public du Multi ne mise pas comme le public du gagnant : l'indicateur n'est
+  utile que **calibré** sur nos rapports réels. Libellé : « indice de valeur estimé
+  (hypothèse) ». **Il n'entre ni dans la recommandation ni dans le verdict** (D0,
+  4.4) tant que cette calibration n'est pas faite.

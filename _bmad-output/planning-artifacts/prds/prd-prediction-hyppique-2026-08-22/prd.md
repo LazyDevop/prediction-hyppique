@@ -1,7 +1,7 @@
 ---
 title: prediction-hyppique
 created: 2026-08-22
-updated: 2026-10-17
+updated: 2026-10-18
 status: final
 ---
 
@@ -15,7 +15,7 @@ Ce PRD cadre le produit dans son ensemble : backend Python/FastAPI (ingestion PM
 - `brief_projet_analyse_hippique.md` — positionnement, différenciation, périmètre, modèle économique envisagé, critères de succès, risques.
 - `cahier_des_charges_backend_hippique.md` — spécification exacte du moteur de calcul (constantes, formules, cas de test), source de données, schéma BDD, endpoints API.
 - `cahier_des_charges_app_mobile.md` — architecture Flutter, écrans, stratégie offline, erreurs à ne pas reproduire.
-- `cahier_des_charges_module_multi.md` (v2, 2026-10-17) — règles du pari Multi, recommandation du modèle, systèmes réduits, verdict, protocole d'évaluation (§4.11).
+- `cahier_des_charges_module_multi.md` (v2, 2026-10-17) — règles du pari Multi, sélection du modèle, systèmes réduits, protocole d'évaluation (§4.11) ; recadré le 2026-10-18 en pronostic sans argent (`multi/reconcile-cdc-multi-prd.md`, « D ter »), recadrage qui fait foi sur le cahier en cas d'écart.
 
 Ce PRD ne duplique pas les formules ni le code : il définit les capacités attendues, pour qui, et sous quelles contraintes. Les détails d'implémentation (constantes exactes, structure de modules, stack technique, cas de test) restent dans les cahiers des charges cités et dans `addendum.md`. En cas de divergence entre ce PRD et les cahiers techniques sur une question de *comportement produit*, ce PRD fait foi ; sur une question de *formule ou d'implémentation*, le cahier backend fait foi (principe déjà posé par le porteur de projet lui-même dans le cahier mobile, section 0).
 
@@ -27,7 +27,7 @@ Un parieur qui veut analyser une course hippique avant de jouer dispose aujourd'
 
 prediction-hyppique transforme l'information hippique abondante mais non exploitée en décision chiffrée, reproductible et actionnable : un moteur de scoring (Plackett-Luce / Harville) calcule une probabilité par cheval à partir de son historique de performances, la compare à la cote pour détecter la value (`probabilité × cote − 1`), classe les combinaisons de paris possibles (couplé à quinté, ordre et désordre) par probabilité décroissante, et suggère une mise par la formule de Kelly fractionné. Le moteur est transparent : chaque coefficient (récence, poids, âge, terrain, niveau) est visible et réglable par l'utilisateur, à l'opposé du pronostic opaque des sites concurrents.
 
-Pour le **Multi**, le même modèle répond à une question précise : sur la course support, et pour le budget que le parieur s'est fixé, faut-il jouer, avec quelle sélection et quelles bases, quel système — et pourquoi. Il dit aussi ce qu'un système couvre vraiment : une couverture garantie, jamais un gain garanti.
+Pour le **Multi**, le même modèle donne un pronostic : sur la course support, et pour le nombre de chevaux que le parieur choisit, quels chevaux peuvent constituer l'arrivée, quels chevaux les plus probables retenir comme bases, avec quel degré de confiance — et pourquoi. Il dit aussi ce qu'un système de tickets couvre vraiment : une couverture garantie, jamais un gain garanti. Il ne parle jamais d'argent : ni mise, ni coût, ni gain.
 
 Le produit reste, explicitement et durablement, un outil d'**aide à la décision** — jamais un système de paris automatisé, jamais un générateur de certitudes. Chaque écran de résultats porte le rappel que le jeu comporte des risques et qu'aucun modèle ne garantit un gain. Le moteur de calcul est déjà conçu et validé numériquement dans deux prototypes fonctionnels (`analyse_hippique_v2.html`, `analyse_hippique_ia.jsx`) — ce PRD cadre son industrialisation en un produit backend + mobile utilisable, y compris sur l'hippodrome avec une connexion incertaine.
 
@@ -40,7 +40,7 @@ Le produit reste, explicitement et durablement, un outil d'**aide à la décisio
 - **Fonctionnel** : avant de jouer une course, savoir quels chevaux sont statistiquement sous-cotés par le marché plutôt que de me fier à un pronostic en prose que je ne peux pas vérifier.
 - **Fonctionnel** : obtenir des combinaisons de paris (couplé, tiercé, quarté, quinté) déjà classées par probabilité, en dossards, sans les recalculer moi-même.
 - **Fonctionnel** : savoir combien miser sur un cheval donné sans avoir à faire le calcul de Kelly moi-même, et sans dépasser ce que je peux me permettre de perdre.
-- **Fonctionnel (Multi)** : pour la course support, obtenir une sélection expliquée, voir ce qu'un système de tickets couvre vraiment et ce qu'il coûte, et décider en connaissance de cause de jouer ou non — pour ne pas dépenser sur la foi d'une promesse de « garantie ».
+- **Fonctionnel (Multi)** : pour la course support, obtenir un pronostic expliqué — les chevaux qui peuvent constituer l'arrivée, à la taille de sélection que je choisis, avec un indice de confiance — et voir ce qu'un système de tickets couvre vraiment, pour ne pas me fier à une promesse de « garantie » ; le lendemain, savoir sans embellissement combien de chevaux de l'arrivée j'avais.
 - **Contextuel** : pouvoir analyser une course même sans réseau fiable, depuis les tribunes ou le pesage d'un hippodrome.
 - **Émotionnel** : reprendre la main sur ma décision de pari plutôt que de suivre aveuglément le favori du marché ou l'avis d'un tipster anonyme.
 - **Fonctionnel (porteur de projet)** : disposer d'un historique de courses accumulé en base propre, condition pour mesurer un jour si le modèle est réellement mieux calibré que le marché.
@@ -78,14 +78,14 @@ Le produit reste, explicitement et durablement, un outil d'**aide à la décisio
   - **Résolution :** la fiche corrigée entre dans le calcul comme n'importe quelle autre.
   - **Edge case :** extraction échouée (image floue, réseau coupé) → message d'erreur explicite, retour à la saisie manuelle sans perte du reste du formulaire.
 
-- **UJ-4. Marc décide s'il joue le Multi du samedi, et lequel.**
-  - **Persona + contexte :** Marc, 38 ans, joue au Multi le week-end par plaisir, avec un budget fixe qu'il se donne lui-même (30 € par course support). Il lit un peu la presse sans s'y fier aveuglément, se méfie des « systèmes garantis », et joue lui-même auprès de son opérateur habituel. C'est le même parieur individuel qu'en UJ-1 à UJ-3, côté Multi. Samedi, 9 h 40, chez lui, connecté. *(Récit d'origine : `sources/uj-multi-marc-2026-10-17.md` ; réécrit pour suivre les décisions D0-D7 du module Multi.)*
+- **UJ-4. Marc prépare son pronostic Multi du samedi.**
+  - **Persona + contexte :** Marc, 38 ans, joue au Multi le week-end par plaisir. Il lit un peu la presse sans s'y fier aveuglément, se méfie des « systèmes garantis », et joue lui-même auprès de son opérateur habituel ; ce qu'il mise ne regarde que lui, l'app ne lui en parle pas. C'est le même parieur individuel qu'en UJ-1 à UJ-3, côté Multi. Samedi, 9 h 40, chez lui, connecté. *(Récit d'origine : `sources/uj-multi-marc-2026-10-17.md` ; réécrit pour suivre les décisions D0-D7 du module Multi, puis le recadrage du 2026-10-18 qui en fait un pronostic sans argent.)*
   - **État d'entrée :** programme du jour chargé ; la course support a 18 partants.
-  - **Parcours :** il ouvre l'écran Multi depuis la course → l'app confirme « 18 partants, course éligible » et affiche « L'outil ne place aucun pari » → il saisit son budget, 30 € → le modèle rend son verdict : « jouable avec un budget de 33 € », avec ses raisons (probabilité de couverture, course ouverte), et les mentions « seuils provisoires » et « modèle en cours d'évaluation » — Marc ne voit pas un oracle → l'app affiche la meilleure option à 30 € et l'option à 33 €, marquée « dépasse le budget » (12 chevaux dont 1 base, tickets de 7 : 11 tickets, 3 tickets physiques — chiffres indicatifs tant que les règles du pari ne sont pas vérifiées, §9.5) ; la formule intégrale, bien plus chère, reste visible et marquée de même → chaque cheval de la sélection porte son explication (« estimé à 41 % d'être dans les 4 premiers », value), et les chevaux écartés les plus proches disent pourquoi → Marc sait qu'un cheval ne partira pas : il le marque non-partant et la recommandation se recalcule ; il ajoute ensuite un cheval auquel il croit : la sélection passe en « modifiée », se réévalue, et le modèle propose les échanges qui améliorent le plus la probabilité de couverture → parmi les 3 bases candidates proposées, il garde celle que le modèle place en tête, après avoir lu ce qu'elle économise et ce qu'elle coûte en probabilité de couverture → il lit la garantie : « Si les 4 premiers sont dans votre sélection et incluent votre base, au moins un ticket paie au moins le rapport Multi en 7 », suivie de « Couverture garantie — pas un gain garanti » → pour chaque formule, il lit le seuil de rentabilité (« pour ne pas perdre, il faut un rapport Multi en 7 d'au moins X € ») à côté du rapport historique médian → il regarde l'évaluation : probabilité de couverture, distribution du nombre de chevaux capturés (0 à 4), indice de valeur marqué « hypothèse », rapport « Multi en 7 » historique médian → par curiosité, il ouvre « Autres méthodes » : la méthode 1 du document source Multi y figure, règle par règle, avec « hypothèse non validée ».
-  - **Climax :** il voit en un écran ce que le système à 33 € couvre réellement, ce qu'il ne couvre pas, et pourquoi le modèle le propose.
-  - **Résolution :** probabilité de couverture modérée, rapport Multi en 7 le plus faible des quatre formules : Marc décide de ne pas aller plus loin. Il joue ce seul système à 33 €, en sachant qu'il dépasse de 3 € le budget qu'il s'était fixé, et n'ajoute rien. Il appuie sur « Je retiens ce jeu », copie les grilles en dossards (export texte), ferme l'app et va jouer lui-même. Le lendemain, l'app lui montre « 3 chevaux sur 4 capturés », sans rien embellir ; la recommandation du modèle et les comparateurs, journalisés avant le départ, alimentent l'évaluation des méthodes.
-  - **Edge case :** sur l'hippodrome sans réseau, un non-partant est annoncé au micro à la dernière minute → Marc le marque non-partant, la recommandation se recalcule sur l'appareil et l'écran montre ce qui change dans ses tickets.
-  - **Critères d'acceptation (porteur de projet) :** chaque cheval affiche ce qui l'a fait sélectionner ; « hypothèse non validée » (comparateurs), « modèle en cours d'évaluation » (recommandation), « Couverture garantie — pas un gain garanti » et « L'outil ne place aucun pari » sont visibles aux étapes concernées ; toute option dépassant le budget est signalée, pas supprimée ; chaque système affiché est vérifié (aucun groupe de 4 chevaux non couvert) ; la recommandation du modèle est journalisée avant le départ, et la séance de Marc (la sélection qu'il a retenue) est conservée sur son téléphone, toutes deux avec l'heure des données utilisées.
+  - **Parcours :** il ouvre l'écran Multi depuis la course → l'app confirme « 18 partants, course éligible » et affiche « L'outil ne place aucun pari » → il choisit la taille de sa sélection : 12 chevaux → le modèle propose les 12 chevaux qui ont, ensemble, la plus forte probabilité de contenir l'arrivée, et l'indice de confiance du pronostic : « confiance moyenne », avec ses raisons (probabilité de couverture, course ouverte, deux chevaux à historique court), et les mentions « seuils provisoires » et « modèle en cours d'évaluation » — Marc ne voit pas un oracle → chaque cheval de la sélection porte son explication (« estimé à 41 % d'être dans les 4 premiers »), et les chevaux écartés les plus proches disent pourquoi → Marc sait qu'un cheval ne partira pas : il le marque non-partant et le pronostic se recalcule ; il ajoute ensuite un cheval auquel il croit : la sélection passe en « modifiée », se réévalue, et le modèle propose les échanges qui améliorent le plus la probabilité de couverture → parmi les 3 « chevaux les plus probables » proposés, chacun avec sa probabilité estimée, il active le premier comme base, après avoir lu les tickets qu'il économise et ce qu'il coûte en probabilité de couverture → il parcourt les systèmes : pour chaque formule (tickets de 4 à 7), le nombre de tickets, de tickets physiques et les grilles en dossards, sans aucun montant (chiffres indicatifs tant que les règles du pari ne sont pas vérifiées, §9.5) → il lit la garantie : « Si les 4 premiers sont dans votre sélection et incluent votre base, au moins un de vos tickets les contient tous », suivie de « Couverture garantie — pas un gain garanti » → il regarde l'évaluation : probabilité de couverture, distribution du nombre de chevaux capturés (0 à 4) → par curiosité, il ouvre « Autres méthodes » : la méthode 1 du document source Multi y figure, règle par règle, avec « hypothèse non validée ».
+  - **Climax :** il voit en un écran quels chevaux peuvent constituer l'arrivée selon le modèle, avec quel degré de confiance, ce que ses tickets couvrent réellement et pourquoi le modèle propose ce pronostic.
+  - **Résolution :** confiance moyenne : Marc s'en tient à ce pronostic et n'ajoute rien. Il appuie sur « Je retiens ce pronostic », copie les grilles en dossards (export texte), ferme l'app et va jouer lui-même. Le lendemain, l'app lui montre « 3 chevaux capturés sur 4 · arrivée dans la sélection : non », sans rien embellir, et la même ligne pour le pronostic du modèle ; ce dernier et les comparateurs, journalisés avant le départ, alimentent l'évaluation des méthodes.
+  - **Edge case :** sur l'hippodrome sans réseau, un non-partant est annoncé au micro à la dernière minute → Marc le marque non-partant, le pronostic se recalcule sur l'appareil et l'écran montre ce qui change dans ses tickets.
+  - **Critères d'acceptation (porteur de projet) :** chaque cheval affiche ce qui l'a fait sélectionner ; « hypothèse non validée » (comparateurs), « modèle en cours d'évaluation » (pronostic du modèle), « Couverture garantie — pas un gain garanti » et « L'outil ne place aucun pari » sont visibles aux étapes concernées ; chaque système affiché est vérifié (aucun groupe de 4 chevaux non couvert) ; le pronostic du modèle est journalisé avant le départ, et le pronostic retenu par Marc est conservé sur son téléphone, tous deux avec l'heure des données utilisées.
 
 ## 3. Glossary
 
@@ -112,19 +112,19 @@ Le produit reste, explicitement et durablement, un outil d'**aide à la décisio
 - **Multi** — Pari PMU sans ordre sur les 4 premiers, joué avec des tickets de 4, 5, 6 ou 7 chevaux ; un ticket paie si les 4 premiers y figurent. Règles détaillées : cahier Multi §2.
 - **Document source Multi** — Brochure PMU « Multi-Systèmes » de 2001-2002 dont viennent les règles du pari, la méthode 1 et le catalogue de systèmes ; à distinguer du **cahier Multi** (`cahier_des_charges_module_multi.md`), qui spécifie le module.
 - **Course support** — La course du jour sur laquelle le Multi est proposé (≥ 14 partants déclarés).
-- **Base** — Cheval imposé dans tous les tickets d'un système Multi (0 à 3 bases).
-- **Sélection (Multi)** — Ensemble des chevaux retenus pour un Multi, bases comprises. Recommandée par le modèle, ou « modifiée » quand l'utilisateur la retouche.
+- **Base** — Cheval imposé dans tous les tickets d'un système Multi (0 à 3 bases), présenté à l'utilisateur comme « cheval le plus probable », toujours avec sa probabilité estimée d'être dans les 4 premiers.
+- **Sélection (Multi)** — Ensemble des chevaux retenus pour un Multi, bases comprises, de la taille choisie par l'utilisateur (4 à 20 chevaux). Recommandée par le modèle, ou « modifiée » quand l'utilisateur la retouche.
+- **Pronostic (Multi)** — Ce que le module propose pour une course support : une sélection, ses bases, les systèmes qui la couvrent, l'évaluation et l'indice de confiance. Ne comporte jamais de mise, de coût, de gain ni de rapport.
 - **Groupe de 4 chevaux** — Ensemble sans ordre de 4 chevaux ; un système Multi doit couvrir chaque groupe de 4 de la sélection, dès lors qu'il contient les bases. À ne pas confondre avec une **Combinaison**, qui désigne un type de pari.
 - **Système réduit** — Ensemble de tickets qui couvre tous les groupes de 4 chevaux d'une sélection qui contiennent les bases, avec moins de tickets que la formule intégrale.
-- **Formule intégrale** — Jeu de tous les groupes de 4 chevaux d'une sélection en tickets de 4 : la référence, la plus chère, dont un système réduit économise des tickets.
+- **Formule intégrale** — Jeu de tous les groupes de 4 chevaux d'une sélection en tickets de 4 : la référence, celle qui compte le plus de tickets, dont un système réduit économise des tickets.
 - **Ticket physique** — Bulletin de jeu ; il porte jusqu'à 4 tickets Multi.
-- **Couverture garantie** — Promesse qu'un système tient : si les 4 premiers sont dans la sélection et incluent les bases, au moins un ticket paie. Jamais une garantie de gain.
+- **Couverture garantie** — Promesse qu'un système tient : si les 4 premiers sont dans la sélection et incluent les bases, au moins un ticket les contient tous. Jamais une garantie de gain.
 - **Probabilité de couverture** — Probabilité, selon le modèle, que les 4 premiers soient tous dans la sélection (et incluent les bases).
 - **Chevaux capturés** — Nombre des 4 premiers de l'arrivée présents dans la sélection (0 à 4).
-- **Seuil de rentabilité** — Rapport Multi minimal pour qu'un système ne fasse pas perdre d'argent, dans le cas où un seul ticket paie.
-- **Indice de valeur (Multi)** — Estimation, marquée « hypothèse », de l'avantage d'un système face au marché ; distincte de la **Value** d'un cheval et non calibrée en V1.
 - **Non-partant (du jour)** — Cheval retiré de la course cible avant le départ. Distinct du Non Partant (NR) d'une performance passée, traité sous **Incident**.
-- **Verdict** — Conclusion du modèle pour une course et un budget : jouer, jouable avec un budget donné, ou passer.
+- **Indice de confiance** — Niveau de confiance du modèle dans son pronostic Multi pour une course — « confiance élevée », « moyenne » ou « faible » —, déduit de la probabilité de couverture, de l'ouverture de la course et de la fragilité des données. Ne dit jamais s'il faut jouer ni combien.
+- **Pronostic retenu** — Pronostic Multi que l'utilisateur déclare suivre (« Je retiens ce pronostic ») : une sélection par course, avec bases et système, conservée sur l'appareil et figée au départ ; seule source de son débrief.
 - **Comparateur** — Méthode de sélection autre que le modèle : méthode 1 du document source Multi et marché (affichées à part comme « hypothèse non validée »), et tirage au hasard (journalisé seulement). Le modèle et la méthode 1 sont mesurés contre le **marché**, la référence à battre ; le tirage au hasard sert de simple repère.
 
 ## 4. Features
@@ -308,7 +308,7 @@ L'utilisateur peut importer une capture du programme complet d'une course ; le b
 **Description :** Un écran dédié expose tous les coefficients réglables du moteur, condition de la promesse de transparence du produit (§1 Vision : "chaque coefficient est visible et réglable par l'utilisateur", à l'opposé du modèle opaque des concurrents). Réalise UJ-2, UJ-4.
 
 #### FR-20: Réglages exposés et persistés
-L'utilisateur peut consulter et modifier tous les paramètres du moteur — pondération de récence, contraste (k), sensibilité au poids, âges min/max, lissage bayésien, coefficient inédit, intensité du malus incident, bankroll, fraction de Kelly, seuils du verdict Multi (FR-26) — chacun avec sa valeur par défaut visible.
+L'utilisateur peut consulter et modifier tous les paramètres du moteur — pondération de récence, contraste (k), sensibilité au poids, âges min/max, lissage bayésien, coefficient inédit, intensité du malus incident, bankroll, fraction de Kelly, seuils de l'indice de confiance Multi (FR-26) — chacun avec sa valeur par défaut visible.
 
 **Consequences (testable):**
 - Chaque paramètre modifié est persisté localement et réappliqué au calcul suivant, sans ressaisie à chaque session (cohérent avec FR-10 pour bankroll/Kelly, étendu ici à l'ensemble des paramètres du moteur).
@@ -327,79 +327,78 @@ L'utilisateur peut exporter ou partager le classement, les probabilités, la val
 
 ### 4.11 Module Multi
 
-**Description :** Pour la course support, le modèle dit s'il faut jouer le Multi, avec quelle sélection et quelles bases, quel système — et pourquoi. Il ne recommande aucune mise : il montre le coût de chaque système pour le budget que l'utilisateur s'est fixé. La spécification exacte (règles du pari, algorithme de sélection, générateur et vérificateur de systèmes, verdict, protocole d'évaluation) est dans `cahier_des_charges_module_multi.md` (v2), référence normative non dupliquée ici. Réalise UJ-4.
+**Description :** Pour la course support, le modèle propose un pronostic : les chevaux qui peuvent constituer l'arrivée du Multi, pour la taille de sélection que l'utilisateur a choisie, avec ses chevaux les plus probables (bases), les systèmes de tickets qui couvrent cette sélection et un indice de confiance — et dit pourquoi. Le module ne parle jamais d'argent : ni mise, ni coût, ni gain, ni rapport (§5). La spécification exacte (règles du pari, algorithme de sélection, générateur et vérificateur de systèmes, protocole d'évaluation) est dans `cahier_des_charges_module_multi.md` (v2), référence normative non dupliquée ici, **recadrée par la décision du porteur de projet du 2026-10-18** (`multi/reconcile-cdc-multi-prd.md`, section « D ter »), qui fait foi en cas d'écart. Réalise UJ-4.
 
 #### FR-22: Éligibilité d'une course au Multi
 L'utilisateur voit, pour une course, si elle est éligible au Multi (course support, ≥ 14 partants déclarés) et peut ouvrir l'écran Multi depuis celle-ci.
 
 **Consequences (testable):**
-- Une course non éligible affiche la raison (pas course support, moins de 14 partants) au lieu d'une recommandation.
-- Si le marqueur « course support » est introuvable dans la source (Open Question 9), les courses de ≥ 14 partants restent accessibles en mode « exploration — rapports Multi indisponibles ».
-- Les règles du pari (prix unitaire, formules, non-partants, ex-aequo, arrivée dégradée) ont une seule source de référence, partagée par le backend et l'application, avec leur provenance et une date de dernière vérification sur pmu.fr ; sans cette date, aucun coût n'est affiché (§9.5).
+- Une course non éligible affiche la raison (pas course support, moins de 14 partants) au lieu d'un pronostic.
+- Si le marqueur « course support » est introuvable dans la source (Open Question 9), les courses de ≥ 14 partants restent accessibles en mode « exploration — course support non confirmée ».
+- Les règles du pari (formules, tickets, non-partants, ex-aequo, arrivée dégradée) ont une seule source de référence, partagée par le backend et l'application, avec leur provenance et une date de dernière vérification sur pmu.fr ; sans cette date, aucune grille n'est affichée (§9.5).
 - Les partants déclarés mais non analysés sont signalés (« N partants non analysés, non sélectionnables ») ; l'utilisateur peut les analyser (FR-6) pour les rendre sélectionnables.
 
-#### FR-23: Recommandation du modèle sous budget
-L'utilisateur saisit un budget en euros (strictement positif) et, s'il le souhaite, un multiplicateur de mise (1 par défaut) ; le modèle choisit la sélection, le nombre de bases et la formule de tickets qui maximisent la probabilité de couverture sans dépasser ce budget. Il propose aussi jusqu'à 3 alternatives, dont obligatoirement la moins chère à probabilité de couverture quasi égale. Le multiplicateur multiplie le coût et les gains ; à budget fixé, il réduit les options accessibles.
+#### FR-23: Pronostic du modèle pour la taille choisie
+L'utilisateur choisit la taille de sa sélection, de 4 à 20 chevaux ; par défaut, la dernière taille utilisée, sinon 10. Pour cette taille, le modèle retient la sélection qui maximise la probabilité de couverture.
 
 **Consequences (testable):**
-- La sélection recommandée vient des probabilités du moteur (§4.3), jamais d'une méthode tierce ; aucun partant virtuel ni non-partant n'y figure.
-- La recommandation porte la mention « modèle en cours d'évaluation » tant que le protocole d'évaluation (SM-4) ne conclut pas. Si l'évaluation conclut que le modèle ne fait pas mieux que le marché, la mention reste et l'écran le dit, avec l'effectif de courses ; la recommandation ne bascule jamais silencieusement vers une autre méthode.
-- Le coût de l'option recommandée est ≤ budget ; une option qui dépasse le budget est signalée « dépasse le budget », jamais supprimée.
-- Un budget inférieur au plus petit système possible ne produit aucune recommandation : l'écran affiche « budget insuffisant — le plus petit système coûte X € » et le verdict correspondant (FR-26).
-- À données, budget et paramètres identiques, la recommandation est identique sur le backend et sur l'appareil : deux options dont les probabilités de couverture diffèrent de moins de 10⁻⁹ sont départagées par les règles d'égalité du cahier Multi, jamais par l'arrondi du calcul.
-- Au-delà d'une proportion réglable de partants inédits ou à historique court, un avertissement fort accompagne la recommandation et devient une raison du verdict.
-- La recommandation se calcule sur l'appareil, sans réseau, pour une course déjà en cache (cohérent avec FR-13).
-- L'information de non-partant parvient à l'appareil par le rafraîchissement explicite de la course (réseau) ou, sans réseau, par l'action « marquer non-partant » de l'utilisateur. La nouvelle recommandation est recalculée localement, et l'écran montre à part ce que deviennent les tickets déjà retenus (requalification selon les règles du pari).
+- La sélection recommandée vient des probabilités du moteur (§4.3), jamais d'une méthode tierce ; aucun partant virtuel ni non-partant n'y figure. Une taille supérieure au nombre de chevaux sélectionnables est ramenée à ce nombre, et l'écran le dit.
+- Aucun champ de budget, de mise ou de multiplicateur n'existe ; aucun montant n'est affiché.
+- Le pronostic porte la mention « modèle en cours d'évaluation » tant que le protocole d'évaluation (SM-4) ne conclut pas. Si l'évaluation conclut que le modèle ne fait pas mieux que le marché, la mention reste et l'écran le dit, avec l'effectif de courses ; le pronostic ne bascule jamais silencieusement vers une autre méthode.
+- À données, taille et paramètres identiques, le pronostic est identique sur le backend et sur l'appareil : deux sélections dont les probabilités de couverture diffèrent de moins de 10⁻⁹ sont départagées par les règles d'égalité du cahier Multi, jamais par l'arrondi du calcul.
+- Au-delà d'une proportion réglable de partants inédits ou à historique court, un avertissement fort accompagne le pronostic et devient une raison de l'indice de confiance (FR-26).
+- Le pronostic se calcule sur l'appareil, sans réseau, pour une course déjà en cache (cohérent avec FR-13).
+- L'information de non-partant parvient à l'appareil par le rafraîchissement explicite de la course (réseau) ou, sans réseau, par l'action « marquer non-partant » de l'utilisateur. Le nouveau pronostic est recalculé localement, et l'écran montre à part ce que deviennent les tickets du pronostic retenu (requalification selon les règles du pari).
 
-#### FR-24: Bases proposées par le modèle
-Le modèle propose 3 bases candidates (moins si la sélection compte moins de 3 chevaux), classées par probabilité estimée d'être dans les 4 premiers ; la recommandation en retient 0 à 3 ; l'utilisateur peut activer ou désactiver chacune.
+#### FR-24: Bases proposées par le modèle (« chevaux les plus probables »)
+Le modèle propose 3 bases candidates, présentées comme « chevaux les plus probables » (moins si la sélection compte moins de 3 chevaux), classées par probabilité estimée d'être dans les 4 premiers ; l'utilisateur active ou désactive chacune. Aucune base n'est active au premier affichage ; l'utilisateur les active.
 
 **Consequences (testable):**
-- Les candidates sont calculées sur la sélection recommandée sans base, à la taille recommandée.
-- Chaque base candidate affiche sa probabilité estimée d'être dans les 4 premiers, le coût économisé et la probabilité de couverture perdue si elle est retenue, à formule égale avec l'option recommandée.
-- Activer une base l'impose ; la désactiver l'interdit comme base. Chaque changement relance la recommandation et le verdict.
+- Les candidates sont calculées sur la sélection recommandée sans base, à la taille choisie.
+- Chaque base candidate affiche sa probabilité estimée d'être dans les 4 premiers, les tickets économisés et la probabilité de couverture perdue si elle est retenue, à formule égale.
+- Activer une base l'impose dans tous les tickets ; la désactiver l'interdit comme base. Chaque changement recalcule les systèmes, l'évaluation et l'indice de confiance.
 
 #### FR-25: Systèmes de tickets vérifiés
-Pour une sélection et ses bases, l'utilisateur voit chaque formule possible (tickets de 4 à 7) : nombre de tickets et de tickets physiques, coût, niveau garanti, probabilité de couverture, seuil de rentabilité, et les grilles en dossards.
+Pour une sélection et ses bases, l'utilisateur voit chaque formule possible (tickets de 4 à 7) : nombre de tickets, nombre de tickets physiques, garantie de couverture et grilles en dossards. Aucun coût n'est affiché.
 
 **Consequences (testable):**
 - Aucun système n'est affiché si un groupe de 4 chevaux exigé par sa garantie n'est pas couvert (vérification systématique, jamais contournée).
-- Le texte de garantie dit : « Si les 4 premiers sont dans votre sélection [et incluent vos bases], au moins un ticket paie au moins le rapport Multi en k », suivi de « Couverture garantie — pas un gain garanti » et de « Un ticket payant peut rapporter moins que la mise totale ».
-- Chaque option affiche son seuil de rentabilité (« pour ne pas perdre, il faut un rapport Multi en k d'au moins X € »), à côté du rapport historique médian ou, à défaut, de la mention « rapports réels inconnus ».
-- Pour chaque entrée du catalogue du document source Multi, le système généré compte au plus autant de tickets que celui du document, sauf coquilles documentées dans le cahier Multi.
+- Le texte de garantie dit : « Si les 4 premiers sont dans votre sélection [et incluent vos bases], au moins un de vos tickets les contient tous », suivi de « Couverture garantie — pas un gain garanti ».
+- Pour chaque entrée du catalogue du document source Multi, le système généré compte au plus autant de tickets que celui du document, sauf coquilles documentées dans le cahier Multi. Le catalogue précalculé reste disponible hors ligne.
 - L'utilisateur peut saisir un système trouvé ailleurs : l'app dit s'il couvre réellement ce qu'il promet et, si le catalogue contient un système valide plus petit pour la même sélection, les mêmes bases et la même formule, le propose.
+- Par défaut, la formule affichée est le Multi en 7.
 - Les grilles s'exportent en texte copiable (extension de FR-21).
 
-#### FR-26: Verdict par course
-Pour une course et un budget, le modèle rend un verdict — jouer, jouable avec un budget de X €, ou passer — toujours accompagné de ses raisons.
+#### FR-26: Indice de confiance du pronostic
+Pour une course et une sélection, le modèle donne un indice de confiance — « confiance élevée », « confiance moyenne » ou « confiance faible » — toujours accompagné de ses raisons.
 
 **Consequences (testable):**
-- Les raisons couvrent au minimum : probabilité de couverture, coût, seuil de rentabilité face au rapport historique médian (ou son absence), ouverture de la course, fragilité des données.
-- « Jouable avec un budget de X € » informe ; il ne remplace jamais le budget saisi : l'option recommandée reste dans le budget, et l'option à X € est affichée marquée « dépasse le budget ».
-- Les seuils du verdict sont des réglages de l'utilisateur, persistés et réinitialisables (cohérent avec FR-20).
+- Les raisons couvrent au minimum : probabilité de couverture, ouverture de la course, fragilité des données (inédits, historiques courts, cotes manquantes, partants non analysés).
+- L'indice ne dit jamais s'il faut jouer ni combien : aucun « jouer », « passer » ou montant n'est affiché.
+- Les seuils de l'indice dépendent de la taille de la sélection ; ce sont des réglages de l'utilisateur, persistés et réinitialisables (cohérent avec FR-20).
 - Leurs valeurs par défaut sont fixées par le pilote d'évaluation, qui tourne sur l'historique (backtest) et ne dépend pas de la journalisation quotidienne ; jusque-là, l'écran affiche « seuils provisoires ».
-- Le verdict n'utilise ni l'indice de valeur (non calibré) ni aucune donnée de presse.
+- L'indice n'utilise aucune donnée de presse.
 
-#### FR-27: Explications de la recommandation
-Chaque élément de la recommandation dit pourquoi : cheval retenu, cheval écarté, base, système, verdict.
+#### FR-27: Explications du pronostic
+Chaque élément du pronostic dit pourquoi : cheval retenu, cheval écarté, base, système, indice de confiance.
 
 **Consequences (testable):**
-- Chaque cheval retenu affiche ce qui l'a fait sélectionner (probabilité estimée par le modèle d'être dans les 4 premiers, value si la cote est connue, indicateurs de transparence de FR-4) et sa contribution à la probabilité de couverture.
+- Chaque cheval retenu affiche ce qui l'a fait sélectionner (probabilité estimée par le modèle d'être dans les 4 premiers, indicateurs de transparence de FR-4) et sa contribution à la probabilité de couverture. Aucun badge de value n'est affiché dans le Multi : la value reste sur l'écran Résultats (FR-9).
 - Les 3 chevaux non retenus de plus forte probabilité estimée d'être dans les 4 premiers affichent la raison de leur exclusion.
 - Les limites des données sont dites : heure des cotes utilisées, cote manquante, données fragiles (historique court, inédit), partants non analysés.
 - Toute probabilité affichée est présentée comme une estimation du modèle (« estimé à 41 % »), jamais comme une fréquence observée.
 - Les explications sont produites par le moteur sous forme de codes et de valeurs, jamais de phrases figées, pour permettre leur traduction ultérieure (§8).
 
 #### FR-28: Choix de l'utilisateur
-L'utilisateur peut retirer ou ajouter des chevaux analysés, imposer des chevaux, marquer un non-partant, ou saisir sa propre sélection, que le modèle évalue. L'utilisateur retient le jeu qu'il compte jouer.
+L'utilisateur choisit la taille de la sélection, peut retirer ou ajouter des chevaux analysés, imposer des chevaux, marquer un non-partant, ou saisir sa propre sélection, que le modèle évalue. L'utilisateur retient le pronostic qu'il compte suivre.
 
 **Consequences (testable):**
 - Une sélection retouchée passe en « modifiée » ; sa probabilité de couverture est recalculée et le modèle propose les 1 à 2 échanges qui l'améliorent le plus.
-- Imposer un cheval affiche son coût en probabilité de couverture par rapport à la recommandation libre.
-- L'action « Je retiens ce jeu » enregistre une seule sélection par course (avec bases et système), remplaçable jusqu'à l'heure de départ, figée ensuite ; c'est la seule source du débrief de l'utilisateur (FR-30). L'export des grilles propose de retenir le jeu, sans le faire à la place de l'utilisateur.
+- Imposer un cheval affiche ce qu'il coûte en probabilité de couverture par rapport au pronostic libre, à taille égale.
+- L'action « Je retiens ce pronostic » enregistre une seule sélection par course (avec bases et système), remplaçable jusqu'à l'heure de départ, figée ensuite ; c'est la seule source du débrief de l'utilisateur (FR-30). L'export des grilles propose de retenir le pronostic, sans le faire à la place de l'utilisateur.
 
 #### FR-29: Comparateurs
-L'utilisateur peut consulter, à part, la sélection de deux comparateurs : la méthode 1 du document source Multi (règle par règle) et le marché (cotes les plus basses). Un tirage au hasard est journalisé comme repère d'évaluation, sans être affiché.
+L'utilisateur peut consulter, à part et à la même taille de sélection, la sélection de deux comparateurs : la méthode 1 du document source Multi (règle par règle) et le marché (cotes les plus basses). Un tirage au hasard est journalisé comme repère d'évaluation, sans être affiché.
 
 **Consequences (testable):**
 - Chaque comparateur porte « hypothèse non validée » tant que le protocole d'évaluation ne conclut pas.
@@ -408,18 +407,19 @@ L'utilisateur peut consulter, à part, la sélection de deux comparateurs : la m
 - Les comparateurs ne sont jamais proposés par défaut.
 
 #### FR-30: Évaluation, journalisation et débrief
-L'utilisateur voit l'évaluation de la sélection ; les recommandations sont journalisées avant le départ ; après la course, l'app montre ce qui a été capturé.
+L'utilisateur voit l'évaluation de la sélection ; les pronostics du modèle sont journalisés avant le départ ; après la course, l'app montre ce qui a été capturé.
 
 **Consequences (testable):**
-- L'évaluation affiche la probabilité de couverture, la distribution du nombre de chevaux capturés (0 à 4), un indice de valeur marqué « hypothèse », et le rapport « Multi en 7 » historique médian quand au moins 30 courses support sont en base (sinon « rapports réels inconnus »).
-- Chaque jour, avant le départ, le backend journalise la recommandation du modèle aux budgets de référence fixés par le pilote, et les comparateurs, avec l'heure des données utilisées ; une entrée journalisée n'est jamais modifiée. Un échec de journalisation est lui-même journalisé (« non journalisé », avec la raison) et la course est exclue de l'évaluation ; l'exclusion est comptée. Un non-partant survenu après la journalisation est traité par les règles de requalification, sans réécrire l'entrée.
-- Une recommandation reconstituée sur l'historique (backtest) n'utilise aucune donnée postérieure à l'heure de ses données ; toute constante dérivée des données (quantiles de niveau, réglages) est figée avant la période de test, et sa date figure dans le rapport d'évaluation. L'heure des cotes du comparateur marché est alignée sur celle du modèle, ou l'écart est déclaré.
-- Le jeu retenu par l'utilisateur (FR-28) est conservé sur l'appareil avec l'heure des données utilisées, pendant 90 jours, sans compte ni envoi au serveur (V1 mono-utilisateur).
-- Après finalisation de la course (FR-17), l'app affiche, pour la recommandation du modèle et pour le jeu retenu, le nombre de chevaux capturés et si la sélection contenait une arrivée payable (« oui / non »), sans embellissement ; les ex-aequo et l'arrivée dégradée suivent les règles du pari, et une correction de l'arrivée après finalisation met le débrief à jour avec une mention.
+- L'évaluation affiche la probabilité de couverture et la distribution du nombre de chevaux capturés (0 à 4). Aucun rapport Multi, réel ou historique, n'est affiché.
+- Chaque jour, avant le départ, le backend journalise le pronostic du modèle aux tailles de référence fixées par le pilote, et les comparateurs, avec l'heure des données utilisées ; une entrée journalisée n'est jamais modifiée. Un échec de journalisation est lui-même journalisé (« non journalisé », avec la raison) et la course est exclue de l'évaluation ; l'exclusion est comptée. Un non-partant survenu après la journalisation est traité par les règles de requalification, sans réécrire l'entrée.
+- Un pronostic reconstitué sur l'historique (backtest) n'utilise aucune donnée postérieure à l'heure de ses données ; toute constante dérivée des données (quantiles de niveau, réglages) est figée avant la période de test, et sa date figure dans le rapport d'évaluation. L'heure des cotes du comparateur marché est alignée sur celle du modèle, ou l'écart est déclaré.
+- Le pronostic retenu par l'utilisateur (FR-28) est conservé sur l'appareil avec l'heure des données utilisées, pendant 90 jours, sans compte ni envoi au serveur (V1 mono-utilisateur).
+- Après finalisation de la course (FR-17), l'app affiche, pour le pronostic retenu et pour le pronostic du modèle, « N chevaux capturés sur 4 » et « arrivée dans la sélection : oui / non », sans embellissement. Seule l'arrivée officielle sert au débrief et à l'évaluation ; les ex-aequo et l'arrivée dégradée suivent les règles du pari, et une correction de l'arrivée après finalisation met le débrief à jour avec une mention.
 
 **Feature-specific NFRs:**
 - Mentions obligatoires sur l'écran Multi : « L'outil ne place aucun pari », « Couverture garantie — pas un gain garanti », et le rappel de jeu responsable (§5).
-- Les fonctions de calcul du Multi (règles, couverture, recommandation, verdict, vérification) ont la même parité backend/mobile que le reste du moteur (§8), vérifiée par des cas de test partagés.
+- Aucun montant en euros (mise, coût, gain, rapport, seuil de rentabilité) n'apparaît sur l'écran Multi ni dans l'export de ses grilles.
+- Les fonctions de calcul du Multi (règles, couverture, sélection, indice de confiance, vérification) ont la même parité backend/mobile que le reste du moteur (§8), vérifiée par des cas de test partagés.
 
 ## 5. Non-Goals (Explicit)
 
@@ -427,7 +427,7 @@ L'utilisateur voit l'évaluation de la sélection ; les recommandations sont jou
 - Pas de couverture des courses hors France (pas de PMUC camerounais, pas de courses internationales) — le moteur et les échelles terrain/niveau sont calibrés sur les conventions françaises.
 - Pas d'historique de presse/consensus intégré au score — si réintroduit un jour, affiché à part, jamais mélangé au calcul.
 - Le produit ne prétend jamais à une fiabilité garantie : aucun écran de résultats sans le rappel que le jeu comporte des risques.
-- Le module Multi ne recommande aucune mise ni multiplicateur : il affiche le coût de chaque système ; le budget reste la décision de l'utilisateur.
+- Le module Multi est un pronostic : il n'affiche ni mise, ni coût, ni gain, ni rapport, ne demande aucun budget et ne dit jamais s'il faut jouer. Ce que l'utilisateur mise reste hors de l'outil.
 - La méthode 2 du document source Multi (citations de presse) n'entre ni dans la recommandation ni dans le MVP ; si elle est réintroduite un jour, ce sera comme comparateur affiché à part, conformément au non-goal presse ci-dessus.
 - Exclusions V1 différées à V2 (compte/authentification, paywall/facturation, notifications) : voir §6.2 pour le détail.
 
@@ -439,8 +439,8 @@ L'utilisateur voit l'évaluation de la sélection ; les recommandations sont jou
 - App mobile Flutter, Android uniquement : tous les écrans du cahier mobile §7 (accueil, configuration course, liste partants, fiche cheval, import photo, résultats, réglages), moteur dupliqué en Dart, cache SQLite, fonctionnement hors ligne pour le calcul (§4.6).
 - Export/partage du classement calculé (texte ou JSON au minimum ; export PDF en bonus, pas requis).
 - Module Multi (§4.11), livré **après le cœur du MVP déjà construit** (§4.1 à §4.10), en deux incréments. Arbitrage assumé : le module Multi pèse à lui seul autant que le reste du MVP ; il ne retarde pas ce qui est livré, et le premier incrément rend le module utile avant que l'évaluation existe.
-  - **Incrément Multi 1 — décider** : vérification des règles du pari (§9.5), écran Multi, recommandation, bases, systèmes vérifiés et catalogue précalculé, verdict en « seuils provisoires », explications, choix de l'utilisateur, calcul hors ligne, jeu retenu et débrief sur l'appareil ; endpoints `/courses/{id}/multi/eligibilite`, `/multi/recommandation`, `/multi/systemes`, `/multi/verifier`, `/multi/evaluer` (à la racine de l'API, sauf l'éligibilité).
-  - **Incrément Multi 2 — évaluer** : comparateurs, ingestion des rapports Multi, harnais de backtest et pilote (qui fixe les seuils par défaut du verdict, les budgets de référence et l'effectif minimal d'affichage), exécutés d'abord sur la machine de développement avec import des résultats en production, puis journalisation quotidienne avant départ ; endpoints `/multi/comparateur`, `/multi/performance`. L'endpoint `/multi/backtest` n'est construit que lorsque le harnais passe sur un serveur. Ordre imposé : backtest et pilote → seuils et budgets de référence → journalisation quotidienne.
+  - **Incrément Multi 1 — pronostiquer** : vérification des règles du pari (§9.5), écran Multi, pronostic du modèle à la taille choisie, bases (« chevaux les plus probables »), systèmes vérifiés et catalogue précalculé, indice de confiance en « seuils provisoires », explications, choix de l'utilisateur, calcul hors ligne, pronostic retenu et débrief sur l'appareil ; endpoints `/courses/{id}/multi/eligibilite`, `/multi/recommandation`, `/multi/systemes`, `/multi/verifier`, `/multi/evaluer` (à la racine de l'API, sauf l'éligibilité).
+  - **Incrément Multi 2 — évaluer** : comparateurs, harnais de backtest et pilote (qui fixe les seuils par défaut de l'indice de confiance, les tailles de référence et l'effectif minimal d'affichage), exécutés d'abord sur la machine de développement avec import des résultats en production, puis journalisation quotidienne avant départ ; endpoints `/multi/comparateur`, `/multi/performance`. L'endpoint `/multi/backtest` n'est construit que lorsque le harnais passe sur un serveur. Ordre imposé : backtest et pilote → seuils et tailles de référence → journalisation quotidienne. Seule l'arrivée officielle (avec ex-aequo) est nécessaire ; aucun rapport Multi n'est ingéré.
 - Rappel de jeu responsable visible sur chaque écran de résultats.
 - Usage mono-utilisateur, sans compte ni authentification.
 
@@ -453,7 +453,8 @@ L'utilisateur voit l'évaluation de la sélection ; les recommandations sont jou
 - Notifications push, rappels d'heure de départ.
 - Historique de presse/consensus intégré au produit (affiché à part si réintroduit un jour, jamais mélangé au calcul — voir aussi §5).
 - Backfill historique antérieur à 2004 au-delà de ce que `open-pmu-api` fournit déjà — pas un chantier V1 dédié.
-- Module Multi : méthode 2 et import du consensus presse ; systèmes mixtes (tickets de 5 et 6) ; choix du système parmi les systèmes équivalents selon la valeur ; indice de valeur dans le verdict (tant qu'il n'est pas calibré) ; Flexi.
+- Module Multi : méthode 2 et import du consensus presse ; systèmes mixtes (tickets de 5 et 6) ; choix du système parmi les systèmes équivalents selon la valeur ; Flexi.
+- Module Multi — tout ce qui touche à l'argent, retiré par le recadrage du 2026-10-18 : budget, coût, multiplicateur, mise, gain, seuil de rentabilité, indice de valeur ; ingestion et affichage des rapports Multi ; évaluation financière du Multi.
 - Affichage de l'application en anglais : le MVP est en français ; l'anglais, au choix de l'utilisateur, vient après le MVP pour toute l'application (§8). Décision du porteur de projet (2026-10-17).
 
 ## 7. Success Metrics
@@ -462,7 +463,7 @@ L'utilisateur voit l'évaluation de la sélection ; les recommandations sont jou
 
 **Primary**
 - **SM-1** : Calibration du modèle — sur un échantillon d'au moins quelques centaines de courses avec résultat connu, la calibration (les chevaux annoncés à X % de chances gagnent-ils environ X fois sur cent ?) doit être mesurablement meilleure que celle de la probabilité implicite du marché (`1/cote`), mesurée par score de Brier ou courbe de calibration par tranches. Valide FR-7, FR-8. En dessous de quelques centaines de courses, aucune conclusion n'est tirée dans un sens ou dans l'autre — pas de seuil chiffré fixé avant d'avoir ce volume. **Portée explicite** : SM-1 compare le modèle au marché (1/cote), pas au jugement des pronostiqueurs experts des sites concurrents — un SM-1 positif ne doit jamais être présenté comme une preuve de supériorité sur l'expertise humaine, question qui reste et restera non mesurée (§1 Vision, limite assumée).
-- **SM-4** (module Multi) : Calibration de la probabilité de couverture du Multi (FR-23, FR-30) — même logique que SM-1 : score de Brier et courbe par tranches sur les courses de ≥ 14 partants, comparée à la même quantité calculée à partir des cotes du marché. Complétée par la différence appariée, **à taille de sélection égale**, du nombre de chevaux capturés entre la recommandation du modèle et le comparateur marché, avec son intervalle de confiance. Aucun seuil chiffré fixé avant le pilote (cahier Multi §8). Conditionne le retrait de la mention « modèle en cours d'évaluation ». La qualité du verdict (FR-26) découle directement de cette calibration et n'a pas de métrique propre.
+- **SM-4** (module Multi) : Calibration de la probabilité de couverture du Multi (FR-23, FR-30) — même logique que SM-1 : score de Brier et courbe par tranches sur les courses de ≥ 14 partants, comparée à la même quantité calculée à partir des cotes du marché. Complétée par la différence appariée, **à taille de sélection égale**, du nombre de chevaux capturés entre la recommandation du modèle et le comparateur marché, avec son intervalle de confiance. Aucun seuil chiffré fixé avant le pilote (cahier Multi §8). Conditionne le retrait de la mention « modèle en cours d'évaluation ». La qualité de l'indice de confiance (FR-26) découle directement de cette calibration et n'a pas de métrique propre. Aucune métrique financière n'existe pour le Multi.
 
 **Secondary**
 - **SM-2** : ROI simulé sur les paris à value détectée (FR-9) — présenté uniquement couplé à sa taille d'échantillon, jamais comme preuve isolée. Directionnel seulement, pas un objectif à optimiser en soi.
@@ -471,12 +472,12 @@ L'utilisateur voit l'évaluation de la sélection ; les recommandations sont jou
 **Counter-metrics (do not optimize)**
 - **SM-C1** : Fréquence d'usage / rétention brute (revient chaque semaine) — explicitement écartée comme indicateur de succès à elle seule (contrepartie de SM-3, brief §5) : un usage fréquent sans changement de comportement de mise n'est pas un signal positif.
 - **SM-C2** : Volume de mises suggérées ou de value détectée — ne doit jamais être optimisé pour lui-même. Un modèle qui signale de la "value" plus souvent n'est pas meilleur ; seule la calibration (SM-1) juge la qualité réelle. Contrepartie de SM-1 et SM-2 : empêche d'ajuster le moteur pour produire plus de signaux plutôt que des signaux plus justes.
-- **SM-C3** : Fréquence des verdicts « jouer » du Multi — ne jamais régler les seuils du verdict pour en produire davantage. Seule la calibration de la probabilité de couverture (SM-4), qui fonde le verdict, juge la qualité de celui-ci. Contrepartie de SM-4.
+- **SM-C3** : Fréquence des pronostics Multi en « confiance élevée » — ne jamais régler les seuils de l'indice de confiance pour en produire davantage. Seule la calibration de la probabilité de couverture (SM-4), qui fonde l'indice, juge la qualité de celui-ci. Contrepartie de SM-4.
 
 ## 8. Cross-Cutting NFRs
 
 - **Parité fonctionnelle backend/mobile** : le moteur de calcul (scoring, probabilités, value, combinaisons) produit des résultats identiques à epsilon près entre l'implémentation Python (backend) et Dart (mobile), vérifié par les mêmes cas de test portés dans les deux langages (cahier backend §9, cahier mobile §5.2/§9).
-- **Performance du calcul local** : le recalcul complet (score → probabilités → combinaisons, y compris la simulation Monte-Carlo à 20 000 tirages) et la recommandation Multi (sélection, bases, formule, verdict) s'exécutent sur l'appareil mobile en un temps perçu comme instantané par l'utilisateur (pas de seuil chiffré fixé à ce stade — `[OPEN QUESTION]`, voir §11).
+- **Performance du calcul local** : le recalcul complet (score → probabilités → combinaisons, y compris la simulation Monte-Carlo à 20 000 tirages) et le pronostic Multi (sélection, bases, systèmes, indice de confiance) s'exécutent sur l'appareil mobile en un temps perçu comme instantané par l'utilisateur (pas de seuil chiffré fixé à ce stade — `[OPEN QUESTION]`, voir §11).
 - **Disponibilité du calcul hors ligne** : non négociable une fois les données d'une course en cache (§4.6) — c'est une contrainte transverse, pas une fonctionnalité optionnelle.
 - **Reproductibilité** : à jeu de données et paramètres identiques, le classement produit est identique à celui du prototype `analyse_hippique_v2.html` sur le même jeu d'entrée (critère d'acceptation explicite, cahier mobile §11).
 - **Préparation à l'affichage multilingue** : l'application du MVP est en français ; l'anglais vient après le MVP (§6.2). Dès le MVP, le moteur produit ses nouveaux textes (explications et raisons du Multi, FR-27) sous forme de codes et de valeurs que l'application met en forme, jamais sous forme de phrases figées dans le moteur ou l'API, pour que l'ajout de l'anglais n'oblige pas à reprendre le moteur. Les libellés de transparence de FR-4 et l'extraction par photo restent en français.
@@ -510,7 +511,7 @@ L'extraction par image (§4.8) appelle un fournisseur de vision IA payant à l'u
 
 ### 9.5 Règles du Multi — prérequis bloquant
 
-Les règles du pari Multi (prix unitaire, formules, coefficients de rapport, rapports minimums, jours de course support, seuil de 14 partants, non-partants) viennent d'un document PMU de 2001-2002. **Aucune story de développement du module Multi ne démarre avant que ces règles aient été vérifiées sur pmu.fr et datées** dans le module de règles (FR-22). Si elles ont changé, les coûts, le catalogue de systèmes, le verdict et les chiffres de UJ-4 changent aussi.
+Les règles du pari Multi (formules, tickets, tickets physiques, jours de course support, seuil de 14 partants, non-partants, ex-aequo, arrivée dégradée) viennent d'un document PMU de 2001-2002. Elles restent nécessaires même sans argent : elles déterminent les formules, les grilles, la requalification des tickets et le débrief. **Aucune story de développement du module Multi ne démarre avant que ces règles aient été vérifiées sur pmu.fr et datées** dans le module de règles (FR-22) ; sans cette date, aucune grille n'est affichée. Si elles ont changé, le catalogue de systèmes, les grilles et les chiffres de UJ-4 changent aussi. Le prix unitaire n'est plus affiché ; il n'est conservé dans le module de règles que comme provenance.
 
 ## 10. Monetization (Roadmap V2 — non construit en V1)
 
@@ -531,11 +532,11 @@ Les règles du pari Multi (prix unitaire, formules, coefficients de rapport, rap
 5. Méthode de dérivation du niveau de course depuis l'allocation PMU (cahier backend §7.2) — calibration par quantiles proposée mais à valider sur un premier jeu de données réel, avant d'être considérée fiable.
 6. Fréquence et volume d'ingestion quotidienne raisonnables pour ne pas solliciter excessivement une source non officielle (§9.3) — à décider avant d'automatiser le job d'ingestion.
 7. Gestion des homonymes de chevaux (le nom normalisé est la seule clé de rapprochement inter-courses, `numPmu` n'étant pas stable) — accepter le risque documenté ou ajouter un critère de désambiguïsation si un cas réel se présente.
-8. Règles du Multi (prix unitaire, formules, coefficients de rapport, rapports minimums, jours de course support, seuil de 14 partants, non-partants) : la source date de 2001-2002 — **prérequis bloquant** pour le développement du module Multi (§9.5).
-9. Emplacement des rapports Multi définitifs et du marqueur « course support » dans la source PMU — à découvrir dans l'adaptateur `pmu_client.py` ; conditionne l'évaluation financière (FR-30), pas la recommandation.
-10. Valeurs par défaut des seuils du verdict Multi (FR-26) — fixées par le pilote d'évaluation (cahier Multi §8.4), affichées « provisoires » jusque-là.
+8. Règles du Multi (formules, tickets, jours de course support, seuil de 14 partants, non-partants, ex-aequo, arrivée dégradée) : la source date de 2001-2002 — **prérequis bloquant** pour le développement du module Multi (§9.5). Les coefficients de rapport et rapports minimums ne sont plus nécessaires (recadrage du 2026-10-18).
+9. Emplacement du marqueur « course support » dans la source PMU — à découvrir dans l'adaptateur `pmu_client.py` ; en attendant, mode « exploration » (FR-22). *Volet « rapports Multi définitifs » clos le 2026-10-18 : rapports hors périmètre, seule l'arrivée officielle sert.*
+10. Valeurs par défaut des seuils de l'indice de confiance Multi (FR-26), qui dépendent de la taille de la sélection — fixées par le pilote d'évaluation (cahier Multi §8.4), affichées « provisoires » jusque-là. *Libellés « élevée / moyenne / faible » et seuils par taille confirmés par le porteur de projet le 2026-10-18.*
 11. Calendrier de l'affichage en anglais après le MVP (§8).
-12. Mesure de SM-3 (mises effectivement placées sur des chevaux « value ») : aucune exigence ne capte aujourd'hui les paris placés (pas de compte, aucun lien avec un compte de jeu). Piste : un journal déclaratif local, sur le modèle du jeu retenu du Multi (FR-28). À trancher avant de pouvoir mesurer SM-3 ; pas un blocage pour le MVP.
+12. Mesure de SM-3 (mises effectivement placées sur des chevaux « value ») : aucune exigence ne capte aujourd'hui les paris placés (pas de compte, aucun lien avec un compte de jeu). Piste : un journal déclaratif local, sur le modèle du pronostic retenu du Multi (FR-28) — qui, lui, ne capte aucune mise. À trancher avant de pouvoir mesurer SM-3 ; pas un blocage pour le MVP.
 
 ## 12. Assumptions Index
 
@@ -544,8 +545,13 @@ Les règles du pari Multi (prix unitaire, formules, coefficients de rapport, rap
 - Calendrier — pas de date de lancement fixe, rythme bootstrap : confirmé explicitement par le porteur de projet.
 - §9.2 — La réglementation camerounaise cible structurellement les opérateurs de mise, pas les outils d'analyse : lecture du brief, non confirmée par une source juridique primaire (voir Open Question 3).
 - §10 — Modèle à l'usage/crédits pressenti plutôt qu'abonnement fixe : préférence exprimée dans le brief, pas encore décidée (voir Open Question 2).
-- §4.11 — Module Multi dans le MVP ; le modèle décide la sélection ; pas de mise recommandée ; méthode 2 hors MVP ; verdict par course ; 3 bases candidates ; taille, bases et formule choisies sous budget : décisions D0-D7 confirmées par le porteur de projet le 2026-10-17 (`multi/reconcile-cdc-multi-prd.md`).
-- UJ-4 — Récit du porteur de projet réécrit pour suivre D0-D7 (le récit d'origine choisissait la méthode 1 et importait la presse) : arbitrage confirmé par le porteur de projet.
+- §4.11 — Module Multi dans le MVP ; le modèle décide la sélection ; méthode 2 hors MVP ; 3 bases candidates : décisions D0-D7 confirmées par le porteur de projet le 2026-10-17 (`multi/reconcile-cdc-multi-prd.md`).
+- §1, §4.11, §5, §6, §7 — **Recadrage du 2026-10-18 (« D ter »)** : le Multi devient un pronostic sans argent (ni budget, coût, multiplicateur, mise, gain, rapport, seuil de rentabilité ni indice de valeur) ; taille de sélection choisie par l'utilisateur ; verdict remplacé par l'indice de confiance ; rapports Multi et évaluation financière hors périmètre. Remplace D0, D3 et D5, précise D4 : décision du porteur de projet.
+- FR-23 — Taille par défaut de la sélection : dernière taille utilisée, sinon 10 : confirmé par le porteur de projet le 2026-10-18.
+- FR-24 — Aucune base active au premier affichage, l'utilisateur active les « chevaux les plus probables » qu'il veut : confirmé par le porteur de projet le 2026-10-18.
+- FR-26 — Libellés « confiance élevée / moyenne / faible », seuils qui dépendent de la taille de la sélection, provisoires jusqu'au pilote : confirmé par le porteur de projet le 2026-10-18 (valeurs des seuils : Open Question 10).
+- FR-24, FR-25, FR-27 — Bases nommées « chevaux les plus probables » ; formule affichée par défaut : Multi en 7 ; aucun badge de value dans le Multi (la value reste sur l'écran Résultats) : confirmé par le porteur de projet le 2026-10-18.
+- UJ-4 — Récit du porteur de projet réécrit pour suivre D0-D7 (le récit d'origine choisissait la méthode 1 et importait la presse), puis le recadrage du 2026-10-18 (budget et coûts retirés) : arbitrage confirmé par le porteur de projet.
 - §6.1 — Module Multi livré en deux incréments (décider, puis évaluer), après le cœur du MVP ; vérification des règles du pari comme prérequis bloquant (§9.5) : recommandations de la revue de finalisation, approuvées par le porteur de projet le 2026-10-17.
 - §6.2, §8 — Application en français dans le MVP, anglais après : confirmé par le porteur de projet le 2026-10-17 (calendrier : Open Question 11).
-- FR-30 — Débrief sur la recommandation du modèle et sur le jeu retenu par l'utilisateur (conservé sur l'appareil) : confirmé par le porteur de projet le 2026-10-17.
+- FR-30 — Débrief sur le pronostic du modèle et sur le pronostic retenu par l'utilisateur (conservé sur l'appareil) : confirmé par le porteur de projet le 2026-10-17, maintenu par le recadrage du 2026-10-18.

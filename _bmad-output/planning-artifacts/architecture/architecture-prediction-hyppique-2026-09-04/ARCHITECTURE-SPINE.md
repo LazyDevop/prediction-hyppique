@@ -7,7 +7,7 @@ paradigm: 'hexagonal (ports and adapters)'
 scope: 'Backend FastAPI + mobile Flutter — invariants keeping the two independently-built engines (Python/Dart) and the epics that will be carved from the PRD consistent.'
 status: final
 created: '2026-09-04'
-updated: '2026-10-17'
+updated: '2026-10-18'
 binds: []
 sources:
   - '_bmad-output/planning-artifacts/prds/prd-prediction-hyppique-2026-08-22/prd.md'
@@ -85,7 +85,7 @@ flowchart LR
     MULTID[lib/engine/multi/*]
     CATM[assets/ catalogue copy]
     LIB[Dart code-to-label table FR]
-    LOCAL[(sqflite v2: jeu_retenu,<br/>recommandation_consultee)]
+    LOCAL[(sqflite v2: pronostic_retenu,<br/>recommandation_consultee)]
   end
   GEN --> CAT
   CAT -->|byte-identical copy| CATB
@@ -149,9 +149,9 @@ flowchart LR
 
 ### AD-6 — The Multi engine consumes the scoring core and a server-built race context; the phone always computes locally
 
-- **Binds:** `backend/app/engine/multi/` and `mobile/lib/engine/multi/` (modules `regles`, `couverture`, `recommandation`, `verdict`, `explications`, `verification`, comparators); `fixtures/multi_cases.json`; every caller of the Multi engine (routes, jobs, Flutter providers); the data adapters that prepare its inputs.
-- **Prevents:** the Multi screen and the Results screen disagreeing about the same horse because a story recomputed scores, Top4 or value inside the Multi code; the Python and Dart engines picking different recommendations for the same race; a phone that cannot give a verdict offline because some input only exists on the server.
-- **Rule:** the Multi engine's inputs are (1) the scoring core's output for the race (win probabilities, `top4`, `value`, transparency flags, virtual runners) and (2) a **Multi race context** built by the backend and delivered with the race's runners: eligibility (support race, declared runners), historical median R7 or its absence, model evaluation status, and whether verdict thresholds are still provisional. The phone caches that context with the race and **always computes the recommendation, verdict and explanations with the Dart engine**, online or not; it never calls `/multi/recommandation`, which serves the backend's own jobs and non-mobile clients. The engine never computes a score, reads a database or the network (AD-1); M1 inputs (last-race rank, allocation, decoded *musique*) are normalized in the data layer (`pmu_client.py` / `repository.py`), never parsed inside the engine. Every Multi module except the generator and the B0 random comparator (logged by the backend only) exists in Python and Dart, with fixed-input cases in `fixtures/multi_cases.json` run by both suites (AD-2). Probabilities are compared after quantization to a 1e-9 grid, so equality is transitive and ties go to the cahier's tie rules; any iteration cap on the selection search is a shared constant, identical on both sides. [decided this run, tightened at review]
+- **Binds:** `backend/app/engine/multi/` and `mobile/lib/engine/multi/` (modules `regles`, `couverture`, `recommandation`, `confiance`, `explications`, `verification`, comparators); `fixtures/multi_cases.json`; every caller of the Multi engine (routes, jobs, Flutter providers); the data adapters that prepare its inputs.
+- **Prevents:** the Multi screen and the Results screen disagreeing about the same horse because a story recomputed scores, Top4 or value inside the Multi code; the Python and Dart engines picking different recommendations for the same race; a phone that cannot give a confidence index offline because some input only exists on the server.
+- **Rule:** the Multi engine's inputs are (1) the scoring core's output for the race (win probabilities, `top4`, `value`, transparency flags, virtual runners) and (2) a **Multi race context** built by the backend and delivered with the race's runners: eligibility (support race, declared runners), model evaluation status, and whether the confidence-index thresholds are still provisional. It carries no money figure (no rapport, no R7, no cost): the Multi is a forecast (cahier Multi v3). The phone caches that context with the race and **always computes the forecast (selection at the user-chosen size, candidate bases, systems for every formula), the confidence index and explanations with the Dart engine**, online or not; it never calls `/multi/recommandation`, which serves the backend's own jobs and non-mobile clients. The engine never computes a score, reads a database or the network (AD-1); M1 inputs (last-race rank, allocation, decoded *musique*) are normalized in the data layer (`pmu_client.py` / `repository.py`), never parsed inside the engine. Every Multi module except the generator and the B0 random comparator (logged by the backend only) exists in Python and Dart, with fixed-input cases in `fixtures/multi_cases.json` run by both suites (AD-2). Probabilities are compared after quantization to a 1e-9 grid, so equality is transitive and ties go to the cahier's tie rules; any iteration cap on the selection search is a shared constant, identical on both sides. [decided this run, tightened at review; amended 2026-10-18 — no money in the context]
 
 ### AD-7 — Reduced systems come from an offline-generated, verified, versioned catalogue; rules have one canonical file
 
@@ -163,7 +163,7 @@ flowchart LR
   - **Catalogue shape.** A header (`version` = sha256 of the entries, sha256 of `multi_regles.json` used, SciPy/HiGHS versions) and entries keyed by `(v', k', t')`, each a list of blocks over indices `0..v'-1`, verified at generation. Any test of the catalogue runs without SciPy.
   - **Relabelling.** One canonical mapping, identical in both languages: the non-base horses of the selection, sorted by `top4` descending, then win probability descending, then dossard ascending, take indices `0..v'-1`; each ticket is the bases plus the mapped block. Shared cases compare full ticket lists, not just counts. Every relabelled system is re-verified before it is shown.
   - **Runtime.** Nothing generates systems at runtime; a shape missing from the catalogue gets no system and a warning.
-  - **Rules.** `fixtures/multi_regles.json` holds unit stake, formulas, rapport coefficients, minimum rapports, support-race criteria, non-runner requalification and a mandatory `date_verification`; `regles.py` and `regles.dart` are validated against it; without a verification date no cost is displayed (FR-22); any change regenerates the catalogue. [decided this run, tightened at review]
+  - **Rules.** `fixtures/multi_regles.json` holds unit stake, formulas, rapport coefficients, minimum rapports, support-race criteria, non-runner requalification and a mandatory `date_verification`; `regles.py` and `regles.dart` are validated against it; without a verification date no grid is displayed (FR-22); the money constants stay in the file for completeness but are never used by the forecast nor displayed; any change regenerates the catalogue. [decided this run, tightened at review; amended 2026-10-18]
 
 ### AD-8 — Explanations travel as registered codes, never sentences
 
@@ -171,33 +171,33 @@ flowchart LR
 - **Prevents:** the two engines emitting different codes, or the same code with different parameters, and the screen silently showing nothing (or a raw code) for one of them; French sentences hard-coded in the engine or API, which would force an engine rewrite when English arrives (PRD §8).
 - **Rule:** every explanation, reason and warning produced by the Multi engine is a `(code, params)` pair whose code and parameter names are declared in `fixtures/multi_codes.json`. Tests in both languages assert that the engine emits only declared codes with their declared parameters; a mobile test asserts every declared code has a label. For the MVP the app renders codes through a plain Dart table mapping each code to a French sentence template; migrating that table to Flutter's localization tooling is deferred to the English release. [decided this run]
 
-### AD-9 — The retained play lives on the device only, in the existing SQLite cache
+### AD-9 — The retained forecast lives on the device only, in the existing SQLite cache
 
 - **Binds:** `mobile/lib/data/local/database_helper.dart` (schema version 1 → 2), the Multi providers, the next-day debrief.
-- **Prevents:** debrief history stored in a settings store; the retained play leaking to the server in a V1 that has no account (PRD §9.1); fresh installs and upgraded installs ending up with different local schemas.
-- **Rule:** the retained play and the model recommendation consulted with it are stored in two new tables of `hippique_cache.db` (`jeu_retenu`, `recommandation_consultee`), each referencing the race by its stable key and carrying the recommendation identity (AD-12). `onCreate` builds schema version 2 directly and `onUpgrade` migrates 1 → 2; both paths are tested. A retained play is replaceable until the race's departure time and frozen afterwards (UTC comparison, AD-12). Entries older than 90 days are purged at app start-up (no background task). Verdict thresholds are user settings stored in `shared_preferences` with the other engine parameters (FR-20). Nothing of this is sent to the backend. [decided this run, tightened at review]
+- **Prevents:** debrief history stored in a settings store; the retained forecast leaking to the server in a V1 that has no account (PRD §9.1); fresh installs and upgraded installs ending up with different local schemas.
+- **Rule:** the retained forecast (« pronostic retenu », formerly « jeu retenu ») and the model forecast consulted with it are stored in two new tables of `hippique_cache.db` (`pronostic_retenu` — renamed from `jeu_retenu`, never shipped — and `recommandation_consultee`, name kept), each referencing the race by its stable key and carrying the recommendation identity (AD-12). `onCreate` builds schema version 2 directly and `onUpgrade` migrates 1 → 2; both paths are tested. A retained forecast is replaceable until the race's departure time and frozen afterwards (UTC comparison, AD-12). Entries older than 90 days are purged at app start-up (no background task). Confidence-index thresholds and the last-used selection size are user settings stored in `shared_preferences` with the other engine parameters (FR-20). Nothing of this is sent to the backend. [decided this run, tightened at review; amended 2026-10-18 — retained forecast]
 
 ### AD-10 — Server-side Multi records: one writer per table, through the repository; the daily log is append-only
 
 - **Binds:** `backend/app/data/models.py`, `backend/app/data/repository.py`, `backend/app/jobs/`, `api/routes_multi`.
-- **Prevents:** a route or job writing Multi tables directly; two jobs both writing outcomes or rapports; a correction overwriting a logged recommendation; failure entries colliding with the uniqueness rule of logged recommendations.
+- **Prevents:** a route or job writing Multi tables directly; two jobs both writing outcomes or arrivals; a correction overwriting a logged recommendation; failure entries colliding with the uniqueness rule of logged recommendations.
 - **Rule:** French-named tables, read and written only through `repository.py`, each with a single writer:
 
   | Table | Content | Sole writer |
   | --- | --- | --- |
-  | `multi_course` | eligibility, Multi rapports, arrival with ties | ingestion/finalisation job |
-  | `recommandation_multi` | logged model recommendations and comparators, unique per (race key, strategy, strategy version, mode, budget) | daily Multi log job |
+  | `multi_course` | eligibility, arrival with ties (no rapports) | ingestion/finalisation job |
+  | `recommandation_multi` | logged model forecasts (with confidence level) and comparators, unique per (race key, strategy, strategy version, mode, reference size) | daily Multi log job |
   | `echec_journal_multi` | daily runs that could not log, with reason | daily Multi log job |
-  | `resultat_recommandation` | outcome of each logged entry | finalisation job |
+  | `resultat_recommandation` | outcome of each logged entry: horses captured (0–4), arrival in selection — no cost or gain | finalisation job |
   | `performance_strategie` | backtest/pilot results | backtest import command (AD-11) |
 
-  `recommandation_multi` rows are never updated or deleted; a correction is a new strategy version. The daily Multi log runs in the `ingestion` container and starts only once the pilot has fixed the reference budgets (PRD §6.1). Multi rapports are read from the PMU source only inside `pmu_client.py` (AD-1). How these tables and the new M1 columns reach an existing production database is decided by AD-13. [decided this run, tightened at review]
+  `recommandation_multi` rows are never updated or deleted; a correction is a new strategy version. The daily Multi log runs in the `ingestion` container and starts only once the pilot has fixed the reference sizes (PRD §6.1). Table names are kept; they now hold forecasts. How these tables and the new M1 columns reach an existing production database is decided by AD-13. [decided this run, tightened at review; amended 2026-10-18 — no rapports]
 
 ### AD-11 — The backtest is a backend job, location-agnostic; its results reach production by an explicit import
 
 - **Binds:** the backtest/pilot harness and its import command in `backend/app/jobs/`; `fixtures/multi_parametres_pilote.json`; `/multi/performance`; the future `/multi/backtest`.
 - **Prevents:** a developer-machine-only harness rewritten when evaluation moves to a server; pilot results stranded in a database copy while production shows nothing; Python, Dart and the daily job each taking the pilot's defaults from a different place.
-- **Rule:** the harness is a driving adapter in `backend/app/jobs/`, configured solely by `DATABASE_URL`, calling the Multi engine and `repository.py` like any other job. It runs first on the developer machine against a copy of the production database, later on a server, with the same code. Its results are exported to a file and loaded into production by an import command of the same module, through `repository.py`; `/multi/performance` only reads `performance_strategie`. The values the pilot fixes — default verdict thresholds, reference budgets, minimum sample size for displaying performances, and the "provisional" flag — live in `fixtures/multi_parametres_pilote.json`, validated by both languages' tests and read by the daily job (AD-2 pattern). `/multi/backtest` is built only when the harness moves to a server. [decided this run, tightened at review]
+- **Rule:** the harness is a driving adapter in `backend/app/jobs/`, configured solely by `DATABASE_URL`, calling the Multi engine and `repository.py` like any other job. It runs first on the developer machine against a copy of the production database, later on a server, with the same code. Its results are exported to a file and loaded into production by an import command of the same module, through `repository.py`; `/multi/performance` only reads `performance_strategie`. The values the pilot fixes — default confidence-index thresholds (per selection size), reference sizes, minimum sample size for displaying performances, and the "provisional" flag — live in `fixtures/multi_parametres_pilote.json`, validated by both languages' tests and read by the daily job (AD-2 pattern). `/multi/backtest` is built only when the harness moves to a server. [decided this run, tightened at review; amended 2026-10-18]
 
 ### AD-12 — Race identity, recommendation identity and time are fixed shapes
 
@@ -217,8 +217,8 @@ flowchart LR
 | --- | --- |
 | Naming (entities, fields) | French domain vocabulary end-to-end — `nom`, `cote`, `dossard`/`num_pmu`, `forme`, `score`, `probabilite`, `value`, `kelly`, `mise`, `inedit`, `partants`. Identical spelling in Python dataclasses, JSON API payloads, and Dart models — never translated to English — **for the engine-facing shape** (`HorseAnalysis`/`Performance` and their JSON mirror). A DB/API schema serving a genuinely different bounded context (e.g. `ParticipationOut`'s course-specific `age_a_la_course`/`cote_reference` vs. the ad-hoc-analysis `HorseIn`'s `age`/`cote`) may legitimately use different names for an equivalent concept — the requirement is that the translation between them happens in one explicit mapping function (already the pattern: `_build_horse_analysis()`), never implicitly assumed identical. [narrowed after adversarial review — the original unqualified claim didn't hold for `ParticipationOut` vs `HorseIn`] |
 | Data & formats | A cross-course-stable horse identity is the normalized name (`nom_normalise`); `num_pmu` is valid only within one course (cahier backend §6.2 — a documented pitfall, not a design choice made here). `terrain`/`niveau`/`distance` on a `Performance` are nullable and mean "neutral coefficient," never a guessed default — this rule already governs the engine (§7.5) and extends verbatim to every future field with the same shape (see AD-5 for the wire-format corollary). |
-| State & cross-cutting | Mobile local calculation never depends on network reachability once a course is cached (PRD FR-13) — this includes the whole Multi recommendation and verdict; the network-dependent features (photo import, refreshing odds, non-runners and arrivals) fail visibly and leave the rest of the screen usable (FR-15). No third-party API key ever ships in the mobile binary (AD-3). API responses are always typed (AD-4), Multi routes included. |
-| Multi naming | French domain vocabulary end-to-end for Multi shapes as well (`selection`, `bases`, `tickets`, `p_couverture`, `verdict`, `explications`), matching the cahier Multi v2; English never appears in a Multi identifier, table or JSON key. |
+| State & cross-cutting | Mobile local calculation never depends on network reachability once a course is cached (PRD FR-13) — this includes the whole Multi forecast and confidence index; the network-dependent features (photo import, refreshing odds, non-runners and arrivals) fail visibly and leave the rest of the screen usable (FR-15). No third-party API key ever ships in the mobile binary (AD-3). API responses are always typed (AD-4), Multi routes included. |
+| Multi naming | French domain vocabulary end-to-end for Multi shapes as well (`selection`, `bases`, `tickets`, `p_couverture`, `confiance`, `explications`), matching the cahier Multi v3; English never appears in a Multi identifier, table or JSON key. |
 
 ## Stack
 
@@ -281,7 +281,7 @@ flowchart LR
 - **Localization tooling.** The Dart code-to-label table (AD-8) is migrated to Flutter's localization tooling when English is added after the MVP (PRD §8); the tooling's current setup is verified then, not now.
 - **Backtest on a server.** When the harness (AD-11) moves off the developer machine: which host, how it is triggered, and the `/multi/backtest` endpoint. Revisit when the pilot needs to run regularly.
 - **Betting rules verification** (PRD §9.5) is a product prerequisite, not an architecture decision: it fills `fixtures/multi_regles.json`; AD-7 only fixes where the result lives.
-- **Where Multi rapports and the support-race marker sit in the PMU source** (PRD Open Question 9) — discovered inside `pmu_client.py` (AD-1); no structural hook needed beyond AD-10.
+- **Where the support-race marker and the arrival with ties sit in the PMU source** (PRD Open Question 9) — discovered inside `pmu_client.py` (AD-1); no structural hook needed beyond AD-10. Multi rapports are out of scope since 2026-10-18 (the Multi is a forecast): not ingested, not stored, not displayed.
 - **Operations of the Multi jobs.** Schedule of the daily Multi log relative to departure times, and backup of the production SQLite file (now the only home of logged recommendations): decide when increment 2 starts.
 - **Local test environment vs production.** The backend's local virtualenv runs Python 3.15 / NumPy 2.x while production runs 3.12 / 1.26.4; running backend tests under `uv` with Python 3.12 and the pinned requirements would close the gap. Revisit before the Multi engine's numeric fixtures are frozen.
 - **Payment/account/multi-user architecture.** Explicitly out of MVP scope (PRD §6.2, §9.1) — revisit only once the V2 monetization gate (PRD §10) is met.

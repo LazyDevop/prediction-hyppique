@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Maquette — Multi</title>
+<style>
+/*
+  Gouverné par :
+  - DESIGN.md : Colors (liste fermée des usages de l'or : confiance élevée et base seulement
+    pour le Multi ; aucun vert/rouge dans le Multi : réservés à la value, sur Résultats ; line-card à .36 ; on-gold), Typography
+    (chiffres tabulaires ; valeur de la taille en headlineSmall, titre de la confiance en
+    titleLarge ; label ≥ 11sp), Shapes (size-stepper en rounded.sm), Elevation & Depth
+    (bordure or : liste fermée, toujours doublée d'un texte), Components (size-stepper,
+    confidence-card, multi-row, base-chip, formula-row, evaluation-block,
+    other-methods-section, multi-action-bar, tickets-sheet, status-banner, dossard-badge
+    et sa variante contour, cta-primary, cta-ghost ; pas de value-badge dans le Multi), Do's and Don'ts
+  - EXPERIENCE.md : Foundation (le Multi est un pronostic sans argent — §D ter),
+    Information Architecture (ordre de l'écran Multi), Voice and Tone (garantie mot pour
+    mot, « arrivée dans la sélection », « chevaux les plus probables », heures « 15 h 05 »),
+    Component Patterns, State Patterns, Accessibility Floor (barre basse sous le contenu,
+    en-têtes, feuille des grilles), Key Flows UJ-4 étapes 5-9
+  Aucun montant, coût, mise, gain ni rapport nulle part.
+  Colonne 1 : après retouches (non-partant n° 7 remplacé, n° 6 ajouté), 13 chevaux dont 1 base,
+              confiance moyenne (UJ-4 étapes 5-8).
+  Colonne 2 : feuille des grilles, Multi en 7 affichée, pronostic retenu (UJ-4 étape 9).
+  Chiffres illustratifs ; la grille de la colonne 2 est un vrai système couvrant
+  (base 11 + 6 chevaux parmi 12 : tout groupe de 3 non-bases est dans au moins un ticket).
+*/
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  background:#05070d; font-family:'Segoe UI',Roboto,system-ui,-apple-system,sans-serif;
+  padding:40px 20px; display:flex; gap:40px; flex-wrap:wrap; justify-content:center;
+  font-variant-numeric:tabular-nums;
+}
+.caption { color:#8B93A7; font-size:12px; text-align:center; margin-bottom:10px; letter-spacing:.5px; text-transform:uppercase; max-width:390px; }
+/* Cadre : la zone défilante et la barre basse sont empilées — la barre ne recouvre jamais le contenu */
+.frame { width:390px; height:792px; background:#0B1120; border-radius:28px; border:6px solid #1a1f2e; overflow:hidden; box-shadow:0 0 0 1px rgba(255,255,255,.04); position:relative; display:flex; flex-direction:column; }
+.screen { flex:1; min-height:0; overflow-y:auto; padding:14px 14px 18px; color:#E7E4DA; }
+.screen::-webkit-scrollbar{ width:0; }
+
+.top { display:flex; align-items:center; gap:10px; min-height:48px; }
+.back { color:#8B93A7; font-size:18px; min-width:32px; }
+h1 { font-size:15px; text-transform:uppercase; letter-spacing:.6px; color:#E8B33C; flex:1; }
+.settings { color:#8B93A7; font-size:18px; min-width:48px; min-height:48px; display:flex; align-items:center; justify-content:center; }
+.race { font-size:12px; }
+.race b { font-weight:700; }
+.meta { font-size:11px; color:#8B93A7; margin-top:2px; }
+.nobet { font-size:11px; color:#8B93A7; margin-top:6px; padding-bottom:10px; border-bottom:1px solid rgba(255,255,255,.08); }
+
+.label { font-size:11px; text-transform:uppercase; letter-spacing:.7px; color:#8B93A7; }
+.section-label { color:#E8B33C; font-size:11px; text-transform:uppercase; letter-spacing:.7px; margin:18px 0 8px; }
+.section-label .aside { color:#8B93A7; }
+
+/* status-banner neutre */
+.banner { background:#131C2E; border:1px solid rgba(255,255,255,.36); border-radius:8px; padding:8px 10px; font-size:12px; margin-top:10px; }
+
+/* size-stepper : contrôle à pas, rounded.sm, boutons 48dp, aucun montant */
+.stepper { background:#131C2E; border:1px solid rgba(255,255,255,.36); border-radius:8px; padding:6px; margin-top:12px; display:flex; align-items:center; gap:8px; }
+.stepper .mid { text-align:center; }
+.stepper .val { font-size:24px; font-weight:700; line-height:1.3; }
+.stepbtn { min-width:48px; min-height:48px; border:1px solid rgba(255,255,255,.36); border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:20px; font-weight:700; color:#E7E4DA; background:#0F1728; }
+.stepbtn.off { color:#8B93A7; }
+
+.card { background:#0F1728; border:1px solid rgba(255,255,255,.36); border-radius:12px; padding:12px 14px; }
+/* confidence-card : or seulement pour « Confiance élevée » (.high, non montrée ici) */
+.conf { margin-top:12px; }
+.conf .title { font-size:22px; font-weight:700; color:#E7E4DA; margin:4px 0 6px; }
+.conf.high { border-color:#E8B33C; background:linear-gradient(rgba(232,179,60,.12),rgba(232,179,60,.12)),#0F1728; }
+.conf.high .title { color:#E8B33C; }
+.conf.high .tag { color:#E7E4DA; }
+.tags { display:flex; gap:6px; flex-wrap:wrap; margin-top:9px; }
+.tag { font-size:11px; text-transform:uppercase; letter-spacing:.6px; color:#8B93A7; border:1px solid rgba(255,255,255,.36); border-radius:6px; padding:2px 6px; }
+
+.kv { display:flex; justify-content:space-between; flex-wrap:wrap; gap:2px 10px; font-size:12.5px; padding:4px 0; border-bottom:1px solid rgba(255,255,255,.08); }
+.kv span:first-child { color:#8B93A7; }
+.kv:last-of-type { border-bottom:none; }
+.note { font-size:11px; color:#8B93A7; margin-top:7px; line-height:1.4; }
+
+.mrow { display:flex; align-items:center; flex-wrap:wrap; gap:4px 10px; padding:8px 0; border-bottom:1px solid rgba(255,255,255,.08); min-height:48px; }
+.dossard { background:#E8B33C; color:#14100A; font-weight:800; border-radius:6px; min-width:26px; text-align:center; padding:4px 5px; font-size:13px; flex-shrink:0; }
+.mid { flex:1; min-width:0; }
+.mname { font-size:13.5px; font-weight:700; }
+.basetag { color:#E8B33C; font-size:11px; text-transform:uppercase; letter-spacing:.6px; margin-left:6px; font-weight:700; }
+.addtag { color:#8B93A7; font-size:11px; text-transform:uppercase; letter-spacing:.6px; margin-left:6px; }
+.mexp { font-size:11px; color:#8B93A7; margin-top:1px; }
+.mrow.out .mname, .mrow.out .mexp { color:#8B93A7; font-weight:400; }
+.mrow.out .mname { font-weight:600; }
+/* dossard-badge, variante contour (outline-*) : chevaux écartés */
+.mrow.out .dossard { background:#131C2E; color:#8B93A7; border:1px solid rgba(255,255,255,.36); }
+.sub-label { font-size:11px; text-transform:uppercase; letter-spacing:.6px; color:#8B93A7; margin:12px 0 2px; }
+.swap { display:flex; align-items:center; justify-content:space-between; gap:10px; font-size:12px; margin-top:10px; }
+.swap .ghost { padding:0 14px; display:flex; align-items:center; }
+
+/* base-chip — section « Chevaux les plus probables » */
+.chip { background:#131C2E; border:1px solid rgba(255,255,255,.36); border-radius:10px; padding:9px 12px; display:flex; align-items:center; gap:10px; margin-bottom:7px; min-height:48px; }
+.chip.on { border-color:#E8B33C; }
+.chip .state { font-size:11px; color:#8B93A7; margin-top:1px; }
+.chip.on .state { color:#E7E4DA; }
+.sw { width:36px; height:20px; border-radius:6px; background:#0B1120; border:1px solid rgba(255,255,255,.36); position:relative; flex-shrink:0; }
+.sw i { position:absolute; top:2px; left:2px; width:14px; height:14px; border-radius:4px; background:#8B93A7; }
+.chip.on .sw { border-color:#E8B33C; } .chip.on .sw i { left:18px; background:#E8B33C; }
+
+/* formula-row : aucune bordure or, étiquette texte « Affichée », aucun coût */
+.frow { background:#0F1728; border:1px solid rgba(255,255,255,.36); border-radius:12px; padding:10px 12px; margin-bottom:8px; min-height:48px; }
+.frow-head { display:flex; justify-content:space-between; align-items:baseline; gap:8px; flex-wrap:wrap; }
+.fform { font-size:13px; font-weight:700; }
+.fflag { font-size:11px; text-transform:uppercase; letter-spacing:.6px; color:#E7E4DA; font-weight:700; }
+.fnums { font-size:11.5px; color:#8B93A7; margin-top:2px; }
+.fnums b { color:#E7E4DA; }
+.frow .note { border-top:1px solid rgba(255,255,255,.08); padding-top:7px; }
+
+/* evaluation-block */
+.dist { display:grid; grid-template-columns:auto 1fr auto; gap:5px 8px; align-items:center; font-size:11.5px; margin:6px 0 4px; }
+.dist span:first-child, .dist .lbl { color:#8B93A7; }
+.track { height:6px; background:#131C2E; border:1px solid rgba(255,255,255,.36); border-radius:3px; overflow:hidden; }
+.track i { display:block; height:100%; background:#8B93A7; }
+
+.ghost { background:#131C2E; border:1px solid rgba(255,255,255,.36); border-radius:10px; color:#E7E4DA; font-size:13px; padding:12px 14px; text-align:center; font-weight:600; min-height:48px; }
+.ghost.small { margin-top:8px; }
+.collapse { display:flex; justify-content:space-between; text-align:left; margin-top:18px; }
+.collapse small { display:block; color:#8B93A7; font-weight:400; font-size:11px; margin-top:2px; }
+
+.disclaimer { margin-top:16px; font-size:11px; color:#8B93A7; text-align:center; font-style:italic; padding:10px; border-top:1px solid rgba(255,255,255,.14); }
+
+/* multi-action-bar : sous la zone défilante (jamais par-dessus) */
+.bar { flex-shrink:0; background:#0B1120; border-top:1px solid rgba(255,255,255,.36); padding:12px 14px 14px; display:flex; flex-direction:column; gap:8px; }
+.cta { background:#E8B33C; color:#14100A; border-radius:10px; text-align:center; font-weight:800; font-size:14px; letter-spacing:.6px; padding:13px; text-transform:uppercase; min-height:48px; }
+.bar .ghost { padding:12px; }
+
+/* Colonne 2 — feuille des grilles (tickets-sheet) */
+.scrim { position:absolute; inset:0; background:rgba(5,7,13,.72); }
+.sheet { position:absolute; left:0; right:0; bottom:0; max-height:86%; display:flex; flex-direction:column; background:#131C2E; border-top:1px solid rgba(255,255,255,.36); border-radius:12px 12px 0 0; color:#E7E4DA; }
+.sheet-body { overflow-y:auto; padding:10px 16px 12px; }
+.handle { width:36px; height:4px; border-radius:2px; background:rgba(255,255,255,.36); margin:0 auto 6px; }
+.sheet-head { display:flex; justify-content:space-between; align-items:center; min-height:48px; }
+.sheet-title { font-size:15px; font-weight:700; }
+.close { font-size:13px; color:#E7E4DA; border:1px solid rgba(255,255,255,.36); border-radius:10px; padding:0 14px; min-height:48px; display:flex; align-items:center; }
+.phys { border:1px solid rgba(255,255,255,.36); border-radius:12px; background:#0F1728; padding:8px 10px; margin-top:9px; }
+.phys .label { margin-bottom:4px; }
+.tk { display:grid; grid-template-columns:minmax(34px,auto) repeat(7, 1fr); font-size:13px; padding:3px 0; border-bottom:1px solid rgba(255,255,255,.08); text-align:center; }
+.tk:last-child { border-bottom:none; }
+.tk span:first-child { color:#8B93A7; font-size:11px; text-align:left; align-self:center; white-space:nowrap; }
+.tk .b { color:#E8B33C; font-weight:800; }
+.legend { font-size:11px; color:#8B93A7; margin-top:6px; }
+.legend b { color:#E8B33C; }
+.pinned { flex-shrink:0; background:#131C2E; border-top:1px solid rgba(255,255,255,.36); padding:10px 16px 14px; }
+</style>
+</head>
+<body>
+
+<div>
+  <div class="caption">Multi — après retouches, 13 chevaux dont 1 base (UJ-4 étapes 5-8)</div>
+  <div class="frame">
+    <div class="screen">
+      <!-- 1. En-tête -->
+      <div class="top"><span class="back">←</span><h1>Multi</h1><span class="settings" title="Réglages">⚙</span></div>
+      <div class="race"><b>R1C3 · Vincennes</b> · Prix des Ajoncs · départ 15 h 05</div>
+      <div class="meta">18 partants · course éligible · Cotes de 9 h 38</div>
+      <div class="meta">Modifiable jusqu'au départ (15 h 05)</div>
+      <div class="nobet">L'outil ne place aucun pari.</div>
+      <div class="banner">ℹ️ Non-partant : n° 7 — pronostic recalculé</div>
+
+      <!-- 2. Taille de la sélection -->
+      <div class="stepper">
+        <span class="stepbtn" title="Un cheval de moins">−</span>
+        <div class="mid"><div class="label">Taille de la sélection</div><div class="val">13 chevaux</div></div>
+        <span class="stepbtn" title="Un cheval de plus">+</span>
+      </div>
+
+      <!-- 3. Confiance -->
+      <div class="card conf">
+        <div class="label">Confiance</div>
+        <div class="title">Confiance moyenne</div>
+        <div class="kv"><span>Arrivée dans la sélection, bases comprises</span><span>31 % (estimé)</span></div>
+        <div class="kv"><span>Ouverture de la course</span><span>course ouverte</span></div>
+        <div class="kv"><span>Données</span><span>1 cheval à historique court</span></div>
+        <div class="tags"><span class="tag">modèle en cours d'évaluation</span><span class="tag">seuils provisoires</span></div>
+      </div>
+
+      <!-- 4. Sélection -->
+      <div class="section-label">Sélection · 13 chevaux<span class="mod">Modifiée</span></div>
+      <div class="mrow"><span class="dossard">11</span><div class="mid"><div class="mname">Brise de Mars<span class="basetag">Base</span></div><div class="mexp">Top 4 estimé 58 % · contribution −14 pts</div></div></div>
+      <div class="mrow"><span class="dossard">4</span><div class="mid"><div class="mname">Gaillard du Pré</div><div class="mexp">Top 4 estimé 49 % · contribution −9 pts</div></div></div>
+      <div class="mrow"><span class="dossard">2</span><div class="mid"><div class="mname">Hêtre Pourpre</div><div class="mexp">Top 4 estimé 41 % · contribution −6 pts</div></div></div>
+      <div class="mrow"><span class="dossard">15</span><div class="mid"><div class="mname">Jade de Vire</div><div class="mexp">Top 4 estimé 34 % · contribution −5 pts</div></div></div>
+      <div class="mrow"><span class="dossard">9</span><div class="mid"><div class="mname">Ivoire Sauvage</div><div class="mexp">Top 4 estimé 31 % · contribution −4 pts · cote manquante</div></div></div>
+      <div class="mrow"><span class="dossard">13</span><div class="mid"><div class="mname">Comète d'Ourville</div><div class="mexp">Top 4 estimé 27 % · contribution −3 pts</div></div></div>
+      <div class="mrow"><span class="dossard">1</span><div class="mid"><div class="mname">Altesse du Bocage</div><div class="mexp">Top 4 estimé 24 % · contribution −3 pts</div></div></div>
+      <div class="mrow"><span class="dossard">16</span><div class="mid"><div class="mname">Fusain des Landes</div><div class="mexp">Top 4 estimé 21 % · contribution −2 pts</div></div></div>
+      <div class="mrow"><span class="dossard">5</span><div class="mid"><div class="mname">Éclair de Juin</div><div class="mexp">Top 4 estimé 18 % · contribution −2 pts</div></div></div>
+      <div class="mrow"><span class="dossard">8</span><div class="mid"><div class="mname">Danseur Gris</div><div class="mexp">Top 4 estimé 15 % · contribution −1 pt</div></div></div>
+      <div class="mrow"><span class="dossard">3</span><div class="mid"><div class="mname">Korrigan Blanc</div><div class="mexp">Top 4 estimé 9 % · contribution −1 pt</div></div></div>
+      <div class="mrow"><span class="dossard">17</span><div class="mid"><div class="mname">Marquis du Val</div><div class="mexp">Top 4 estimé 6 % · contribution −1 pt · historique court (3)</div></div></div>
+      <div class="mrow"><span class="dossard">6</span><div class="mid"><div class="mname">Vent d'Anjou<span class="addtag">Ajouté par vous</span></div><div class="mexp">Top 4 estimé 5 % · contribution −1 pt</div></div></div>
+      <div class="sub-label">Écartés les plus proches</div>
+      <div class="mrow out"><span class="dossard">12</span><div class="mid"><div class="mname">Lune de Sienne</div><div class="mexp">Écarté : top 4 estimé 7 % · 🐎 Inédit</div></div></div>
+      <div class="mrow out"><span class="dossard">10</span><div class="mid"><div class="mname">Nuage d'Or</div><div class="mexp">Écarté : top 4 estimé 4 % · +1 pt si ajouté</div></div></div>
+      <div class="mrow out"><span class="dossard">14</span><div class="mid"><div class="mname">Olympe du Lys</div><div class="mexp">Écarté : top 4 estimé 3 % · données non saisies</div></div></div>
+      <div class="swap"><span>Échanger n° 6 contre n° 12 : +1 pt d'arrivée dans la sélection</span><span class="ghost">Appliquer</span></div>
+      <div class="ghost small">Revenir au pronostic du modèle</div>
+      <div class="ghost small">+ Ajouter un cheval</div>
+      <div class="ghost small">Saisir ma propre sélection</div>
+
+      <!-- 5. Chevaux les plus probables -->
+      <div class="section-label">Chevaux les plus probables <span class="aside">· selon le modèle</span></div>
+      <div class="chip on"><span class="dossard">11</span><div class="mid"><div class="mname">Top 4 estimé 58 % · en base −4 pts</div><div class="state">Base imposée dans tous les tickets</div></div><span class="sw"><i></i></span></div>
+      <div class="chip"><span class="dossard">4</span><div class="mid"><div class="mname">Top 4 estimé 49 % · en base −6 pts</div><div class="state">Interdite comme base</div></div><span class="sw"><i></i></span></div>
+      <div class="chip"><span class="dossard">2</span><div class="mid"><div class="mname">Top 4 estimé 41 % · en base −8 pts</div><div class="state">Interdite comme base</div></div><span class="sw"><i></i></span></div>
+
+      <!-- 6. Systèmes -->
+      <div class="section-label">Systèmes <span class="aside">· 13 chevaux dont 1 base</span></div>
+      <div class="frow">
+        <div class="frow-head"><span class="fform">Multi en 7</span><span class="fflag">Affichée</span></div>
+        <div class="fnums"><b>15 tickets</b> · 4 tickets physiques</div>
+        <div class="note">Si les 4 premiers sont dans votre sélection et incluent votre base, au moins un de vos tickets les contient tous.<br>Couverture garantie — pas un gain garanti.</div>
+      </div>
+      <div class="frow"><div class="frow-head"><span class="fform">Multi en 6</span></div><div class="fnums"><b>29 tickets</b> · 8 tickets physiques</div></div>
+      <div class="frow"><div class="frow-head"><span class="fform">Multi en 5</span></div><div class="fnums"><b>57 tickets</b> · 15 tickets physiques</div></div>
+      <div class="frow"><div class="frow-head"><span class="fform">Multi en 4</span></div><div class="fnums"><b>220 tickets</b> · 55 tickets physiques</div></div>
+      <div class="ghost small">Saisir un système trouvé ailleurs</div>
+
+      <!-- 7. Évaluation -->
+      <div class="section-label">Évaluation</div>
+      <div class="card">
+        <div class="kv"><span>Arrivée dans la sélection</span><span>38 % (estimé)</span></div>
+        <div class="kv"><span>Bases comprises</span><span>31 % (estimé)</span></div>
+        <div class="label" style="margin-top:8px">Chevaux capturés (estimation)</div>
+        <div class="dist">
+          <span>0 capturé</span><span class="track"><i style="width:1%"></i></span><span>1 %</span>
+          <span class="lbl">1 capturé</span><span class="track"><i style="width:7%"></i></span><span>7 %</span>
+          <span class="lbl">2 capturés</span><span class="track"><i style="width:21%"></i></span><span>21 %</span>
+          <span class="lbl">3 capturés</span><span class="track"><i style="width:33%"></i></span><span>33 %</span>
+          <span class="lbl">4 capturés</span><span class="track"><i style="width:38%"></i></span><span>38 %</span>
+        </div>
+      </div>
+
+      <!-- 8. Autres méthodes (repliée) -->
+      <div class="ghost collapse"><span>Autres méthodes<small>Méthode 1 · marché — hypothèse non validée</small></span><span>▸</span></div>
+
+      <!-- 9. Rappel -->
+      <div class="disclaimer">Outil d'aide à la décision — aucun modèle ne garantit un gain. Jouez uniquement ce que vous pouvez vous permettre de perdre.</div>
+    </div>
+    <div class="bar">
+      <div class="cta">Je retiens ce pronostic</div>
+      <div class="ghost">Voir les grilles</div>
+    </div>
+  </div>
+</div>
+
+<div>
+  <div class="caption">Multi — feuille « Voir les grilles », Multi en 7 affichée, pronostic retenu (UJ-4 étape 9)</div>
+  <div class="frame">
+    <div class="screen" style="overflow:hidden">
+      <div class="top"><span class="back">←</span><h1>Multi</h1><span class="settings">⚙</span></div>
+      <div class="race"><b>R1C3 · Vincennes</b> · Prix des Ajoncs · départ 15 h 05</div>
+      <div class="meta">18 partants · course éligible · Cotes de 9 h 38</div>
+      <div class="meta">Pronostic retenu à 9 h 52</div>
+      <div class="nobet">L'outil ne place aucun pari.</div>
+      <div class="stepper"><span class="stepbtn">−</span><div class="mid"><div class="label">Taille de la sélection</div><div class="val">13 chevaux</div></div><span class="stepbtn">+</span></div>
+    </div>
+    <div class="bar">
+      <div class="cta">Remplacer mon pronostic retenu</div>
+      <div class="ghost">Voir les grilles</div>
+    </div>
+    <div class="scrim"></div>
+    <div class="sheet">
+      <div class="sheet-body">
+        <div class="handle"></div>
+        <div class="sheet-head"><span class="sheet-title">Grilles · Multi en 7</span><span class="close">Fermer</span></div>
+        <div class="meta">13 chevaux dont 1 base · 15 tickets · 4 tickets physiques</div>
+        <div class="legend">Base : <b>n° 11</b> (première colonne, en gras) · dossards de chaque ticket</div>
+
+        <div class="phys"><div class="label">Ticket physique 1 · tickets 1 à 4</div>
+          <div class="tk"><span>T1</span><span class="b">11</span><span>1</span><span>2</span><span>3</span><span>9</span><span>15</span><span>17</span></div>
+          <div class="tk"><span>T2</span><span class="b">11</span><span>1</span><span>6</span><span>8</span><span>9</span><span>13</span><span>16</span></div>
+          <div class="tk"><span>T3</span><span class="b">11</span><span>3</span><span>4</span><span>5</span><span>6</span><span>15</span><span>16</span></div>
+          <div class="tk"><span>T4</span><span class="b">11</span><span>2</span><span>4</span><span>5</span><span>8</span><span>13</span><span>17</span></div>
+        </div>
+        <div class="phys"><div class="label">Ticket physique 2 · tickets 5 à 8</div>
+          <div class="tk"><span>T5</span><span class="b">11</span><span>1</span><span>2</span><span>3</span><span>4</span><span>13</span><span>16</span></div>
+          <div class="tk"><span>T6</span><span class="b">11</span><span>2</span><span>5</span><span>6</span><span>9</span><span>16</span><span>17</span></div>
+          <div class="tk"><span>T7</span><span class="b">11</span><span>3</span><span>6</span><span>8</span><span>13</span><span>15</span><span>17</span></div>
+          <div class="tk"><span>T8</span><span class="b">11</span><span>1</span><span>4</span><span>5</span><span>8</span><span>9</span><span>15</span></div>
+        </div>
+        <div class="phys"><div class="label">Ticket physique 3 · tickets 9 à 12</div>
+          <div class="tk"><span>T9</span><span class="b">11</span><span>1</span><span>5</span><span>13</span><span>15</span><span>16</span><span>17</span></div>
+          <div class="tk"><span>T10</span><span class="b">11</span><span>2</span><span>4</span><span>6</span><span>9</span><span>13</span><span>15</span></div>
+          <div class="tk"><span>T11</span><span class="b">11</span><span>1</span><span>2</span><span>3</span><span>5</span><span>6</span><span>8</span></div>
+          <div class="tk"><span>T12</span><span class="b">11</span><span>3</span><span>4</span><span>8</span><span>9</span><span>16</span><span>17</span></div>
+        </div>
+        <div class="phys"><div class="label">Ticket physique 4 · tickets 13 à 15</div>
+          <div class="tk"><span>T13</span><span class="b">11</span><span>3</span><span>5</span><span>6</span><span>9</span><span>13</span><span>17</span></div>
+          <div class="tk"><span>T14</span><span class="b">11</span><span>2</span><span>5</span><span>8</span><span>9</span><span>15</span><span>16</span></div>
+          <div class="tk"><span>T15</span><span class="b">11</span><span>1</span><span>4</span><span>6</span><span>8</span><span>15</span><span>17</span></div>
+        </div>
+
+        <div class="ghost collapse" style="margin-top:10px"><span>Carte de couverture<small>Combinaisons couvertes 1×, 2×, 3×</small></span><span>▸</span></div>
+      </div>
+      <div class="pinned"><div class="ghost">⧉ Copier les grilles</div></div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

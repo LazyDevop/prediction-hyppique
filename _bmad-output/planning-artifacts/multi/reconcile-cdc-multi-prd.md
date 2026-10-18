@@ -162,3 +162,34 @@ Cahier : « Couverture garantie — pas un gain garanti », « L'outil ne place 
 2. Mettre à jour le cahier Multi (sections 4, 6, 10, 11) et l'enregistrer dans `docs/`.
 3. Ajouter FR-22 à FR-28 et le glossaire au PRD ; créer l'**Epic 5** dans `epics.md`.
 4. Premier incrément conseillé, sans dépendance de données nouvelles : `rules.py` + vérificateur + `p_couverture` exact + sélection du modèle, avec fixtures partagées Python/Dart.
+
+## D ter. Recadrage du porteur de projet (2026-10-18) — le Multi devient un pronostic
+
+> « Je ne veux pas que l'on propose la mise ni le gain, mais juste un pronostic sur
+> les chevaux qui peuvent constituer l'arrivée du Multi, comme dans ce qui existe déjà. »
+
+Ce recadrage **remplace** D0, D3 et D5 et précise D4. Il fait foi sur tout document
+antérieur (PRD §4.11, cahier Multi v2, spine AD-6 à AD-11, contrat UX).
+
+| Sujet | Décision |
+|---|---|
+| Argent | **Rien** : ni budget, ni coût, ni multiplicateur, ni mise, ni gain, ni rapport, ni seuil de rentabilité, ni indice de valeur, ni « prix du point de couverture ». |
+| Taille de la sélection | **Choisie par l'utilisateur** (4 à 20 chevaux) ; par défaut la dernière taille utilisée, sinon 10 `[ASSUMPTION]`. |
+| Choix des chevaux | Le modèle retient, pour cette taille, la sélection qui maximise la probabilité que l'arrivée (les 4 premiers) y soit — même algorithme qu'avant. |
+| Bases | **Gardées comme « chevaux sûrs »** : le modèle propose 3 bases candidates (plus forte probabilité estimée d'être dans les 4) ; l'utilisateur les active ou les désactive. |
+| Systèmes réduits | **Gardés, sans coût** : pour la sélection et ses bases, chaque formule (tickets de 4 à 7) affiche nombre de tickets, tickets physiques, garantie de couverture et grilles en dossards. « Couverture garantie — pas un gain garanti » reste. Le catalogue hors ligne reste. |
+| Verdict | **Remplacé par un indice de confiance du pronostic** : probabilité que l'arrivée soit dans la sélection, ouverture de la course, fragilité des données → niveau « confiance élevée / moyenne / faible » `[ASSUMPTION sur les libellés]`. Seuils réglables, provisoires jusqu'au pilote. Plus de « jouer / passer / jouable avec X € ». |
+| Évaluation affichée | Probabilité que l'arrivée soit dans la sélection, distribution des chevaux capturés (0 à 4). |
+| Débrief | **Gardé** : le lendemain, « N chevaux capturés sur 4 » et « arrivée dans la sélection : oui / non », pour le pronostic retenu et pour celui du modèle. |
+| Pronostic retenu | « Je retiens ce pronostic » (ex-« jeu retenu ») : stocké sur l'appareil, 90 jours, figé au départ. |
+| Comparateurs | **Gardés** : méthode 1 et marché, à part, « hypothèse non validée ». |
+| Rapports Multi | Plus affichés ni nécessaires au produit ; leur ingestion et l'évaluation financière du Multi sortent du périmètre. Seule l'arrivée (avec ex-aequo) sert au débrief et à l'évaluation. |
+| Journalisation et pilote | Inchangés sur le principe ; les « budgets de référence » deviennent des **tailles de référence** ; le pilote fixe les seuils de l'indice de confiance. |
+| Règles du pari | Toujours nécessaires (formules, tickets, non-partants, arrivée dégradée) ; le prix unitaire n'est plus affiché. La vérification sur pmu.fr reste un prérequis pour les grilles. |
+
+**Précisions du porteur de projet (2026-10-18, suite)** — confirment ou remplacent les `[ASSUMPTION]` ci-dessus :
+
+- Les bases proposées s'appellent **« chevaux les plus probables »** (et non « chevaux sûrs »), toujours avec leur probabilité estimée.
+- **Aucune base n'est active au premier affichage** ; l'utilisateur les active.
+- **Pas de badge de value dans le Multi** : il ne parle que de la probabilité d'être dans les 4 premiers ; la value reste sur l'écran Résultats.
+- Défauts validés : **taille 10** (sinon la dernière utilisée) ; indice de confiance **« élevée / moyenne / faible »** avec des **seuils qui dépendent de la taille**, provisoires jusqu'au pilote ; formule affichée par défaut **Multi en 7**.
