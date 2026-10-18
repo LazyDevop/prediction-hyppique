@@ -97,3 +97,22 @@ def test_normaliser_terrain_couvre_toutes_les_cles_du_moteur():
         assert pmu_client.normaliser_terrain(label) == label
     for label in TERRAIN_COEFFICIENTS_PSF:
         assert pmu_client.normaliser_terrain(f"PSF {label}") == label
+
+
+def test_get_programme_lit_le_terrain_du_jour_au_penetrometre(monkeypatch, no_network):
+    # Fixture réelle du 18/10/2026 réduite : ParisLongchamp C1-C2 (gazon
+    # mesuré "Bon souple") et une course de trot (pas de pénétromètre).
+    monkeypatch.setattr(pmu_client, "_get", lambda endpoint: _load("programme_18102026.json"))
+
+    courses = pmu_client.get_programme(pmu_client.date(2026, 10, 18))
+
+    terrains = {(c.numero_reunion, c.numero_course): c.terrain for c in courses}
+    assert terrains == {(1, 1): "Bon souple", (1, 2): "Bon souple", (4, 1): None}
+
+
+def test_normaliser_terrain_psf_sans_etat_est_silencieux(caplog):
+    # La veille, une piste en sable fibré est annoncée "PSF" sans état
+    # mesuré : c'est une mesure à venir, pas un libellé inconnu.
+    with caplog.at_level("WARNING", logger=pmu_client.__name__):
+        assert pmu_client.normaliser_terrain("PSF") is None
+    assert caplog.text == ""

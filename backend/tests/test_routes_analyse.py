@@ -471,3 +471,30 @@ def test_extraction_reponse_mal_formee_de_vision_client_renvoie_502_pas_500(monk
     response = client.post("/extraction/fiche", files={"file": ("fiche.png", b"donnees", "image/png")})
 
     assert response.status_code == 502
+
+
+def test_analyse_par_course_id_utilise_le_terrain_du_jour(monkeypatch):
+    from datetime import date
+
+    from app.data.pmu_client import CourseInfo
+    from app.engine.constants import terrain_coefficient
+
+    course = routes_analyse.repository.upsert_course(CourseInfo(
+        date=date(2099, 1, 1), numero_reunion=1, numero_course=1, hippodrome="ParisLongchamp",
+        pays="FRA", libelle="Prix Test", discipline="plat", discipline_brute="PLAT",
+        distance=1600.0, allocation=20000.0, corde=None, nb_partants_declares=0,
+        arrivee_definitive=False, heure_depart=None, terrain="Bon souple",
+    ))
+    cibles = []
+    vrai_analyse_course = routes_analyse.analyse_course
+
+    def analyse_course_espion(horses, target, params, mode_recence):
+        cibles.append(target)
+        return vrai_analyse_course(horses, target, params, mode_recence=mode_recence)
+
+    monkeypatch.setattr(routes_analyse, "analyse_course", analyse_course_espion)
+
+    response = client.post("/analyse", json={"course_id": course.id})
+
+    assert response.status_code == 200
+    assert cibles[0].terrain == terrain_coefficient("Bon souple")

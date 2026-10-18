@@ -424,3 +424,17 @@ def test_run_avec_days_ahead_par_defaut_ingere_today_et_today_plus_1(repo):
         call(date(2026, 8, 1)),
         call(date(2026, 8, 2)),
     ]
+
+
+def test_rafraichir_terrains_du_jour_met_a_jour_les_courses_sans_rappeler_les_partants(repo):
+    jour = date(2026, 10, 18)
+    repo.upsert_course(make_course_info(date=jour, numero_reunion=1, numero_course=1, terrain=None))
+    mesure = make_course_info(date=jour, numero_reunion=1, numero_course=1, terrain="Bon souple")
+
+    with patch.object(ingest_daily.pmu_client, "get_programme", return_value=[mesure]) as get_programme, \
+         patch.object(ingest_daily.pmu_client, "get_participants") as get_participants:
+        ingest_daily.rafraichir_terrains_du_jour(repo, jour)
+
+    get_programme.assert_called_once_with(jour)
+    get_participants.assert_not_called()
+    assert repo.list_courses_for_date(jour)[0].terrain == "Bon souple"

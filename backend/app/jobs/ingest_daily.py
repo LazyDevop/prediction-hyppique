@@ -27,6 +27,19 @@ def ingest_programme_du_jour(repository: Repository, target_date: date) -> None:
             )
 
 
+def rafraichir_terrains_du_jour(repository: Repository, target_date: date) -> None:
+    """Le pénétromètre est mesuré le matin de la course, souvent après
+    l'ingestion quotidienne : un seul appel au programme suffit à le
+    récupérer, sans recharger partants ni historique."""
+    courses = pmu_client.get_programme(target_date)
+    for info in courses:
+        repository.upsert_course(info)
+    logger.info(
+        "Terrains du %s rafraîchis : %d course(s) mesurée(s) sur %d",
+        target_date, sum(1 for c in courses if c.terrain is not None), len(courses),
+    )
+
+
 def ingest_resultats_veille(repository: Repository, veille: date) -> None:
     """Repasse sur les courses d'une date passée pour en récupérer le résultat définitif."""
     courses = repository.get_unfinalized_courses_before(veille + timedelta(days=1))

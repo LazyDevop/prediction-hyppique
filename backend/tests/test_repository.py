@@ -147,6 +147,21 @@ def test_upsert_course_meme_cle_met_a_jour_sans_dupliquer(repo):
 
 # 2. upsert_cheval : matché par nom_normalise, réutilisé malgré casse/espaces
 
+def test_upsert_course_terrain_du_jour_mis_a_jour_mais_jamais_efface(repo):
+    course = repo.upsert_course(make_course_info(terrain=None))
+    assert course.terrain is None
+
+    course = repo.upsert_course(make_course_info(terrain="Bon souple"))
+    assert course.terrain == "Bon souple"
+
+    # Une ré-ingestion sans mesure (ex. réponse partielle) ne doit pas
+    # effacer une mesure déjà obtenue ; une nouvelle mesure la remplace.
+    course = repo.upsert_course(make_course_info(terrain=None))
+    assert course.terrain == "Bon souple"
+    course = repo.upsert_course(make_course_info(terrain="Souple"))
+    assert course.terrain == "Souple"
+
+
 def test_upsert_cheval_reutilise_par_nom_normalise(repo):
     with Session(repo.engine) as session:
         cheval1 = repo.upsert_cheval(session, "Bucéphale")
@@ -467,3 +482,15 @@ def test_get_hippodromes_connus_retourne_ensemble_distinct(repo):
 
     hippodromes_autre = repo.get_hippodromes_connus(autre_cheval_id)
     assert sorted(hippodromes_autre) == ["Auteuil"]
+
+
+def test_repository_lit_database_url_a_la_construction(monkeypatch, tmp_path):
+    # Lue à l'import, la variable figeait la base du premier module de test
+    # importé : les routes de l'API écrivaient alors dans ./hippique.db.
+    chemin = tmp_path / "lu_a_la_construction.db"
+    monkeypatch.setenv("DATABASE_URL", f"sqlite:///{chemin}")
+
+    repository = Repository()
+
+    assert repository.engine.url.database == str(chemin)
+    repository.engine.dispose()

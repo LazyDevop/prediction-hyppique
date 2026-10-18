@@ -39,12 +39,18 @@ STATUS_TO_INCIDENT = {
 _TERRAIN_PAR_LIBELLE = {label.casefold(): label for label in TERRAIN_COEFFICIENTS_GRASS}
 _TERRAIN_PAR_LIBELLE.update({f"psf {label}".casefold(): label for label in TERRAIN_COEFFICIENTS_PSF})
 _TERRAIN_PAR_LIBELLE["psf lente"] = "Lent"
+# La veille, une PSF est annoncée "PSF" sans état : mesure à venir, pas un
+# libellé inconnu.
+_PSF_SANS_ETAT = "psf"
 
 
 def normaliser_terrain(libelle: Optional[str]) -> Optional[str]:
     if not libelle or not libelle.strip():
         return None
-    terrain = _TERRAIN_PAR_LIBELLE.get(" ".join(libelle.split()).casefold())
+    cle = " ".join(libelle.split()).casefold()
+    if cle == _PSF_SANS_ETAT:
+        return None
+    terrain = _TERRAIN_PAR_LIBELLE.get(cle)
     if terrain is None:
         # Jamais de valeur par défaut : un terrain deviné fausserait le
         # coefficient, alors qu'un terrain absent le laisse neutre.
@@ -91,6 +97,7 @@ class CourseInfo:
     nb_partants_declares: Optional[int]
     arrivee_definitive: bool
     heure_depart: Optional[datetime]
+    terrain: Optional[str] = None
 
 
 @dataclass
@@ -155,6 +162,7 @@ def get_programme(target_date: date, pays_filter: Optional[str] = "FRA") -> List
                 nb_partants_declares=course.get("nombreDeclaresPartants"),
                 arrivee_definitive=bool(course.get("arriveeDefinitive")),
                 heure_depart=_epoch_ms_to_datetime(course.get("heureDepart")),
+                terrain=normaliser_terrain((course.get("penetrometre") or {}).get("intitule")),
             ))
     return courses
 

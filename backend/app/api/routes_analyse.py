@@ -4,6 +4,7 @@ from fastapi import APIRouter, File, HTTPException, UploadFile
 from pydantic import BaseModel, ValidationError
 
 from app.engine.combinatoire import build_combinaisons
+from app.engine.constants import terrain_coefficient
 from app.engine.scoring import CourseTarget, HorseAnalysis, Performance, analyse_course
 from app.data import vision_client
 from app.data.repository import Repository
@@ -92,7 +93,7 @@ def analyse(request: AnalyseIn):
         horses = repository.get_horses_for_course(course)
         target = CourseTarget(
             distance=course.distance,
-            terrain=None,
+            terrain=terrain_coefficient(course.terrain),
             niveau=None,
             nb_partants_course=course.nb_partants or len(horses),
         )

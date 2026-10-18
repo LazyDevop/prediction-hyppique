@@ -12,11 +12,13 @@ from app.data.pmu_client import CourseInfo, PartantInfo, PerformancePassee, _nor
 from app.engine.constants import terrain_coefficient
 from app.engine.scoring import HorseAnalysis, Performance
 
-DATABASE_URL = os.environ.get("DATABASE_URL", "sqlite:///./hippique.db")
+DEFAULT_DATABASE_URL = "sqlite:///./hippique.db"
 
 
 class Repository:
-    def __init__(self, database_url: str = DATABASE_URL):
+    def __init__(self, database_url: Optional[str] = None):
+        if database_url is None:
+            database_url = os.environ.get("DATABASE_URL", DEFAULT_DATABASE_URL)
         self.engine = create_engine(database_url, connect_args={"check_same_thread": False})
         Base.metadata.create_all(self.engine)
         self._migrate()
@@ -160,6 +162,11 @@ class Repository:
             course.corde = info.corde
             course.nb_partants = info.nb_partants_declares
             course.heure_depart = info.heure_depart
+            # Le pénétromètre n'est mesuré que le matin de la course : une
+            # ingestion antérieure (ou une réponse partielle) ne doit pas
+            # effacer une mesure déjà obtenue.
+            if info.terrain is not None:
+                course.terrain = info.terrain
             course.source = "pmu"
             session.commit()
             session.refresh(course)
