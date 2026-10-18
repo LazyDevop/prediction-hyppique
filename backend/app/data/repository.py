@@ -243,7 +243,7 @@ class Repository:
                         "distance": perf.distance,
                         "nb_participants": perf.nb_participants,
                         "rang": perf.rang,
-                        "terrain": None,
+                        "terrain": perf.terrain,
                         "incident": perf.incident,
                         "source": "pmu",
                     }

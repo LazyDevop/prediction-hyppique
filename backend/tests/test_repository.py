@@ -113,6 +113,7 @@ def make_performance_passee(**overrides) -> PerformancePassee:
         nb_participants=16,
         rang=3,
         incident=None,
+        terrain=None,
     )
     defaults.update(overrides)
     return PerformancePassee(**defaults)
@@ -239,6 +240,20 @@ def test_save_historique_source_pmu_ecrase_toujours(repo):
     assert ligne.allocation == 25000.0
 
 
+def test_save_historique_persiste_le_terrain(repo):
+    course = repo.upsert_course(make_course_info())
+    repo.save_partants(course.id, [make_partant_info(num_pmu=5, nom="Bucephale")])
+
+    repo.save_historique(course.id, {5: [make_performance_passee(terrain="Bon souple")]})
+
+    with Session(repo.engine) as session:
+        ligne = session.query(PerformanceHistorique).one()
+    assert ligne.terrain == "Bon souple"
+
+    horses = repo.get_horses_for_course(repo.get_course_by_id(course.id))
+    assert horses[0].performances[0].terrain == terrain_coefficient("Bon souple")
+
+
 def test_save_historique_num_pmu_sans_participation_correspondante_est_ignore(repo):
     # repository.py:232-234 : si le num_pmu de l'historique ne correspond à
     # aucune participation de la course (feuille de départ désynchronisée du
@@ -295,9 +310,9 @@ def test_get_horses_for_course_tri_terrain_et_niveau(repo):
     full_course = repo.get_course_by_id(course.id)
     cheval_id = full_course.participations[0].cheval_id
 
-    # ni save_historique ni le backfill ne permettent de fixer `terrain`
-    # (les deux l'écrivent toujours à NULL) : seul moyen d'exercer ce champ
-    # pour ce test, insertion directe via l'ORM (setup, pas le code sous test).
+    # save_historique ne stocke que des libellés déjà normalisés : insertion
+    # directe via l'ORM pour exercer aussi un libellé non reconnu en base
+    # (setup, pas le code sous test).
     with Session(repo.engine) as session:
         session.add_all([
             PerformanceHistorique(

@@ -1,9 +1,14 @@
+import logging
 import time
 from dataclasses import dataclass, field
 from datetime import date, datetime, timezone
 from typing import Any, Dict, List, Optional
 
 import requests
+
+from app.engine.constants import TERRAIN_COEFFICIENTS_GRASS, TERRAIN_COEFFICIENTS_PSF
+
+logger = logging.getLogger(__name__)
 
 BASE_URL = "https://offline.turfinfo.api.pmu.fr/rest/client/61/programme"
 HEADERS = {
@@ -26,6 +31,25 @@ DISCIPLINE_MAP = {
 STATUS_TO_INCIDENT = {
     "DISQUALIFIE": "D",
 }
+
+
+# etatTerrain arrive en libellé texte, alors que le moteur indexe ses
+# coefficients sur ses propres clés : le gazon correspond tel quel, la piste en
+# sable fibré est préfixée "PSF" et accordée au féminin ("PSF Lente").
+_TERRAIN_PAR_LIBELLE = {label.casefold(): label for label in TERRAIN_COEFFICIENTS_GRASS}
+_TERRAIN_PAR_LIBELLE.update({f"psf {label}".casefold(): label for label in TERRAIN_COEFFICIENTS_PSF})
+_TERRAIN_PAR_LIBELLE["psf lente"] = "Lent"
+
+
+def normaliser_terrain(libelle: Optional[str]) -> Optional[str]:
+    if not libelle or not libelle.strip():
+        return None
+    terrain = _TERRAIN_PAR_LIBELLE.get(" ".join(libelle.split()).casefold())
+    if terrain is None:
+        # Jamais de valeur par défaut : un terrain deviné fausserait le
+        # coefficient, alors qu'un terrain absent le laisse neutre.
+        logger.warning("etatTerrain non reconnu : %r", libelle)
+    return terrain
 
 
 def _get(endpoint: str) -> Any:
@@ -99,6 +123,7 @@ class PerformancePassee:
     nb_participants: Optional[int]
     rang: Optional[int]
     incident: Optional[str]
+    terrain: Optional[str] = None
 
 
 def get_programme(target_date: date, pays_filter: Optional[str] = "FRA") -> List[CourseInfo]:
@@ -191,6 +216,7 @@ def get_historique(target_date: date, reunion: int, course: int) -> Dict[int, Li
                 nb_participants=course_passee.get("nbParticipants"),
                 rang=place_info.get("place"),
                 incident=STATUS_TO_INCIDENT.get(status_arrivee),
+                terrain=normaliser_terrain(course_passee.get("etatTerrain")),
             ))
         if num_pmu is not None:
             results[num_pmu] = performances

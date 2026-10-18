@@ -1,0 +1,514 @@
+{
+ "participants": [
+  {
+   "numPmu": 1,
+   "nomCheval": "YES ZARA",
+   "coursesCourues": [
+    {
+     "date": 1790373600000,
+     "timezoneOffset": 7200000,
+     "hippodrome": "LYON-PARILLY",
+     "nomPrix": "GP DES PROVINCES-PRIX ANDRE BABOIN-13E ETAPE DEFI DU GALOP-G.CAMPRUBI",
+     "discipline": "PLAT",
+     "allocation": 47600,
+     "distance": 2400,
+     "nbParticipants": 8,
+     "tempsDuPremier": 158020,
+     "etatTerrain": "Souple",
+     "participants": [
+      {
+       "numPmu": 8,
+       "place": {
+        "place": 5,
+        "rawValue": "DP",
+        "statusArrivee": "PLACE"
+       },
+       "nomCheval": "YES ZARA",
+       "nomJockey": "M.VELON",
+       "poidsJockey": 56.0,
+       "corde": 2,
+       "distanceAvecPrecedent": {
+        "knownValue": "UNE_LONGUEUR_ET_DEMIE",
+        "rawValue": "1 L 1/2"
+       },
+       "itsHim": true,
+       "reductionKilometrique": 66100,
+       "distanceParcourue": null,
+       "oeillere": "SANS_OEILLERES"
+      }
+     ]
+    },
+    {
+     "date": 1788645600000,
+     "timezoneOffset": 7200000,
+     "hippodrome": "ParisLongchamp",
+     "nomPrix": "QATAR PRIX DE LA REINE MARGUERITE PRESENTE PAR LE PARISIEN",
+     "discipline": "PLAT",
+     "allocation": 50900,
+     "distance": 2400,
+     "nbParticipants": 16,
+     "tempsDuPremier": 148910,
+     "etatTerrain": "Bon souple",
+     "participants": [
+      {
+       "numPmu": 9,
+       "place": {
+        "place": 1,
+        "rawValue": "DP",
+        "statusArrivee": "PLACE"
+       },
+       "nomCheval": "YES ZARA",
+       "nomJockey": "M.VELON",
+       "poidsJockey": 55.5,
+       "corde": 6,
+       "distanceAvecPrecedent": null,
+       "itsHim": true,
+       "reductionKilometrique": 62040,
+       "distanceParcourue": null,
+       "oeillere": "SANS_OEILLERES"
+      }
+     ]
+    },
+    {
+     "date": 1787608800000,
+     "timezoneOffset": 7200000,
+     "hippodrome": "DEAUVILLE-LA TOUQUES",
+     "nomPrix": "MOROCCO CUP - HANDICAP DE LA MANCHE",
+     "discipline": "PLAT",
+     "allocation": 50900,
+     "distance": 3200,
+     "nbParticipants": 16,
+     "tempsDuPremier": 209640,
+     "etatTerrain": "Bon souple",
+     "participants": [
+      {
+       "numPmu": 10,
+       "place": {
+        "place": 16,
+        "rawValue": "DP",
+        "statusArrivee": "NON_PLACE"
+       },
+       "nomCheval": "YES ZARA",
+       "nomJockey": "M.VELON",
+       "poidsJockey": 55.5,
+       "corde": 14,
+       "distanceAvecPrecedent": {
+        "knownValue": "TROIS_QUARTS_DE_LONGUEUR",
+        "rawValue": "3/4 L"
+       },
+       "itsHim": true,
+       "reductionKilometrique": 66630,
+       "distanceParcourue": null,
+       "oeillere": "OEILLERES_CLASSIQUE"
+      }
+     ]
+    },
+    {
+     "date": 1785448800000,
+     "timezoneOffset": 7200000,
+     "hippodrome": "SENONNES-POUANCE",
+     "nomPrix": "PRIX DES VANS THEAULT",
+     "discipline": "PLAT",
+     "allocation": 19200,
+     "distance": 3000,
+     "nbParticipants": 6,
+     "tempsDuPremier": 208890,
+     "etatTerrain": "Bon souple",
+     "participants": [
+      {
+       "numPmu": 3,
+       "place": {
+        "place": 1,
+        "rawValue": "DP",
+        "statusArrivee": "PLACE"
+       },
+       "nomCheval": "YES ZARA",
+       "nomJockey": "M.VELON",
+       "poidsJockey": 58.5,
+       "corde": 4,
+       "distanceAvecPrecedent": null,
+       "itsHim": true,
+       "reductionKilometrique": 69630,
+       "distanceParcourue": null,
+       "oeillere": "OEILLERES_CLASSIQUE"
+      }
+     ]
+    },
+    {
+     "date": 1783634400000,
+     "timezoneOffset": 7200000,
+     "hippodrome": "COMPIEGNE",
+     "nomPrix": "PRIX D'AUTRECHES",
+     "discipline": "PLAT",
+     "allocation": 22100,
+     "distance": 2800,
+     "nbParticipants": 11,
+     "tempsDuPremier": 181990,
+     "etatTerrain": "Bon",
+     "participants": [
+      {
+       "numPmu": 7,
+       "place": {
+        "place": 1,
+        "rawValue": "DP",
+        "statusArrivee": "PLACE"
+       },
+       "nomCheval": "YES ZARA",
+       "nomJockey": "M.VELON",
+       "poidsJockey": 57.5,
+       "corde": 4,
+       "distanceAvecPrecedent": null,
+       "itsHim": true,
+       "reductionKilometrique": 64990,
+       "distanceParcourue": null,
+       "oeillere": "OEILLERES_CLASSIQUE"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "numPmu": 2,
+   "nomCheval": "DON'T SHUT ME DOWN",
+   "coursesCourues": [
+    {
+     "date": 1787608800000,
+     "timezoneOffset": 7200000,
+     "hippodrome": "DEAUVILLE-LA TOUQUES",
+     "nomPrix": "MOROCCO CUP - HANDICAP DE LA MANCHE",
+     "discipline": "PLAT",
+     "allocation": 50900,
+     "distance": 3200,
+     "nbParticipants": 16,
+     "tempsDuPremier": 209640,
+     "etatTerrain": "Bon souple",
+     "participants": [
+      {
+       "numPmu": 3,
+       "place": {
+        "place": 5,
+        "rawValue": "DP",
+        "statusArrivee": "PLACE"
+       },
+       "nomCheval": "DON'T SHUT ME DOWN",
+       "nomJockey": "M.GUYON",
+       "poidsJockey": 59.0,
+       "corde": 11,
+       "distanceAvecPrecedent": {
+        "knownValue": "DEMI_LONGUEUR",
+        "rawValue": "1/2 L"
+       },
+       "itsHim": true,
+       "reductionKilometrique": 65600,
+       "distanceParcourue": null,
+       "oeillere": "SANS_OEILLERES"
+      }
+     ]
+    },
+    {
+     "date": 1784757600000,
+     "timezoneOffset": 7200000,
+     "hippodrome": "VICHY",
+     "nomPrix": "PRIX PARIS TURF (PRIX VICHY COMMUNAUTE)",
+     "discipline": "PLAT",
+     "allocation": 50900,
+     "distance": 2800,
+     "nbParticipants": 16,
+     "tempsDuPremier": 174300,
+     "etatTerrain": "Souple",
+     "participants": [
+      {
+       "numPmu": 6,
+       "place": {
+        "place": 1,
+        "rawValue": "DP",
+        "statusArrivee": "PLACE"
+       },
+       "nomCheval": "DON'T SHUT ME DOWN",
+       "nomJockey": "M.GUYON",
+       "poidsJockey": 56.5,
+       "corde": 3,
+       "distanceAvecPrecedent": null,
+       "itsHim": true,
+       "reductionKilometrique": 62250,
+       "distanceParcourue": null,
+       "oeillere": "SANS_OEILLERES"
+      }
+     ]
+    },
+    {
+     "date": 1781906400000,
+     "timezoneOffset": 7200000,
+     "hippodrome": "COMPIEGNE",
+     "nomPrix": "PRIX RACE AND CARE",
+     "discipline": "PLAT",
+     "allocation": 50900,
+     "distance": 2800,
+     "nbParticipants": 14,
+     "tempsDuPremier": 181780,
+     "etatTerrain": "Bon souple",
+     "participants": [
+      {
+       "numPmu": 5,
+       "place": {
+        "place": 5,
+        "rawValue": "DP",
+        "statusArrivee": "PLACE"
+       },
+       "nomCheval": "DON'T SHUT ME DOWN",
+       "nomJockey": "T.TRULLIER",
+       "poidsJockey": 57.0,
+       "corde": 4,
+       "distanceAvecPrecedent": {
+        "knownValue": "TROIS_QUARTS_DE_LONGUEUR",
+        "rawValue": "3/4 L"
+       },
+       "itsHim": true,
+       "reductionKilometrique": 65030,
+       "distanceParcourue": null,
+       "oeillere": "SANS_OEILLERES"
+      }
+     ]
+    },
+    {
+     "date": 1778796000000,
+     "timezoneOffset": 7200000,
+     "hippodrome": "SAINT-CLOUD",
+     "nomPrix": "PRIX DU VESINET",
+     "discipline": "PLAT",
+     "allocation": 25000,
+     "distance": 2500,
+     "nbParticipants": 10,
+     "tempsDuPremier": 171170,
+     "etatTerrain": "Collant",
+     "participants": [
+      {
+       "numPmu": 3,
+       "place": {
+        "place": 7,
+        "rawValue": "DP",
+        "statusArrivee": "NON_PLACE"
+       },
+       "nomCheval": "DON'T SHUT ME DOWN",
+       "nomJockey": "M.GUYON",
+       "poidsJockey": 58.0,
+       "corde": 6,
+       "distanceAvecPrecedent": {
+        "knownValue": "TROIS_QUARTS_DE_LONGUEUR",
+        "rawValue": "3/4 L"
+       },
+       "itsHim": true,
+       "reductionKilometrique": 68980,
+       "distanceParcourue": null,
+       "oeillere": "SANS_OEILLERES"
+      }
+     ]
+    },
+    {
+     "date": 1775944800000,
+     "timezoneOffset": 7200000,
+     "hippodrome": "ParisLongchamp",
+     "nomPrix": "PRIX DU PAVILLON ROYAL",
+     "discipline": "PLAT",
+     "allocation": 50900,
+     "distance": 2400,
+     "nbParticipants": 16,
+     "tempsDuPremier": 150310,
+     "etatTerrain": "Bon",
+     "participants": [
+      {
+       "numPmu": 5,
+       "place": {
+        "place": 12,
+        "rawValue": "DP",
+        "statusArrivee": "NON_PLACE"
+       },
+       "nomCheval": "DON'T SHUT ME DOWN",
+       "nomJockey": "M.GUYON",
+       "poidsJockey": 58.0,
+       "corde": 9,
+       "distanceAvecPrecedent": {
+        "knownValue": "UNE_LONGUEUR_ET_QUART",
+        "rawValue": "1 L 1/4"
+       },
+       "itsHim": true,
+       "reductionKilometrique": 63150,
+       "distanceParcourue": null,
+       "oeillere": "SANS_OEILLERES"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "numPmu": 6,
+   "nomCheval": "FERDINAND PREMIER",
+   "coursesCourues": [
+    {
+     "date": 1790287200000,
+     "timezoneOffset": 7200000,
+     "hippodrome": "SAINT-CLOUD",
+     "nomPrix": "PRIX DU VAL D'OR",
+     "discipline": "PLAT",
+     "allocation": 28800,
+     "distance": 2400,
+     "nbParticipants": 16,
+     "tempsDuPremier": 157930,
+     "etatTerrain": "Bon souple",
+     "participants": [
+      {
+       "numPmu": 1,
+       "place": {
+        "place": 15,
+        "rawValue": "DP",
+        "statusArrivee": "NON_PLACE"
+       },
+       "nomCheval": "FERDINAND PREMIER",
+       "nomJockey": "C.LECOEUVRE",
+       "poidsJockey": 64.5,
+       "corde": 2,
+       "distanceAvecPrecedent": {
+        "knownValue": "DEUX_LONGUEURS_ET_DEMIE",
+        "rawValue": "2 L 1/2"
+       },
+       "itsHim": true,
+       "reductionKilometrique": 66940,
+       "distanceParcourue": null,
+       "oeillere": "SANS_OEILLERES"
+      }
+     ]
+    },
+    {
+     "date": 1787954400000,
+     "timezoneOffset": 7200000,
+     "hippodrome": "DEAUVILLE-CLAIREFONTAINE",
+     "nomPrix": "PRIX DU PUBLIC DE LA VILLE DE DEAUVILLE 2026 (PRIX DE RICARVILLE)",
+     "discipline": "PLAT",
+     "allocation": 18200,
+     "distance": 2200,
+     "nbParticipants": 8,
+     "tempsDuPremier": 143800,
+     "etatTerrain": "Très souple",
+     "participants": [
+      {
+       "numPmu": 2,
+       "place": {
+        "place": 7,
+        "rawValue": "DP",
+        "statusArrivee": "NON_PLACE"
+       },
+       "nomCheval": "FERDINAND PREMIER",
+       "nomJockey": "C.DEMURO",
+       "poidsJockey": 59.0,
+       "corde": 5,
+       "distanceAvecPrecedent": {
+        "knownValue": "QUINZE_LONGUEURS",
+        "rawValue": "15 L"
+       },
+       "itsHim": true,
+       "reductionKilometrique": 66900,
+       "distanceParcourue": null,
+       "oeillere": "SANS_OEILLERES"
+      }
+     ]
+    },
+    {
+     "date": 1776895200000,
+     "timezoneOffset": 7200000,
+     "hippodrome": "ParisLongchamp",
+     "nomPrix": "PRIX DU PANTHEON",
+     "discipline": "PLAT",
+     "allocation": 50900,
+     "distance": 3000,
+     "nbParticipants": 16,
+     "tempsDuPremier": 191290,
+     "etatTerrain": "Bon souple",
+     "participants": [
+      {
+       "numPmu": 5,
+       "place": {
+        "place": 4,
+        "rawValue": "DP",
+        "statusArrivee": "PLACE"
+       },
+       "nomCheval": "FERDINAND PREMIER",
+       "nomJockey": "C.SOUMILLON",
+       "poidsJockey": 57.5,
+       "corde": 6,
+       "distanceAvecPrecedent": {
+        "knownValue": "ENCOLURE",
+        "rawValue": "Encolure"
+       },
+       "itsHim": true,
+       "reductionKilometrique": 63920,
+       "distanceParcourue": null,
+       "oeillere": "SANS_OEILLERES"
+      }
+     ]
+    },
+    {
+     "date": 1774566000000,
+     "timezoneOffset": 3600000,
+     "hippodrome": "COMPIEGNE",
+     "nomPrix": "PRIX DE MORIENVAL",
+     "discipline": "PLAT",
+     "allocation": 28800,
+     "distance": 2400,
+     "nbParticipants": 14,
+     "tempsDuPremier": 162180,
+     "etatTerrain": "Très souple",
+     "participants": [
+      {
+       "numPmu": 6,
+       "place": {
+        "place": 1,
+        "rawValue": "DP",
+        "statusArrivee": "PLACE"
+       },
+       "nomCheval": "FERDINAND PREMIER",
+       "nomJockey": "C.SOUMILLON",
+       "poidsJockey": 58.5,
+       "corde": 7,
+       "distanceAvecPrecedent": null,
+       "itsHim": true,
+       "reductionKilometrique": 67570,
+       "distanceParcourue": null,
+       "oeillere": "SANS_OEILLERES"
+      }
+     ]
+    },
+    {
+     "date": 1771974000000,
+     "timezoneOffset": 3600000,
+     "hippodrome": "CHANTILLY",
+     "nomPrix": "PRIX DE LA FONTAINE D'ORRY",
+     "discipline": "PLAT",
+     "allocation": 28800,
+     "distance": 2700,
+     "nbParticipants": 11,
+     "tempsDuPremier": 179500,
+     "etatTerrain": "PSF Standard",
+     "participants": [
+      {
+       "numPmu": 7,
+       "place": {
+        "place": 1,
+        "rawValue": "DP",
+        "statusArrivee": "PLACE"
+       },
+       "nomCheval": "FERDINAND PREMIER",
+       "nomJockey": "C.SOUMILLON",
+       "poidsJockey": 57.0,
+       "corde": 4,
+       "distanceAvecPrecedent": null,
+       "itsHim": true,
+       "reductionKilometrique": 66480,
+       "distanceParcourue": null,
+       "oeillere": "SANS_OEILLERES"
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}
