@@ -81,6 +81,16 @@
 
   .suivi { margin-top: 20px; }
   .comparaison { margin-top: 12px; }
+  .liste { margin-top: 12px; }
+  .liste-scroll { max-height: 420px; overflow: auto; margin-top: 8px; }
+  .liste thead th { position: sticky; top: 0; background: var(--surface-1); }
+  .liste td { vertical-align: top; }
+  .liste td, .liste th { text-align: left; }
+  .top3 { display: flex; flex-direction: column; gap: 2px; }
+  .proba { color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+  .statut { white-space: nowrap; }
+  .tag { display: inline-block; font-size: 12px; color: var(--text-secondary); border: 1px solid var(--border);
+         border-radius: 4px; padding: 0 4px; margin-left: 4px; }
   .suivi-ligne { display: flex; flex-wrap: wrap; gap: 8px 28px; margin-top: 8px; }
   .suivi-ligne div { display: flex; flex-direction: column; }
   .suivi-ligne strong { font-size: 22px; font-variant-numeric: tabular-nums; }
@@ -135,6 +145,12 @@
   <section class="card suivi" aria-label="Suivi du jour">
     <h2 id="suivi-titre">Suivi du jour</h2>
     <div class="suivi-ligne" id="suivi"></div>
+  </section>
+
+  <section class="card liste" aria-label="Pronostics du jour">
+    <h2 id="liste-titre">Pronostics du jour</h2>
+    <p class="muted" id="liste-aide">Le dernier pronostic enregistré avant le départ de chaque course.</p>
+    <div class="liste-scroll" id="liste"></div>
   </section>
 
   <p class="notice" id="notice-rejeu" hidden>
@@ -280,6 +296,38 @@
       items.map(([v, l]) => `<div><strong>${v}</strong><span>${l}</span></div>`).join("");
   }
 
+  const STATUTS = {
+    trouve: "✓ Gagnant trouvé",
+    top3: "◐ Gagnant dans le top 3",
+    rate: "✗ Raté",
+    en_attente: "⏳ En attente",
+  };
+
+  function renderListe(lignes, variante) {
+    const parUtilisateur = variante === "app";
+    document.getElementById("liste-aide").textContent = parUtilisateur
+      ? "Le dernier pronostic de chaque utilisateur, reçu avant le départ."
+      : "Le dernier pronostic enregistré avant le départ de chaque course.";
+    const heure = (iso) => iso ? iso.slice(11, 16) : "—";
+    document.getElementById("liste").innerHTML = !lignes.length
+      ? '<p class="empty">Aucun pronostic pour cette journée.</p>'
+      : "<table><thead><tr><th>Départ</th><th>Course</th>" + (parUtilisateur ? "<th>Utilisateur</th>" : "") +
+        "<th>Top 3 du pronostic</th><th>Résultat</th></tr></thead><tbody>" +
+        lignes.map((l) => {
+          const top3 = l.top3.map((c) => `<span><strong>${c.num_pmu}</strong> ${esc(c.nom || "")} ` +
+            `<span class="proba">${pct(c.probabilite)}</span></span>`).join("");
+          const gagnant = l.gagnant ? `<div class="muted">gagnant : ${l.gagnant.num_pmu} ${esc(l.gagnant.nom || "")}</div>` : "";
+          const utilisateur = parUtilisateur
+            ? `<td>${esc((l.installation_id || "").slice(0, 8))}${l.donnees_modifiees ? '<span class="tag">modifié</span>' : ""}</td>`
+            : "";
+          const degradee = l.degradee ? '<span class="tag">dégradé</span>' : "";
+          return `<tr><td>${heure(l.heure_depart)}</td>` +
+            `<td>R${l.reunion}C${l.course} ${esc(l.hippodrome)}<div class="muted">${esc(LIBELLES[l.discipline] || l.discipline)}${degradee}</div></td>` +
+            utilisateur + `<td><div class="top3">${top3}</div></td>` +
+            `<td class="statut">${STATUTS[l.statut]}${gagnant}</td></tr>`;
+        }).join("") + "</tbody></table>";
+  }
+
   function renderComparaison(c) {
     const lignes = [["Tous les pronostics app", c.toutes], ["Données modifiées à la main", c.donnees_modifiees],
                     ["Données intactes", c.donnees_intactes]];
@@ -308,6 +356,7 @@
       ? "<strong>Aucune course évaluée pour l'instant.</strong> Les pronostics sont enregistrés chaque heure avant les départs ; les résultats arrivent le lendemain."
       : `<strong>Échantillon encore petit (${g.courses} courses).</strong> Les écarts peuvent être dus au hasard : ne pas conclure avant au moins ${ECHANTILLON_MIN} courses.`;
     renderSuivi(data.suivi);
+    renderListe(data.pronostics_du_jour, variante);
     renderKpis(g);
     renderCalibration(g.calibration);
     renderDecoupages(data);

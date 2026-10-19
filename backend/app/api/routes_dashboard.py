@@ -30,6 +30,7 @@ def dashboard_data(variante: Literal["live", "rejeu", "app"] = "live", jour: Opt
     return {
         "variante": variante,
         "suivi": repository.suivi_du_jour(jour or date.today()),
+        "pronostics_du_jour": repository.pronostics_du_jour(jour or date.today(), variante),
         "global": asdict(agreger(evaluations)),
         "par_discipline": {d: asdict(agreger([e for e in evaluations if e.discipline == d])) for d in disciplines},
         "par_qualite": {

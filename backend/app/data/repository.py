@@ -423,6 +423,57 @@ class Repository:
                 ))
             return resultat
 
+    def pronostics_du_jour(self, jour: date, variante: str) -> List[dict]:
+        """Le pronostic retenu pour chaque course du jour (par utilisateur pour
+        l'app) : son top 3 et, une fois l'arrivée connue, s'il a vu juste."""
+        with Session(self.engine) as session:
+            requete = session.query(PredictionRun, Course).join(Course, Course.id == PredictionRun.course_id).filter(
+                Course.date == jour,
+                PredictionRun.variante == variante,
+            )
+            if variante in ("live", "app"):
+                requete = requete.filter(
+                    Course.heure_depart.is_not(None),
+                    PredictionRun.cree_le <= Course.heure_depart,
+                )
+            retenus = {}
+            for run, course in requete.order_by(PredictionRun.cree_le):
+                retenus[(course.id, run.installation_id)] = (run, course)
+
+            lignes = []
+            for run, course in retenus.values():
+                noms = {p.num_pmu: p.cheval.nom_normalise for p in course.participations}
+                gagnant = next((p.num_pmu for p in course.participations if p.rang_arrivee == 1), None)
+                classement = [c.num_pmu for c in sorted(run.chevaux, key=lambda c: c.probabilite, reverse=True)]
+                probas = {c.num_pmu: c.probabilite for c in run.chevaux}
+                if gagnant is None:
+                    statut = "en_attente"
+                elif classement[:1] == [gagnant]:
+                    statut = "trouve"
+                elif gagnant in classement[:3]:
+                    statut = "top3"
+                else:
+                    statut = "rate"
+                lignes.append({
+                    "course_id": course.id,
+                    "reunion": course.numero_reunion,
+                    "course": course.numero_course,
+                    "hippodrome": course.hippodrome,
+                    "discipline": course.discipline,
+                    "heure_depart": course.heure_depart.isoformat() if course.heure_depart else None,
+                    "installation_id": run.installation_id,
+                    "cree_le": run.cree_le.isoformat(),
+                    "donnees_modifiees": bool(run.donnees_modifiees),
+                    "degradee": run.degradee,
+                    "top3": [
+                        {"num_pmu": n, "nom": noms.get(n), "probabilite": probas[n]} for n in classement[:3]
+                    ],
+                    "gagnant": {"num_pmu": gagnant, "nom": noms.get(gagnant)} if gagnant is not None else None,
+                    "statut": statut,
+                })
+            return sorted(lignes, key=lambda l: (l["heure_depart"] or "", l["reunion"] or 0, l["course"] or 0,
+                                                 l["installation_id"] or ""))
+
     def suivi_du_jour(self, jour: date) -> dict:
         """Avancement des pronostics « avant course » d'une journée."""
         with Session(self.engine) as session:

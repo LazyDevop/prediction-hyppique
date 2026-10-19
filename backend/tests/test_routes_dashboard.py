@@ -167,3 +167,34 @@ def test_dashboard_script_syntaxe_valide(tmp_path):
     resultat = subprocess.run([node, "--check", str(fichier)], capture_output=True, text=True)
 
     assert resultat.returncode == 0, resultat.stderr
+
+
+def test_dashboard_data_liste_des_pronostics_du_jour(repo):
+    course_pronostiquee(repo, 1, "plat", gagnant=2)          # auto : favori le 1, perd (2e dans son top 3)
+    pronostic_app(repo, 1, "u1", 0.2, modifiees=True)        # utilisateur : vise le 2
+    en_attente = repo.upsert_course(CourseInfo(
+        date=date(2026, 10, 18), numero_reunion=2, numero_course=3, hippodrome="Y", pays="FRA",
+        libelle="Prix", discipline="trot", discipline_brute="ATTELE", distance=2700.0, allocation=None,
+        corde=None, nb_partants_declares=1, arrivee_definitive=False, heure_depart=datetime(2026, 10, 18, 17, 0),
+    ))
+    repo.save_partants(en_attente.id, [PartantInfo(
+        num_pmu=7, nom="Seul", age=4, sexe=None, statut="PARTANT", driver_jockey=None, entraineur=None,
+        musique=None, nombre_courses=1, inedit=False, handicap_poids=None, cote_reference=None, cote_direct=None,
+        ordre_arrivee=None, incident=None)])
+    repo.save_prediction_run(en_attente.id, [HorseAnalysis(nom="s", num_pmu=7, probabilite=0.9)], "live",
+                             datetime(2026, 10, 18, 12, 0), [])
+
+    auto = client.get("/dashboard/data", params={"variante": "live", "jour": "2026-10-18"}).json()["pronostics_du_jour"]
+    app_ = client.get("/dashboard/data", params={"variante": "app", "jour": "2026-10-18"}).json()["pronostics_du_jour"]
+
+    assert [(p["reunion"], p["course"], p["statut"]) for p in auto] == [(1, 1, "top3"), (2, 3, "en_attente")]
+    premier = auto[0]
+    assert premier["hippodrome"] == "X" and premier["heure_depart"] == "2026-10-18T15:00:00"
+    assert [(c["num_pmu"], c["nom"]) for c in premier["top3"]] == [(1, "C1-1"), (2, "C1-2")]
+    assert premier["top3"][0]["probabilite"] == 0.7
+    assert premier["gagnant"] == {"num_pmu": 2, "nom": "C1-2"}
+    assert auto[1]["gagnant"] is None
+
+    [mien] = app_
+    assert (mien["statut"], mien["installation_id"], mien["donnees_modifiees"]) == ("trouve", "u1", True)
+    assert mien["top3"][0]["num_pmu"] == 2
