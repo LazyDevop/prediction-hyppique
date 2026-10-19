@@ -148,3 +148,22 @@ def test_dashboard_data_comparaison_app_contre_automatique(repo):
     assert comparaison["donnees_modifiees"]["paires"] == 1
     assert comparaison["donnees_intactes"]["paires"] == 1
     assert (data["suivi"]["pronostics_app"], data["suivi"]["utilisateurs"]) == (2, 2)
+
+
+def test_dashboard_script_syntaxe_valide(tmp_path):
+    # Une erreur de syntaxe désactive toute la page (onglets, chiffres) sans
+    # qu'aucun test d'API ne le voie.
+    import re
+    import shutil
+    import subprocess
+
+    node = shutil.which("node")
+    if node is None:
+        pytest.skip("node absent : vérification de syntaxe impossible")
+    script = re.search(r"<script>(.*)</script>", routes_dashboard.PAGE.read_text(encoding="utf-8"), re.S).group(1)
+    fichier = tmp_path / "dashboard.js"
+    fichier.write_text(script, encoding="utf-8")
+
+    resultat = subprocess.run([node, "--check", str(fichier)], capture_output=True, text=True)
+
+    assert resultat.returncode == 0, resultat.stderr

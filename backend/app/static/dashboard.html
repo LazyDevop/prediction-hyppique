@@ -284,7 +284,7 @@
     const lignes = [["Tous les pronostics app", c.toutes], ["Données modifiées à la main", c.donnees_modifiees],
                     ["Données intactes", c.donnees_intactes]];
     document.getElementById("comparaison").innerHTML = !c.toutes.paires
-      ? '<p class="empty">Aucun pronostic de l'app à comparer pour l'instant.</p>'
+      ? '<p class="empty">Aucun pronostic de l’app à comparer pour l’instant.</p>'
       : "<table><thead><tr><th></th><th>Courses</th><th>Utilisateurs</th><th>Gagnant (app)</th>" +
         "<th>Gagnant (auto)</th><th>Log-loss (app)</th><th>Log-loss (auto)</th></tr></thead><tbody>" +
         lignes.map(([l, b]) => `<tr><td>${l}</td><td>${b.paires}</td><td>${b.utilisateurs}</td>` +
