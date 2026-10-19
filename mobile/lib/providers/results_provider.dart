@@ -1,10 +1,16 @@
+import 'dart:async';
+import 'dart:convert';
+import 'dart:developer' as developer;
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../engine/combinatoire.dart';
 import '../engine/scoring.dart';
+import '../models/engine_params.dart';
 import '../models/horse.dart';
 import 'horses_provider.dart';
 import 'params_provider.dart';
+import 'pronostic_provider.dart';
 import 'race_provider.dart';
 
 class AnalyseResult {
@@ -28,6 +34,41 @@ class ResultsNotifier extends Notifier<AnalyseResult?> {
     final resultats = analyseCourse(horses, target, params: params);
     final combinaisons = buildCombinaisons(resultats, horses.length);
     state = AnalyseResult(resultats, horses.length, combinaisons, isStale: false);
+    _envoyerPronostic(resultats, target.terrain, params);
+  }
+
+  /// Transmis au backend pour être comparé à l'arrivée officielle (tableau
+  /// de bord). En arrière-plan : un échec réseau ou un refus (course déjà
+  /// partie) ne doit jamais gêner l'utilisateur.
+  void _envoyerPronostic(List<Horse> resultats, double? terrain, EngineParams params) {
+    final contexte = ref.read(pronosticContextProvider);
+    final courseId = contexte.courseId;
+    if (courseId == null) return;
+
+    final pronostic = <String, Object?>{
+      'course_id': courseId,
+      'installation_id': ref.read(installationIdProvider),
+      'chevaux': [
+        for (final h in resultats)
+          if (h.numPmu != null) {'num_pmu': h.numPmu, 'probabilite': h.probabilite, 'cote': h.cote},
+      ],
+      'parametres': params.toJson(),
+      'reglages_par_defaut': _reglagesMoteur(params) == _reglagesMoteur(const EngineParams()),
+      'donnees_modifiees': contexte.donneesModifiees,
+      'terrain': terrain,
+    };
+    unawaited(ref.read(pronosticsApiProvider).envoyerPronostic(pronostic).catchError((Object e) {
+      developer.log('Pronostic non transmis : $e', name: 'ResultsNotifier');
+    }));
+  }
+
+  /// Bankroll et fraction de Kelly ne changent que la mise suggérée, pas les
+  /// probabilités : les modifier ne fait pas un pronostic "réglé".
+  static String _reglagesMoteur(EngineParams params) {
+    final reglages = Map<String, Object?>.from(params.toJson())
+      ..remove('bankroll')
+      ..remove('fraction_kelly');
+    return jsonEncode(reglages);
   }
 
   /// Marque le résultat courant comme périmé (partants modifiés depuis le

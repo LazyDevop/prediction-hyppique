@@ -7,6 +7,7 @@ import '../models/race_config.dart';
 import '../providers/api_provider.dart';
 import '../providers/horses_provider.dart';
 import '../providers/programme_provider.dart';
+import '../providers/pronostic_provider.dart';
 import '../providers/race_provider.dart';
 import 'import_photo_screen.dart';
 import 'race_config_screen.dart';
@@ -67,10 +68,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     try {
       final horses = await ref.read(courseRepositoryProvider).partants(course.id);
 
-      ref.read(horsesProvider.notifier).clear();
-      for (final horse in horses) {
-        ref.read(horsesProvider.notifier).add(horse);
-      }
+      ref.read(horsesProvider.notifier).setAll(horses);
+      ref.read(pronosticContextProvider.notifier).courseChargee(course.id);
       ref.read(raceConfigProvider.notifier).update(RaceConfig(
             hippodrome: course.hippodrome,
             distance: course.distance,

@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/horse.dart';
+import 'pronostic_provider.dart';
 import 'results_provider.dart';
 
 class HorsesNotifier extends Notifier<List<Horse>> {
@@ -10,6 +11,7 @@ class HorsesNotifier extends Notifier<List<Horse>> {
   void add(Horse horse) {
     state = [...state, horse];
     ref.read(resultsProvider.notifier).markStale();
+    ref.read(pronosticContextProvider.notifier).marquerModification();
   }
 
   void replaceAt(int index, Horse horse) {
@@ -17,12 +19,14 @@ class HorsesNotifier extends Notifier<List<Horse>> {
     copy[index] = horse;
     state = copy;
     ref.read(resultsProvider.notifier).markStale();
+    ref.read(pronosticContextProvider.notifier).marquerModification();
   }
 
   void removeAt(int index) {
     final copy = List<Horse>.from(state)..removeAt(index);
     state = copy;
     ref.read(resultsProvider.notifier).markStale();
+    ref.read(pronosticContextProvider.notifier).marquerModification();
   }
 
   /// Nouvelle course chargée (home_screen.dart `_selectCourse`) : contexte
@@ -32,6 +36,7 @@ class HorsesNotifier extends Notifier<List<Horse>> {
   void clear() {
     state = [];
     ref.read(resultsProvider.notifier).clear();
+    ref.read(pronosticContextProvider.notifier).sansReference();
   }
 
   /// Remplace la liste entière en une seule mise à jour d'état (pas N appels
@@ -44,6 +49,7 @@ class HorsesNotifier extends Notifier<List<Horse>> {
   void setAll(List<Horse> horses) {
     state = horses;
     ref.read(resultsProvider.notifier).clear();
+    ref.read(pronosticContextProvider.notifier).sansReference();
   }
 }
 

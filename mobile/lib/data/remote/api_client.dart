@@ -27,13 +27,26 @@ abstract class ExtractionApi {
   });
 }
 
+/// Envoi d'un pronostic calculé dans l'app (tableau de bord, variante
+/// "app") — même convention que `CoursesApi` : les tests fournissent un faux.
+abstract class PronosticsApi {
+  Future<void> envoyerPronostic(Map<String, Object?> pronostic);
+}
+
 /// Client HTTP vers le backend — section 6 du document mobile. Ne JAMAIS
 /// embarquer de clé API tierce ici : l'extraction vision passe entièrement
 /// par le backend (section 6.3).
-class ApiClient implements CoursesApi, ExtractionApi {
+class ApiClient implements CoursesApi, ExtractionApi, PronosticsApi {
   final Dio _dio;
 
-  ApiClient({String baseUrl = 'http://102.220.19.200:8000'})
+  /// Surchargeable au build (`--dart-define=API_BASE_URL=http://localhost:8000`)
+  /// pour viser un backend local sans toucher au code.
+  static const defaultBaseUrl = String.fromEnvironment(
+    'API_BASE_URL',
+    defaultValue: 'http://102.220.19.200:8000',
+  );
+
+  ApiClient({String baseUrl = defaultBaseUrl})
       : _dio = Dio(BaseOptions(
           baseUrl: baseUrl,
           connectTimeout: const Duration(seconds: 10),
@@ -86,6 +99,13 @@ class ApiClient implements CoursesApi, ExtractionApi {
     });
     final response = await _dio.post('/extraction/programme', data: formData);
     return ProgrammeExtrait.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  /// `POST /pronostics`. Le backend horodate lui-même et refuse (409) un
+  /// pronostic reçu après le départ : l'erreur remonte à l'appelant.
+  @override
+  Future<void> envoyerPronostic(Map<String, Object?> pronostic) async {
+    await _dio.post('/pronostics', data: pronostic);
   }
 
   Horse _horseFromJson(Map<String, dynamic> json) {
