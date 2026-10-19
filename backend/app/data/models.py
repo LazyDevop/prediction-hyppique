@@ -105,3 +105,39 @@ class PerformanceHistorique(Base):
     incident: Mapped[Optional[str]] = mapped_column(String(16))
     source: Mapped[str] = mapped_column(String(16), default="pmu")
     cheval: Mapped[Cheval] = relationship(back_populates="performances_historiques")
+
+
+class PredictionRun(Base):
+    # Un pronostic n'est jamais réécrit : chaque calcul ajoute une ligne, et
+    # l'évaluation retient le dernier calculé avant le départ. La variante
+    # sépare les pronostics réellement enregistrés avant la course ("live")
+    # des recalculs a posteriori ("rejeu"), qui ne prouvent rien.
+    __tablename__ = "prediction_runs"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    course_id: Mapped[int] = mapped_column(ForeignKey("courses.id"), nullable=False, index=True)
+    cree_le: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    variante: Mapped[str] = mapped_column(String(16), nullable=False)
+    degradee: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    manques: Mapped[str] = mapped_column(Text, default="[]", nullable=False)
+    # Variante "app" uniquement : pronostic d'un utilisateur, identifié par
+    # son installation (pas encore de comptes), et ce qu'il a changé.
+    installation_id: Mapped[Optional[str]] = mapped_column(String(64), index=True)
+    donnees_modifiees: Mapped[Optional[bool]] = mapped_column(Boolean)
+    reglages_par_defaut: Mapped[Optional[bool]] = mapped_column(Boolean)
+    terrain_modifie: Mapped[Optional[bool]] = mapped_column(Boolean)
+    parametres: Mapped[Optional[str]] = mapped_column(Text)
+    chevaux: Mapped[list["PredictionCheval"]] = relationship(back_populates="run", cascade="all, delete-orphan")
+
+
+class PredictionCheval(Base):
+    __tablename__ = "prediction_chevaux"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    run_id: Mapped[int] = mapped_column(ForeignKey("prediction_runs.id"), nullable=False, index=True)
+    num_pmu: Mapped[int] = mapped_column(Integer, nullable=False)
+    probabilite: Mapped[float] = mapped_column(Float, nullable=False)
+    # Cote connue au moment du pronostic, pour comparer au favori du marché
+    # tel qu'il était alors, pas à la cote finale.
+    cote: Mapped[Optional[float]] = mapped_column(Float)
+    run: Mapped[PredictionRun] = relationship(back_populates="chevaux")

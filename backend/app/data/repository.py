@@ -1,15 +1,18 @@
 import json
 import os
-from datetime import date
+from datetime import date, datetime
 from typing import List, Optional
 
 from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 from sqlalchemy.orm import Session, selectinload
 
-from app.data.models import Base, Course, Cheval, Participation, PerformanceHistorique
+from app.data.models import (
+    Base, Course, Cheval, Participation, PerformanceHistorique, PredictionCheval, PredictionRun,
+)
 from app.data.pmu_client import CourseInfo, PartantInfo, PerformancePassee, _normalize_name
 from app.engine.constants import terrain_coefficient
+from app.engine.evaluation import ChevalPredit, CoursePredite
 from app.engine.scoring import HorseAnalysis, Performance
 
 DEFAULT_DATABASE_URL = "sqlite:///./hippique.db"
@@ -94,6 +97,19 @@ class Repository:
                     ON performances_historiques (cheval_id, date_course, hippodrome)
                 """))
 
+        run_columns = {col["name"] for col in inspect(self.engine).get_columns("prediction_runs")}
+        colonnes_app = {
+            "installation_id": "VARCHAR(64)",
+            "donnees_modifiees": "BOOLEAN",
+            "reglages_par_defaut": "BOOLEAN",
+            "terrain_modifie": "BOOLEAN",
+            "parametres": "TEXT",
+        }
+        for nom, type_sql in colonnes_app.items():
+            if nom not in run_columns:
+                with self.engine.begin() as conn:
+                    conn.execute(text(f"ALTER TABLE prediction_runs ADD COLUMN {nom} {type_sql}"))
+
         perf_columns = {col["name"] for col in inspect(self.engine).get_columns("performances_historiques")}
         if "rang_impute" not in perf_columns:
             with self.engine.begin() as conn:
@@ -113,7 +129,9 @@ class Repository:
                 .selectinload(Cheval.performances_historiques),
             ).filter(Course.id == course_id).one_or_none()
 
-    def get_horses_for_course(self, course: Course) -> List[HorseAnalysis]:
+    def get_horses_for_course(self, course: Course, avant: Optional[date] = None) -> List[HorseAnalysis]:
+        """`avant` : ne retenir que les performances strictement antérieures
+        à cette date (rejeu d'une course passée, sans fuite de son arrivée)."""
         with Session(self.engine) as session:
             course = session.get(Course, course.id)
             horses = []
@@ -124,7 +142,8 @@ class Repository:
                 # (compute_forme) — nécessaire depuis que le backfill peut
                 # produire un historique plus profond que 6 performances.
                 perfs_triees = sorted(
-                    cheval.performances_historiques,
+                    (p for p in cheval.performances_historiques
+                     if avant is None or (p.date_course is not None and p.date_course < avant)),
                     key=lambda p: p.date_course or date.min,
                     reverse=True,
                 )
@@ -330,6 +349,112 @@ class Repository:
                 Course.date < target_date,
                 Course.finalisee.is_(False),
             ).all()
+
+    def save_prediction_run(
+        self,
+        course_id: int,
+        analyses: List[HorseAnalysis],
+        variante: str,
+        cree_le: datetime,
+        manques: List[str],
+        installation_id: Optional[str] = None,
+        donnees_modifiees: Optional[bool] = None,
+        reglages_par_defaut: Optional[bool] = None,
+        terrain_modifie: Optional[bool] = None,
+        parametres: Optional[dict] = None,
+    ) -> int:
+        with Session(self.engine) as session:
+            run = PredictionRun(
+                course_id=course_id,
+                cree_le=cree_le,
+                variante=variante,
+                degradee=bool(manques),
+                manques=json.dumps(manques),
+                installation_id=installation_id,
+                donnees_modifiees=donnees_modifiees,
+                reglages_par_defaut=reglages_par_defaut,
+                terrain_modifie=terrain_modifie,
+                parametres=json.dumps(parametres) if parametres is not None else None,
+                chevaux=[
+                    PredictionCheval(num_pmu=a.num_pmu, probabilite=a.probabilite, cote=a.cote)
+                    # Les outsiders virtuels (num_pmu None) ne servent qu'au
+                    # calcul des probabilités : ils n'ont pas d'arrivée.
+                    for a in analyses if a.num_pmu is not None
+                ],
+            )
+            session.add(run)
+            session.commit()
+            return run.id
+
+    def courses_evaluables(self, variante: str) -> List[CoursePredite]:
+        with Session(self.engine) as session:
+            requete = session.query(PredictionRun, Course).join(Course, Course.id == PredictionRun.course_id).filter(
+                PredictionRun.variante == variante,
+            )
+            # Seul un pronostic fait avant le départ compte, qu'il vienne du
+            # moteur automatique ou d'un utilisateur de l'app.
+            if variante in ("live", "app"):
+                requete = requete.filter(
+                    Course.heure_depart.is_not(None),
+                    PredictionRun.cree_le <= Course.heure_depart,
+                )
+            # Le dernier avant le départ, par course et par utilisateur
+            # (installation_id vaut None pour le moteur automatique).
+            dernier_par_course = {}
+            for run, course in requete.order_by(PredictionRun.cree_le):
+                dernier_par_course[(course.id, run.installation_id)] = (run, course)
+
+            resultat = []
+            for run, course in dernier_par_course.values():
+                rangs = {p.num_pmu: p.rang_arrivee for p in course.participations}
+                resultat.append(CoursePredite(
+                    discipline=course.discipline,
+                    degradee=run.degradee,
+                    course_id=course.id,
+                    installation_id=run.installation_id,
+                    donnees_modifiees=bool(run.donnees_modifiees),
+                    chevaux=[
+                        ChevalPredit(
+                            num_pmu=c.num_pmu, probabilite=c.probabilite, cote=c.cote,
+                            rang_arrivee=rangs.get(c.num_pmu),
+                        )
+                        for c in sorted(run.chevaux, key=lambda c: c.num_pmu)
+                    ],
+                ))
+            return resultat
+
+    def suivi_du_jour(self, jour: date) -> dict:
+        """Avancement des pronostics « avant course » d'une journée."""
+        with Session(self.engine) as session:
+            courses = session.query(Course).filter(Course.date == jour).all()
+            pronostiquees = evaluees = degradees = 0
+            for course in courses:
+                if course.heure_depart is None:
+                    continue
+                dernier = session.query(PredictionRun).filter(
+                    PredictionRun.course_id == course.id,
+                    PredictionRun.variante == "live",
+                    PredictionRun.cree_le <= course.heure_depart,
+                ).order_by(PredictionRun.cree_le.desc()).first()
+                if dernier is None:
+                    continue
+                pronostiquees += 1
+                degradees += dernier.degradee
+                evaluees += any(p.rang_arrivee == 1 for p in course.participations)
+            pronostics_app = session.query(PredictionRun).join(Course, Course.id == PredictionRun.course_id).filter(
+                Course.date == jour,
+                PredictionRun.variante == "app",
+            ).with_entities(PredictionRun.installation_id).all()
+            return {
+                "jour": jour.isoformat(),
+                "courses": len(courses),
+                "pronostiquees": pronostiquees,
+                "evaluees": evaluees,
+                "en_attente": pronostiquees - evaluees,
+                "degradees": degradees,
+                "pronostics_app": len(pronostics_app),
+                "utilisateurs": len({i for (i,) in pronostics_app}),
+            }
 
     def import_course(self, course_id: int) -> None:
         pass

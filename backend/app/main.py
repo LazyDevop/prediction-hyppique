@@ -10,6 +10,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.routes_analyse import router as routes_analyse_router
 from app.api.routes_chevaux import router as routes_chevaux_router
 from app.api.routes_courses import router as routes_courses_router
+from app.api.routes_dashboard import router as routes_dashboard_router
+from app.api.routes_pronostics import router as routes_pronostics_router
 
 app = FastAPI(title="Prediction Hippique")
 
@@ -27,3 +29,5 @@ app.add_middleware(
 app.include_router(routes_courses_router)
 app.include_router(routes_chevaux_router)
 app.include_router(routes_analyse_router)
+app.include_router(routes_dashboard_router)
+app.include_router(routes_pronostics_router)

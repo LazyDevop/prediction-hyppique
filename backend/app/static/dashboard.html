@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pronostics vs résultats</title>
+<style>
+  :root {
+    color-scheme: light;
+    --surface-0: #f4f4f2;
+    --surface-1: #fcfcfb;
+    --border: #e2e1dc;
+    --grid: #ebeae6;
+    --text-primary: #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted: #77766f;
+    --series-1: #2a78d6;
+    --reference: #8a8983;
+    --notice-bg: #fff6e0;
+    --notice-border: #e8c46a;
+    --font: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) {
+      color-scheme: dark;
+      --surface-0: #121211;
+      --surface-1: #1a1a19;
+      --border: #2e2e2c;
+      --grid: #262624;
+      --text-primary: #f0efec;
+      --text-secondary: #c3c2b7;
+      --text-muted: #9a998f;
+      --series-1: #3987e5;
+      --reference: #8f8e86;
+      --notice-bg: #2d2614;
+      --notice-border: #7a6224;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --surface-0: #121211;
+    --surface-1: #1a1a19;
+    --border: #2e2e2c;
+    --grid: #262624;
+    --text-primary: #f0efec;
+    --text-secondary: #c3c2b7;
+    --text-muted: #9a998f;
+    --series-1: #3987e5;
+    --reference: #8f8e86;
+    --notice-bg: #2d2614;
+    --notice-border: #7a6224;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--surface-0);
+    color: var(--text-primary);
+    font: 15px/1.5 var(--font);
+  }
+  main { max-width: 1080px; margin: 0 auto; padding: 24px 16px 48px; }
+  header { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px; }
+  h1 { font-size: 24px; margin: 0; }
+  h2 { font-size: 16px; margin: 0 0 4px; }
+  .sub { color: var(--text-secondary); margin: 4px 0 0; }
+  .muted { color: var(--text-muted); font-size: 13px; }
+
+  .segmented { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  .segmented button {
+    font: inherit; font-size: 14px; padding: 8px 14px; border: 0; cursor: pointer;
+    background: var(--surface-1); color: var(--text-secondary);
+  }
+  .segmented button[aria-pressed="true"] { background: var(--series-1); color: #fff; }
+  .segmented button:focus-visible { outline: 2px solid var(--series-1); outline-offset: -2px; }
+
+  .notice {
+    margin: 20px 0 0; padding: 12px 14px; border-radius: 8px;
+    background: var(--notice-bg); border: 1px solid var(--notice-border); color: var(--text-primary);
+  }
+  .notice[hidden] { display: none; }
+
+  .suivi { margin-top: 20px; }
+  .comparaison { margin-top: 12px; }
+  .suivi-ligne { display: flex; flex-wrap: wrap; gap: 8px 28px; margin-top: 8px; }
+  .suivi-ligne div { display: flex; flex-direction: column; }
+  .suivi-ligne strong { font-size: 22px; font-variant-numeric: tabular-nums; }
+  .suivi-ligne span { color: var(--text-secondary); font-size: 13px; }
+  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(190px, 100%), 1fr)); gap: 12px; margin-top: 20px; }
+  .card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; padding: 16px; }
+  .kpi-label { color: var(--text-secondary); font-size: 13px; }
+  .kpi-value { font-size: 32px; font-weight: 600; line-height: 1.2; margin: 4px 0; font-variant-numeric: tabular-nums; }
+  .kpi-ref { color: var(--text-muted); font-size: 13px; }
+
+  .grid-2 { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 12px; margin-top: 12px; }
+  @media (max-width: 760px) { .grid-2 { grid-template-columns: minmax(0, 1fr); } }
+
+  .chart-wrap { position: relative; }
+  svg { display: block; width: 100%; height: auto; overflow: visible; }
+  .axis text { fill: var(--text-muted); font-size: 11px; }
+  .axis line, .gridline { stroke: var(--grid); stroke-width: 1; }
+  .diag { stroke: var(--reference); stroke-width: 1.5; stroke-dasharray: 4 4; }
+  .dot { fill: var(--series-1); stroke: var(--surface-1); stroke-width: 2; }
+  .hit { fill: transparent; cursor: pointer; }
+  .hit:focus-visible { outline: none; stroke: var(--series-1); stroke-width: 2; }
+  .tooltip {
+    position: absolute; pointer-events: none; background: var(--surface-1); color: var(--text-primary);
+    border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; font-size: 13px;
+    box-shadow: 0 2px 8px rgba(0,0,0,.12); white-space: nowrap; transform: translate(-50%, calc(-100% - 12px));
+  }
+  .tooltip[hidden] { display: none; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 14px; font-variant-numeric: tabular-nums; }
+  th, td { text-align: right; padding: 6px 8px; border-bottom: 1px solid var(--grid); }
+  th:first-child, td:first-child { text-align: left; }
+  th { color: var(--text-secondary); font-weight: 500; font-size: 13px; }
+  .table-scroll { overflow-x: auto; }
+  details summary { cursor: pointer; color: var(--text-secondary); font-size: 13px; margin-top: 8px; }
+  .empty { color: var(--text-secondary); padding: 24px 0; text-align: center; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <div>
+      <h1>Pronostics vs résultats</h1>
+      <p class="sub">Chaque pronostic du moteur comparé à l'arrivée officielle PMU.</p>
+    </div>
+    <div class="segmented" role="group" aria-label="Variante">
+      <button type="button" data-variante="live" aria-pressed="true">Avant course</button>
+      <button type="button" data-variante="app" aria-pressed="false">App</button>
+      <button type="button" data-variante="rejeu" aria-pressed="false">Rejeu</button>
+    </div>
+  </header>
+
+  <section class="card suivi" aria-label="Suivi du jour">
+    <h2 id="suivi-titre">Suivi du jour</h2>
+    <div class="suivi-ligne" id="suivi"></div>
+  </section>
+
+  <p class="notice" id="notice-rejeu" hidden>
+    <strong>Rejeu a posteriori.</strong> Ces pronostics ont été recalculés après les courses, avec des données
+    ingérées avant le départ (historique, terrain mesuré le matin). Utile pour un premier aperçu, mais ce n'est
+    pas une preuve : seuls les pronostics « Avant course », enregistrés avant le départ, en sont une.
+  </p>
+  <p class="notice" id="notice-app" hidden>
+    <strong>Pronostics des utilisateurs de l'app.</strong> Envoyés par l'app au moment du calcul et horodatés par le
+    serveur ; seuls ceux reçus avant le départ comptent. Un utilisateur = une installation de l'app (pas encore de comptes).
+  </p>
+  <p class="notice" id="notice-echantillon" hidden></p>
+
+  <section class="kpis" id="kpis" aria-label="Indicateurs principaux"></section>
+
+  <section class="grid-2">
+    <div class="card">
+      <h2>Calibration</h2>
+      <p class="muted">Quand le moteur annonce X % de chances de gagner, le cheval gagne-t-il X % du temps ?
+        Plus les points suivent la diagonale, plus les probabilités sont fiables.</p>
+      <div class="chart-wrap" id="calibration"></div>
+      <details>
+        <summary>Voir le tableau</summary>
+        <div class="table-scroll" id="calibration-table"></div>
+      </details>
+    </div>
+    <div class="card">
+      <h2>Par discipline et qualité des données</h2>
+      <p class="muted">« Dégradée » : terrain du jour absent ou partant sans historique au moment du pronostic.</p>
+      <div class="table-scroll" id="decoupages"></div>
+    </div>
+  </section>
+
+  <section class="card comparaison">
+    <h2>Utilisateurs de l'app vs moteur automatique</h2>
+    <p class="muted">Sur les mêmes courses : le pronostic d'un utilisateur (avec ses saisies et réglages) contre le
+      pronostic automatique enregistré avant le départ. C'est ce qui dit si compléter les données à la main paie.</p>
+    <div class="table-scroll" id="comparaison"></div>
+  </section>
+</main>
+
+<script>
+  const pct = (v) => v == null ? "—" : (v * 100).toLocaleString("fr-FR", { maximumFractionDigits: 0 }) + " %";
+  const num = (v, d = 2) => v == null ? "—" : v.toLocaleString("fr-FR", { minimumFractionDigits: d, maximumFractionDigits: d });
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const LIBELLES = { plat: "Plat", trot: "Trot", obstacle: "Obstacle", completes: "Données complètes", degradees: "Données dégradées" };
+  const ECHANTILLON_MIN = 100;
+
+  function kpi(label, value, ref) {
+    return `<div class="card"><div class="kpi-label">${label}</div><div class="kpi-value">${value}</div>` +
+           `<div class="kpi-ref">${ref}</div></div>`;
+  }
+
+  function renderKpis(g) {
+    const n = g.courses;
+    document.getElementById("kpis").innerHTML = [
+      kpi("Courses évaluées", n.toLocaleString("fr-FR"), "pronostic enregistré et arrivée connue"),
+      kpi("Gagnant trouvé", pct(g.taux_gagnant),
+          `favori du marché : ${pct(g.taux_favori)} <span title="courses avec cotes">(${g.courses_avec_cotes} c.)</span>`),
+      kpi("Gagnant dans le top 3", pct(g.taux_top3), "du classement du moteur"),
+      kpi("Log-loss", num(g.log_loss), `hasard : ${num(g.log_loss_hasard)} · plus bas = mieux`),
+      kpi("Brier", num(g.brier, 3), "plus bas = mieux"),
+    ].join("");
+  }
+
+  function renderCalibration(tranches) {
+    const host = document.getElementById("calibration");
+    const pts = tranches.filter((t) => t.chevaux > 0);
+    if (!pts.length) { host.innerHTML = '<p class="empty">Pas encore de données.</p>'; return; }
+
+    const W = 520, H = 300, m = { t: 12, r: 16, b: 40, l: 48 };
+    const max = Math.min(1, Math.max(0.2, Math.ceil(Math.max(...pts.flatMap((t) => [t.proba_moyenne, t.taux_victoire])) * 10) / 10));
+    const x = (v) => m.l + (v / max) * (W - m.l - m.r);
+    const y = (v) => H - m.b - (v / max) * (H - m.t - m.b);
+    const ticks = Array.from({ length: Math.round(max / 0.1) + 1 }, (_, i) => +(i * 0.1).toFixed(1));
+
+    let svg = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Calibration : probabilité annoncée contre taux de victoire observé">`;
+    svg += '<g class="axis">';
+    for (const t of ticks) {
+      svg += `<line class="gridline" x1="${m.l}" x2="${W - m.r}" y1="${y(t)}" y2="${y(t)}"/>`;
+      svg += `<text x="${m.l - 8}" y="${y(t) + 4}" text-anchor="end">${Math.round(t * 100)} %</text>`;
+      svg += `<text x="${x(t)}" y="${H - m.b + 18}" text-anchor="middle">${Math.round(t * 100)} %</text>`;
+    }
+    svg += `<text x="${(m.l + W - m.r) / 2}" y="${H - 4}" text-anchor="middle">Probabilité annoncée</text>`;
+    svg += `<text transform="translate(12 ${(m.t + H - m.b) / 2}) rotate(-90)" text-anchor="middle">Victoires observées</text>`;
+    svg += "</g>";
+    svg += `<line class="diag" x1="${x(0)}" y1="${y(0)}" x2="${x(max)}" y2="${y(max)}"/>`;
+    svg += `<text x="${x(max) - 4}" y="${y(max) + 14}" text-anchor="end" fill="var(--text-muted)" font-size="11">calibration parfaite</text>`;
+    pts.forEach((t, i) => {
+      svg += `<circle class="dot" cx="${x(t.proba_moyenne)}" cy="${y(t.taux_victoire)}" r="5"/>`;
+      svg += `<circle class="hit" data-i="${i}" tabindex="0" cx="${x(t.proba_moyenne)}" cy="${y(t.taux_victoire)}" r="14"/>`;
+    });
+    svg += "</svg>";
+    host.innerHTML = svg + '<div class="tooltip" hidden></div>';
+
+    const tip = host.querySelector(".tooltip");
+    const show = (el) => {
+      const t = pts[+el.dataset.i];
+      tip.innerHTML = `<strong>Tranche ${Math.round(t.borne_basse * 100)}–${Math.round(t.borne_haute * 100)} %</strong><br>` +
+        `annoncé ${pct(t.proba_moyenne)} · observé ${pct(t.taux_victoire)}<br><span class="muted">${t.chevaux} chevaux</span>`;
+      const box = host.getBoundingClientRect(), r = el.getBoundingClientRect();
+      tip.style.left = (r.left + r.width / 2 - box.left) + "px";
+      tip.style.top = (r.top + r.height / 2 - box.top) + "px";
+      tip.hidden = false;
+    };
+    host.querySelectorAll(".hit").forEach((el) => {
+      el.addEventListener("mouseenter", () => show(el));
+      el.addEventListener("focus", () => show(el));
+      el.addEventListener("mouseleave", () => { tip.hidden = true; });
+      el.addEventListener("blur", () => { tip.hidden = true; });
+    });
+
+    document.getElementById("calibration-table").innerHTML =
+      "<table><thead><tr><th>Tranche</th><th>Chevaux</th><th>Annoncé</th><th>Observé</th></tr></thead><tbody>" +
+      tranches.map((t) => `<tr><td>${Math.round(t.borne_basse * 100)}–${Math.round(t.borne_haute * 100)} %</td>` +
+        `<td>${t.chevaux}</td><td>${pct(t.proba_moyenne)}</td><td>${pct(t.taux_victoire)}</td></tr>`).join("") +
+      "</tbody></table>";
+  }
+
+  function renderDecoupages(data) {
+    const lignes = [...Object.entries(data.par_discipline), ...Object.entries(data.par_qualite)]
+      .filter(([, b]) => b.courses > 0);
+    document.getElementById("decoupages").innerHTML = !lignes.length ? '<p class="empty">Pas encore de données.</p>' :
+      "<table><thead><tr><th></th><th>Courses</th><th>Gagnant</th><th>Favori</th><th>Top 3</th></tr></thead><tbody>" +
+      lignes.map(([k, b]) => `<tr><td>${esc(LIBELLES[k] || k)}</td><td>${b.courses}</td><td>${pct(b.taux_gagnant)}</td>` +
+        `<td>${pct(b.taux_favori)}</td><td>${pct(b.taux_top3)}</td></tr>`).join("") +
+      "</tbody></table>";
+  }
+
+  function renderSuivi(s) {
+    const jour = new Date(s.jour + "T12:00:00").toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
+    document.getElementById("suivi-titre").textContent = `Suivi du jour — ${jour}`;
+    const items = [
+      [s.courses, "courses au programme"],
+      [s.pronostiquees, "pronostiquées avant le départ"],
+      [s.degradees, "dont données dégradées"],
+      [s.evaluees, "évaluées (arrivée connue)"],
+      [s.en_attente, "en attente du résultat"],
+      [s.pronostics_app, "pronostics faits dans l'app"],
+      [s.utilisateurs, "utilisateurs de l'app"],
+    ];
+    document.getElementById("suivi").innerHTML =
+      items.map(([v, l]) => `<div><strong>${v}</strong><span>${l}</span></div>`).join("");
+  }
+
+  function renderComparaison(c) {
+    const lignes = [["Tous les pronostics app", c.toutes], ["Données modifiées à la main", c.donnees_modifiees],
+                    ["Données intactes", c.donnees_intactes]];
+    document.getElementById("comparaison").innerHTML = !c.toutes.paires
+      ? '<p class="empty">Aucun pronostic de l'app à comparer pour l'instant.</p>'
+      : "<table><thead><tr><th></th><th>Courses</th><th>Utilisateurs</th><th>Gagnant (app)</th>" +
+        "<th>Gagnant (auto)</th><th>Log-loss (app)</th><th>Log-loss (auto)</th></tr></thead><tbody>" +
+        lignes.map(([l, b]) => `<tr><td>${l}</td><td>${b.paires}</td><td>${b.utilisateurs}</td>` +
+          `<td>${pct(b.taux_gagnant_app)}</td><td>${pct(b.taux_gagnant_auto)}</td>` +
+          `<td>${num(b.log_loss_app)}</td><td>${num(b.log_loss_auto)}</td></tr>`).join("") +
+        "</tbody></table>";
+  }
+
+  async function charger(variante) {
+    document.querySelectorAll(".segmented button").forEach((b) =>
+      b.setAttribute("aria-pressed", String(b.dataset.variante === variante)));
+    document.getElementById("notice-rejeu").hidden = variante !== "rejeu";
+    document.getElementById("notice-app").hidden = variante !== "app";
+    try { localStorage.setItem("dashboard-variante", variante); } catch (e) {}
+
+    const data = await (await fetch(`/dashboard/data?variante=${variante}`)).json();
+    const g = data.global;
+    const notice = document.getElementById("notice-echantillon");
+    notice.hidden = g.courses >= ECHANTILLON_MIN;
+    notice.innerHTML = g.courses === 0
+      ? "<strong>Aucune course évaluée pour l'instant.</strong> Les pronostics sont enregistrés chaque heure avant les départs ; les résultats arrivent le lendemain."
+      : `<strong>Échantillon encore petit (${g.courses} courses).</strong> Les écarts peuvent être dus au hasard : ne pas conclure avant au moins ${ECHANTILLON_MIN} courses.`;
+    renderSuivi(data.suivi);
+    renderKpis(g);
+    renderCalibration(g.calibration);
+    renderDecoupages(data);
+    renderComparaison(data.comparaison_app);
+  }
+
+  document.querySelectorAll(".segmented button").forEach((b) =>
+    b.addEventListener("click", () => charger(b.dataset.variante)));
+  // ?variante=rejeu dans l'URL l'emporte (lien partagé), sinon le dernier choix.
+  let initiale = new URLSearchParams(location.search).get("variante");
+  if (!["live", "app", "rejeu"].includes(initiale)) {
+    initiale = "live";
+    try { initiale = localStorage.getItem("dashboard-variante") || "live"; } catch (e) {}
+  }
+  charger(initiale);
+</script>
+</body>
+</html>

@@ -5,6 +5,7 @@ from datetime import date, datetime, timedelta
 
 from app.data.repository import Repository
 from app.jobs.ingest_daily import rafraichir_terrains_du_jour, run
+from app.jobs.predict import predire_courses_a_venir
 
 logger = logging.getLogger(__name__)
 
@@ -46,6 +47,13 @@ def main() -> None:
                 rafraichir_terrains_du_jour(repository, now.date())
             except Exception:
                 logger.exception("Echec du rafraîchissement des terrains du %s", now.date())
+            # Après le terrain : le dernier pronostic avant le départ doit
+            # intégrer la mesure du matin. Un pronostic par heure et par course
+            # à venir, jamais réécrit (tableau de bord).
+            try:
+                predire_courses_a_venir(repository, now)
+            except Exception:
+                logger.exception("Echec des pronostics du %s", now.date())
             last_terrain_refresh = now
         time.sleep(CHECK_INTERVAL_SECONDS)
 

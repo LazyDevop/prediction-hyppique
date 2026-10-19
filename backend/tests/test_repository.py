@@ -23,7 +23,7 @@ course_id inexistant).
 import atexit
 import os
 import tempfile
-from datetime import date
+from datetime import date, datetime
 
 import pytest
 from sqlalchemy.orm import Session
@@ -508,3 +508,89 @@ def test_repository_lit_database_url_a_la_construction(monkeypatch, tmp_path):
 
     assert repository.engine.url.database == str(chemin)
     repository.engine.dispose()
+
+
+# Pronostics enregistrés ----------------------------------------------------
+
+def _course_avec_partants(repo, heure_depart, partants=((1, "Alpha"), (2, "Beta"))):
+    course = repo.upsert_course(make_course_info(heure_depart=heure_depart, discipline="plat"))
+    repo.save_partants(course.id, [make_partant_info(num_pmu=n, nom=nom) for n, nom in partants])
+    return course
+
+
+def _analyse(num_pmu, probabilite, cote=None):
+    from app.engine.scoring import HorseAnalysis
+
+    return HorseAnalysis(nom=f"H{num_pmu}", num_pmu=num_pmu, probabilite=probabilite, cote=cote)
+
+
+def test_courses_evaluables_retient_le_dernier_pronostic_avant_le_depart(repo):
+    depart = datetime(2026, 1, 15, 14, 0)
+    course = _course_avec_partants(repo, depart)
+    repo.save_prediction_run(course.id, [_analyse(1, 0.3), _analyse(2, 0.7)], "live", datetime(2026, 1, 15, 9, 0), [])
+    repo.save_prediction_run(course.id, [_analyse(1, 0.8, cote=2.0), _analyse(2, 0.2)], "live",
+                             datetime(2026, 1, 15, 13, 0), ["terrain_du_jour"])
+    # Postérieur au départ : ne doit jamais compter comme pronostic.
+    repo.save_prediction_run(course.id, [_analyse(1, 0.1), _analyse(2, 0.9)], "live", datetime(2026, 1, 15, 15, 0), [])
+    repo.update_resultats(course.id, [make_partant_info(num_pmu=1, ordre_arrivee=1),
+                                      make_partant_info(num_pmu=2, ordre_arrivee=2)], True)
+
+    [predite] = repo.courses_evaluables("live")
+
+    assert predite.discipline == "plat"
+    assert predite.degradee is True
+    assert [(c.num_pmu, c.probabilite, c.cote, c.rang_arrivee) for c in predite.chevaux] == [
+        (1, 0.8, 2.0, 1), (2, 0.2, None, 2),
+    ]
+
+
+def test_courses_evaluables_ignore_les_courses_sans_pronostic_ou_sans_heure(repo):
+    _course_avec_partants(repo, None)
+
+    assert repo.courses_evaluables("live") == []
+
+
+def test_courses_evaluables_rejeu_ne_se_melange_pas_au_live(repo):
+    course = _course_avec_partants(repo, datetime(2026, 1, 15, 14, 0))
+    repo.save_prediction_run(course.id, [_analyse(1, 0.6), _analyse(2, 0.4)], "rejeu", datetime(2026, 1, 16, 10, 0), [])
+
+    assert repo.courses_evaluables("live") == []
+    [predite] = repo.courses_evaluables("rejeu")
+    assert [c.probabilite for c in predite.chevaux] == [0.6, 0.4]
+
+
+def test_save_prediction_run_ignore_les_outsiders_virtuels(repo):
+    course = _course_avec_partants(repo, datetime(2026, 1, 15, 14, 0))
+    virtuel = _analyse(None, 0.05)
+
+    repo.save_prediction_run(course.id, [_analyse(1, 0.5), _analyse(2, 0.45), virtuel], "rejeu",
+                             datetime(2026, 1, 16, 10, 0), [])
+
+    [predite] = repo.courses_evaluables("rejeu")
+    assert [c.num_pmu for c in predite.chevaux] == [1, 2]
+
+
+def test_courses_evaluables_app_une_entree_par_utilisateur_avec_ses_indicateurs(repo):
+    course = _course_avec_partants(repo, datetime(2026, 1, 15, 14, 0))
+    repo.save_prediction_run(course.id, [_analyse(1, 0.5), _analyse(2, 0.5)], "app", datetime(2026, 1, 15, 10, 0), [],
+                             installation_id="u1", donnees_modifiees=False)
+    repo.save_prediction_run(course.id, [_analyse(1, 0.9), _analyse(2, 0.1)], "app", datetime(2026, 1, 15, 11, 0), [],
+                             installation_id="u1", donnees_modifiees=True, reglages_par_defaut=False,
+                             terrain_modifie=True, parametres={"contraste": 5})
+    repo.save_prediction_run(course.id, [_analyse(1, 0.2), _analyse(2, 0.8)], "app", datetime(2026, 1, 15, 12, 0), [],
+                             installation_id="u2", donnees_modifiees=False)
+
+    predites = sorted(repo.courses_evaluables("app"), key=lambda p: p.installation_id)
+
+    assert [(p.course_id, p.installation_id, p.donnees_modifiees, p.chevaux[0].probabilite) for p in predites] == [
+        (course.id, "u1", True, 0.9), (course.id, "u2", False, 0.2),
+    ]
+
+
+def test_courses_evaluables_live_porte_l_identifiant_de_course(repo):
+    course = _course_avec_partants(repo, datetime(2026, 1, 15, 14, 0))
+    repo.save_prediction_run(course.id, [_analyse(1, 0.5), _analyse(2, 0.5)], "live", datetime(2026, 1, 15, 10, 0), [])
+
+    [predite] = repo.courses_evaluables("live")
+
+    assert (predite.course_id, predite.installation_id) == (course.id, None)
