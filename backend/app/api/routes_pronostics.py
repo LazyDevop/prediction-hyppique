@@ -27,6 +27,11 @@ class ChevalPronostiqueIn(BaseModel):
     num_pmu: int
     probabilite: float = Field(ge=0.0, le=1.0)
     cote: Optional[float] = None
+    top2: Optional[float] = Field(default=None, ge=0.0, le=1.0)
+    top3: Optional[float] = Field(default=None, ge=0.0, le=1.0)
+    top4: Optional[float] = Field(default=None, ge=0.0, le=1.0)
+    value: Optional[float] = None
+    mise: Optional[float] = None
 
 
 class PronosticAppIn(BaseModel):
@@ -37,6 +42,8 @@ class PronosticAppIn(BaseModel):
     reglages_par_defaut: bool
     donnees_modifiees: bool
     terrain: Optional[float] = None
+    # Combinaisons affichées par l'app, en dossards, par type de pari.
+    combinaisons: Optional[dict] = None
 
 
 @router.post("/pronostics", status_code=201)
@@ -57,7 +64,11 @@ def enregistrer_pronostic(pronostic: PronosticAppIn):
 
     run_id = repository.save_prediction_run(
         course.id,
-        [HorseAnalysis(nom="", num_pmu=c.num_pmu, probabilite=c.probabilite, cote=c.cote) for c in pronostic.chevaux],
+        [
+            HorseAnalysis(nom="", num_pmu=c.num_pmu, probabilite=c.probabilite, cote=c.cote,
+                          top2=c.top2, top3=c.top3, top4=c.top4, value=c.value, mise=c.mise)
+            for c in pronostic.chevaux
+        ],
         "app",
         instant,
         [],
@@ -66,5 +77,6 @@ def enregistrer_pronostic(pronostic: PronosticAppIn):
         reglages_par_defaut=pronostic.reglages_par_defaut,
         terrain_modifie=terrain_modifie,
         parametres=pronostic.parametres,
+        combinaisons=pronostic.combinaisons,
     )
     return {"id": run_id}

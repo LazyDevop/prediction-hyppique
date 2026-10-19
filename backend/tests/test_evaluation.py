@@ -137,3 +137,76 @@ def test_comparer_sans_paire():
     comparaison = comparer([], [])
 
     assert (comparaison.paires, comparaison.taux_gagnant_app, comparaison.log_loss_auto) == (0, None, None)
+
+
+# Paris : chaque type est "trouvé" si l'une des combinaisons proposées gagne.
+
+def combis(**surcharges):
+    vide = {"ordre": [], "desordre": []}
+    base = {"couple": dict(vide), "trio": dict(vide), "quarte": dict(vide), "quinte": dict(vide),
+            "couple_place": [], "deux_sur_quatre": []}
+    base.update(surcharges)
+    return base
+
+
+def test_evaluer_paris_ordre_et_desordre():
+    from app.engine.evaluation import evaluer_paris
+
+    arrivee = [4, 7, 1, 9, 2]
+    c = combis(
+        couple={"ordre": [[7, 4], [4, 7]], "desordre": [[4, 7]]},
+        trio={"ordre": [[4, 1, 7]], "desordre": [[1, 4, 7]]},
+        quarte={"ordre": [[4, 7, 1, 9]], "desordre": [[9, 1, 7, 4]]},
+        quinte={"ordre": [[4, 7, 1, 2, 9]], "desordre": [[2, 9, 1, 7, 4]]},
+    )
+
+    paris = evaluer_paris(c, arrivee, nb_partants=14, numero_un_moteur=4)
+
+    assert paris["couple_ordre"] is True and paris["couple_desordre"] is True
+    assert paris["trio_ordre"] is False and paris["trio_desordre"] is True
+    assert paris["quarte_ordre"] is True and paris["quarte_desordre"] is True
+    assert paris["quinte_ordre"] is False and paris["quinte_desordre"] is True
+
+
+def test_evaluer_paris_couple_place_deux_sur_quatre_et_place():
+    from app.engine.evaluation import evaluer_paris
+
+    arrivee = [4, 7, 1, 9, 2]
+    c = combis(couple_place=[[3, 5], [1, 7]], deux_sur_quatre=[[9, 2]])
+
+    paris = evaluer_paris(c, arrivee, nb_partants=14, numero_un_moteur=1)
+
+    assert paris["couple_place"] is True       # 1 et 7 dans les 3 premiers
+    assert paris["deux_sur_quatre"] is False   # 2 est 5e
+    assert paris["place"] is True              # le n°1 du moteur finit 3e sur 14 partants
+
+
+@pytest.mark.parametrize("nb_partants, attendu", [(14, True), (7, False), (3, None)])
+def test_evaluer_paris_place_depend_du_nombre_de_partants(nb_partants, attendu):
+    from app.engine.evaluation import evaluer_paris
+
+    # 3e : placé à partir de 8 partants, pas entre 4 et 7 (2 places), pas de placé en dessous.
+    assert evaluer_paris(combis(), [4, 7, 1], nb_partants, numero_un_moteur=1)["place"] is attendu
+
+
+def test_evaluer_paris_arrivee_incomplete_ou_sans_combinaison_non_evaluable():
+    from app.engine.evaluation import evaluer_paris
+
+    paris = evaluer_paris(combis(quinte={"ordre": [[1, 2, 3, 4, 5]], "desordre": []}), [1, 2, 3], 14, 1)
+
+    assert paris["quinte_ordre"] is None    # arrivée connue sur 3 places seulement
+    assert paris["couple_ordre"] is None    # aucune combinaison proposée
+    assert evaluer_paris(None, [1, 2, 3], 14, 1)["trio_desordre"] is None
+    assert evaluer_paris(None, [1, 2, 3], 14, 1)["place"] is True  # ne dépend que du classement
+
+
+def test_agreger_paris_taux_par_type_sur_les_courses_evaluables():
+    courses = [course([0.6, 0.4], gagnant=1), course([0.6, 0.4], gagnant=2)]
+    evaluations = [evaluer_course(c) for c in courses]
+    evaluations[0].paris = {"couple_ordre": True, "place": True}
+    evaluations[1].paris = {"couple_ordre": False, "place": None}
+
+    bilan = agreger(evaluations)
+
+    assert bilan.paris["couple_ordre"] == {"courses": 2, "taux": 0.5}
+    assert bilan.paris["place"] == {"courses": 1, "taux": 1.0}

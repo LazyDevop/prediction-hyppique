@@ -122,3 +122,18 @@ def build_combinaisons(horses: Sequence[HorseAnalysis], nb_reels: int) -> Dict[s
         "couple_place": _combo_place(reels, nb_reels, probabilites_champ, 3),
         "deux_sur_quatre": _combo_place(reels, nb_reels, probabilites_champ, 4),
     }
+
+
+def dossards_des_combinaisons(combinaisons: Dict[str, object]) -> Dict[str, object]:
+    """Forme enregistrée des combinaisons d'un pronostic : les seuls dossards,
+    suffisants pour juger chaque pari contre l'arrivée."""
+    def dossards(items):
+        return [list(item["dossards"]) for item in items]
+
+    resultat: Dict[str, object] = {}
+    for pari, valeur in combinaisons.items():
+        if isinstance(valeur, dict):
+            resultat[pari] = {"ordre": dossards(valeur["ordre"]), "desordre": dossards(valeur["desordre"])}
+        else:
+            resultat[pari] = dossards(valeur)
+    return resultat

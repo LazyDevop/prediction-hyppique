@@ -127,6 +127,10 @@ class PredictionRun(Base):
     reglages_par_defaut: Mapped[Optional[bool]] = mapped_column(Boolean)
     terrain_modifie: Mapped[Optional[bool]] = mapped_column(Boolean)
     parametres: Mapped[Optional[str]] = mapped_column(Text)
+    # Combinaisons proposées par type de pari, en dossards (JSON) : elles
+    # dépendent des outsiders virtuels et d'une simulation, on ne peut pas
+    # les recalculer à l'identique après coup.
+    combinaisons: Mapped[Optional[str]] = mapped_column(Text)
     chevaux: Mapped[list["PredictionCheval"]] = relationship(back_populates="run", cascade="all, delete-orphan")
 
 
@@ -140,4 +144,9 @@ class PredictionCheval(Base):
     # Cote connue au moment du pronostic, pour comparer au favori du marché
     # tel qu'il était alors, pas à la cote finale.
     cote: Mapped[Optional[float]] = mapped_column(Float)
+    top2: Mapped[Optional[float]] = mapped_column(Float)
+    top3: Mapped[Optional[float]] = mapped_column(Float)
+    top4: Mapped[Optional[float]] = mapped_column(Float)
+    value: Mapped[Optional[float]] = mapped_column(Float)
+    mise: Mapped[Optional[float]] = mapped_column(Float)
     run: Mapped[PredictionRun] = relationship(back_populates="chevaux")

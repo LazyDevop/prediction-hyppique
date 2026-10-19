@@ -13,6 +13,7 @@ from typing import List, Optional
 
 from app.data.models import Course
 from app.data.repository import Repository
+from app.engine.combinatoire import build_combinaisons, dossards_des_combinaisons
 from app.engine.constants import terrain_coefficient
 from app.engine.scoring import CourseTarget, HorseAnalysis, analyse_course
 
@@ -40,7 +41,11 @@ def predire_course(repository: Repository, course: Course, variante: str, mainte
         niveau=None,
         nb_partants_course=course.nb_partants or len(horses),
     )
-    return repository.save_prediction_run(course.id, analyse_course(horses, cible), variante, maintenant, manques)
+    analyses = analyse_course(horses, cible)
+    combinaisons = dossards_des_combinaisons(build_combinaisons(analyses, len(horses)))
+    return repository.save_prediction_run(
+        course.id, analyses, variante, maintenant, manques, combinaisons=combinaisons,
+    )
 
 
 def predire_courses_a_venir(repository: Repository, maintenant: datetime) -> None:

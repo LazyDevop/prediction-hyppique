@@ -8,11 +8,14 @@ taux de réussite isolé ne dit rien de la qualité du moteur.
 import math
 from dataclasses import dataclass, field
 from statistics import mean
-from typing import List, Optional, Sequence
+from typing import Dict, List, Optional, Sequence
 
 # Plancher de probabilité pour le log-loss : une probabilité nulle donnée au
 # gagnant rendrait la moyenne infinie et masquerait toutes les autres courses.
 PROBA_MIN = 1e-6
+
+# Profondeur d'arrivée jugée par chaque pari en ordre / désordre.
+PROFONDEUR_PARIS = {"couple": 2, "trio": 3, "quarte": 4, "quinte": 5}
 
 TRANCHES_CALIBRATION = [(0.0, 0.05), (0.05, 0.1), (0.1, 0.2), (0.2, 0.3), (0.3, 0.5), (0.5, 1.0)]
 
@@ -35,6 +38,11 @@ class CoursePredite:
     # l'utilisateur a modifié les données avant de calculer.
     installation_id: Optional[str] = None
     donnees_modifiees: bool = False
+    # Combinaisons proposées (dossards), absentes des pronostics enregistrés
+    # avant leur ajout ; l'arrivée est sinon déduite des rangs des chevaux.
+    combinaisons: Optional[dict] = None
+    arrivee: List[int] = field(default_factory=list)
+    nb_partants: Optional[int] = None
 
 
 @dataclass
@@ -51,6 +59,7 @@ class EvaluationCourse:
     course_id: Optional[int] = None
     installation_id: Optional[str] = None
     donnees_modifiees: bool = False
+    paris: Dict[str, Optional[bool]] = field(default_factory=dict)
 
 
 @dataclass
@@ -83,6 +92,47 @@ class Bilan:
     log_loss_hasard: Optional[float]
     brier: Optional[float]
     calibration: List[TrancheCalibration]
+    paris: Dict[str, dict] = field(default_factory=dict)
+
+
+def _places_payees(nb_partants: int) -> int:
+    # Règle PMU du simple placé : 3 places à partir de 8 partants, 2 de 4 à 7.
+    if nb_partants >= 8:
+        return 3
+    if nb_partants >= 4:
+        return 2
+    return 0
+
+
+def evaluer_paris(
+    combinaisons: Optional[dict], arrivee: List[int], nb_partants: int, numero_un_moteur: Optional[int],
+) -> Dict[str, Optional[bool]]:
+    """Pour chaque type de pari : True si l'une des combinaisons proposées
+    gagne, False sinon, None s'il n'est pas évaluable (aucune combinaison
+    proposée, arrivée connue sur trop peu de places, pas de placé)."""
+    paris: Dict[str, Optional[bool]] = {}
+    combinaisons = combinaisons or {}
+
+    for pari, profondeur in PROFONDEUR_PARIS.items():
+        proposees = combinaisons.get(pari) or {}
+        tete = arrivee[:profondeur]
+        complet = len(tete) == profondeur
+        ordre, desordre = proposees.get("ordre") or [], proposees.get("desordre") or []
+        paris[f"{pari}_ordre"] = any(list(c) == tete for c in ordre) if ordre and complet else None
+        paris[f"{pari}_desordre"] = any(set(c) == set(tete) for c in desordre) if desordre and complet else None
+
+    for pari, profondeur in (("couple_place", 3), ("deux_sur_quatre", 4)):
+        proposees = combinaisons.get(pari) or []
+        tete = set(arrivee[:profondeur])
+        complet = len(tete) == profondeur
+        paris[pari] = any(set(c) <= tete for c in proposees) if proposees and complet else None
+
+    places = _places_payees(nb_partants)
+    if places and numero_un_moteur is not None and len(arrivee) >= places:
+        paris["place"] = numero_un_moteur in arrivee[:places]
+    else:
+        paris["place"] = None
+    return paris
 
 
 def evaluer_course(course: CoursePredite) -> Optional[EvaluationCourse]:
@@ -92,6 +142,9 @@ def evaluer_course(course: CoursePredite) -> Optional[EvaluationCourse]:
         return None
 
     classement = sorted(chevaux, key=lambda c: c.probabilite, reverse=True)
+    arrivee = course.arrivee or [
+        c.num_pmu for c in sorted((c for c in chevaux if c.rang_arrivee), key=lambda c: c.rang_arrivee)
+    ]
     cotes = [c for c in chevaux if c.cote]
     favori = min(cotes, key=lambda c: c.cote) if cotes else None
 
@@ -108,6 +161,7 @@ def evaluer_course(course: CoursePredite) -> Optional[EvaluationCourse]:
         course_id=course.course_id,
         installation_id=course.installation_id,
         donnees_modifiees=course.donnees_modifiees,
+        paris=evaluer_paris(course.combinaisons, arrivee, course.nb_partants or len(chevaux), classement[0].num_pmu),
     )
 
 
@@ -140,6 +194,11 @@ def agreger(evaluations: Sequence[EvaluationCourse]) -> Bilan:
         log_loss_hasard=_moyenne([e.log_loss_hasard for e in evaluations]),
         brier=_moyenne([e.brier for e in evaluations]),
         calibration=calibration,
+        paris={
+            pari: {"courses": len(valeurs), "taux": _moyenne([float(v) for v in valeurs])}
+            for pari in sorted({k for e in evaluations for k in e.paris})
+            for valeurs in [[e.paris[pari] for e in evaluations if e.paris.get(pari) is not None]]
+        },
     )
 
 

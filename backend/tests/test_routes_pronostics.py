@@ -125,3 +125,29 @@ def test_pronostic_invalide_rejete(repo, horloge, surcharge):
 
     assert client.post("/pronostics", json=pronostic(course.id, **surcharge)).status_code == 422
     assert runs(repo) == []
+
+
+def test_pronostic_enregistre_les_sorties_completes_de_l_app(repo, horloge):
+    course = ajouter_course(repo)
+    horloge(datetime(2026, 10, 19, 12, 0))
+    combinaisons = {
+        "couple": {"ordre": [[1, 2]], "desordre": [[1, 2]]},
+        "trio": {"ordre": [], "desordre": []}, "quarte": {"ordre": [], "desordre": []},
+        "quinte": {"ordre": [], "desordre": []}, "couple_place": [[1, 2]], "deux_sur_quatre": [[1, 2]],
+    }
+
+    response = client.post("/pronostics", json=pronostic(
+        course.id,
+        chevaux=[{"num_pmu": 1, "probabilite": 0.62, "cote": 2.5, "top2": 0.8, "top3": 0.9, "top4": 0.95,
+                  "value": 0.55, "mise": 12.0},
+                 {"num_pmu": 2, "probabilite": 0.38}],
+        combinaisons=combinaisons,
+    ))
+
+    assert response.status_code == 201
+    [run] = runs(repo)
+    assert json.loads(run.combinaisons) == combinaisons
+    premier = next(c for c in run.chevaux if c.num_pmu == 1)
+    assert (premier.top2, premier.top3, premier.top4, premier.value, premier.mise) == (0.8, 0.9, 0.95, 0.55, 12.0)
+    second = next(c for c in run.chevaux if c.num_pmu == 2)
+    assert (second.top2, second.mise) == (None, None)  # non envoyé : inconnu, pas zéro

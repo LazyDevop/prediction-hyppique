@@ -72,6 +72,16 @@ void main() {
     expect(chevaux.map((h) => h['num_pmu']), [1, 2]);
     expect((chevaux[0]['probabilite'] as double) > (chevaux[1]['probabilite'] as double), isTrue);
     expect(chevaux[0]['cote'], 4.0);
+    // Toutes les sorties du moteur, pour évaluer aussi placé et combinaisons.
+    expect((chevaux[0]['top3'] as double) >= (chevaux[0]['probabilite'] as double), isTrue);
+    expect(chevaux[0].containsKey('top2') && chevaux[0].containsKey('top4'), isTrue);
+    expect(chevaux[0].containsKey('value') && chevaux[0].containsKey('mise'), isTrue);
+    final combinaisons = envoi['combinaisons'] as Map<String, Object?>;
+    expect(combinaisons.keys,
+        containsAll(['couple', 'trio', 'quarte', 'quinte', 'couple_place', 'deux_sur_quatre']));
+    final couple = combinaisons['couple'] as Map<String, Object?>;
+    expect(couple['ordre'], [[1, 2], [2, 1]]);
+    expect(combinaisons['couple_place'], isA<List>());
   });
 
   test('cheval modifié après chargement : donnees_modifiees vrai', () async {

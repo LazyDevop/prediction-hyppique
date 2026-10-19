@@ -198,3 +198,24 @@ def test_dashboard_data_liste_des_pronostics_du_jour(repo):
     [mien] = app_
     assert (mien["statut"], mien["installation_id"], mien["donnees_modifiees"]) == ("trouve", "u1", True)
     assert mien["top3"][0]["num_pmu"] == 2
+
+
+def test_dashboard_data_evalue_les_paris(repo):
+    course_pronostiquee(repo, 1, "plat", gagnant=1)
+    course_id = repo.list_courses_for_date(date(2026, 10, 18))[0].id
+    vide = {"ordre": [], "desordre": []}
+    repo.save_prediction_run(
+        course_id,
+        [HorseAnalysis(nom="a", num_pmu=1, probabilite=0.7), HorseAnalysis(nom="b", num_pmu=2, probabilite=0.3)],
+        "live", datetime(2026, 10, 18, 13, 0), [],
+        combinaisons={"couple": {"ordre": [[1, 2]], "desordre": [[1, 2]]}, "trio": vide, "quarte": vide,
+                      "quinte": vide, "couple_place": [], "deux_sur_quatre": []},
+    )
+
+    data = client.get("/dashboard/data", params={"jour": "2026-10-18"}).json()
+
+    assert data["global"]["paris"]["couple_ordre"] == {"courses": 1, "taux": 1.0}
+    assert "trio_ordre" not in data["global"]["paris"] or data["global"]["paris"]["trio_ordre"]["courses"] == 0
+    [ligne] = data["pronostics_du_jour"]
+    assert ligne["paris"]["couple_ordre"] is True and ligne["paris"]["couple_desordre"] is True
+    assert ligne["paris"]["trio_ordre"] is None

@@ -81,6 +81,7 @@
 
   .suivi { margin-top: 20px; }
   .comparaison { margin-top: 12px; }
+  .paris { margin-top: 12px; }
   .liste { margin-top: 12px; }
   .liste-scroll { max-height: 420px; overflow: auto; margin-top: 8px; }
   .liste thead th { position: sticky; top: 0; background: var(--surface-1); }
@@ -89,6 +90,7 @@
   .top3 { display: flex; flex-direction: column; gap: 2px; }
   .proba { color: var(--text-secondary); font-variant-numeric: tabular-nums; }
   .statut { white-space: nowrap; }
+  .statut div { white-space: normal; max-width: 260px; }
   .tag { display: inline-block; font-size: 12px; color: var(--text-secondary); border: 1px solid var(--border);
          border-radius: 4px; padding: 0 4px; margin-left: 4px; }
   .suivi-ligne { display: flex; flex-wrap: wrap; gap: 8px 28px; margin-top: 8px; }
@@ -182,6 +184,13 @@
       <p class="muted">« Dégradée » : terrain du jour absent ou partant sans historique au moment du pronostic.</p>
       <div class="table-scroll" id="decoupages"></div>
     </div>
+  </section>
+
+  <section class="card paris">
+    <h2>Par type de pari</h2>
+    <p class="muted">Un pari est « trouvé » quand l'une des 3 combinaisons proposées par le moteur est gagnante —
+      celles affichées dans l'app. Évalué sur les pronostics enregistrés avec leurs combinaisons.</p>
+    <div class="table-scroll" id="paris"></div>
   </section>
 
   <section class="card comparaison">
@@ -317,6 +326,8 @@
           const top3 = l.top3.map((c) => `<span><strong>${c.num_pmu}</strong> ${esc(c.nom || "")} ` +
             `<span class="proba">${pct(c.probabilite)}</span></span>`).join("");
           const gagnant = l.gagnant ? `<div class="muted">gagnant : ${l.gagnant.num_pmu} ${esc(l.gagnant.nom || "")}</div>` : "";
+          const trouves = Object.entries(l.paris || {}).filter(([, v]) => v === true).map(([k]) => NOM_PARI[k] || k);
+          const paris = trouves.length ? `<div class="muted">trouvé : ${trouves.map(esc).join(", ")}</div>` : "";
           const utilisateur = parUtilisateur
             ? `<td>${esc((l.installation_id || "").slice(0, 8))}${l.donnees_modifiees ? '<span class="tag">modifié</span>' : ""}</td>`
             : "";
@@ -324,8 +335,27 @@
           return `<tr><td>${heure(l.heure_depart)}</td>` +
             `<td>R${l.reunion}C${l.course} ${esc(l.hippodrome)}<div class="muted">${esc(LIBELLES[l.discipline] || l.discipline)}${degradee}</div></td>` +
             utilisateur + `<td><div class="top3">${top3}</div></td>` +
-            `<td class="statut">${STATUTS[l.statut]}${gagnant}</td></tr>`;
+            `<td class="statut">${STATUTS[l.statut]}${gagnant}${paris}</td></tr>`;
         }).join("") + "</tbody></table>";
+  }
+
+  const PARIS = [
+    ["place", "Placé (n°1 du moteur)"],
+    ["couple_ordre", "Couplé — ordre"], ["couple_desordre", "Couplé — désordre"],
+    ["trio_ordre", "Trio — ordre"], ["trio_desordre", "Trio — désordre"],
+    ["quarte_ordre", "Quarté — ordre"], ["quarte_desordre", "Quarté — désordre"],
+    ["quinte_ordre", "Quinté — ordre"], ["quinte_desordre", "Quinté — désordre"],
+    ["couple_place", "Couplé placé"], ["deux_sur_quatre", "2 sur 4"],
+  ];
+  const NOM_PARI = Object.fromEntries(PARIS);
+
+  function renderParis(paris) {
+    const lignes = PARIS.filter(([k]) => paris[k] && paris[k].courses > 0);
+    document.getElementById("paris").innerHTML = !lignes.length
+      ? '<p class="empty">Pas encore de pari évaluable : il faut des pronostics enregistrés avec leurs combinaisons et des arrivées connues.</p>'
+      : "<table><thead><tr><th>Pari</th><th>Courses évaluées</th><th>Trouvé</th></tr></thead><tbody>" +
+        lignes.map(([k, l]) => `<tr><td>${l}</td><td>${paris[k].courses}</td><td>${pct(paris[k].taux)}</td></tr>`).join("") +
+        "</tbody></table>";
   }
 
   function renderComparaison(c) {
@@ -360,6 +390,7 @@
     renderKpis(g);
     renderCalibration(g.calibration);
     renderDecoupages(data);
+    renderParis(g.paris || {});
     renderComparaison(data.comparaison_app);
   }
 

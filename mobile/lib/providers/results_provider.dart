@@ -34,13 +34,13 @@ class ResultsNotifier extends Notifier<AnalyseResult?> {
     final resultats = analyseCourse(horses, target, params: params);
     final combinaisons = buildCombinaisons(resultats, horses.length);
     state = AnalyseResult(resultats, horses.length, combinaisons, isStale: false);
-    _envoyerPronostic(resultats, target.terrain, params);
+    _envoyerPronostic(resultats, combinaisons, target.terrain, params);
   }
 
   /// Transmis au backend pour être comparé à l'arrivée officielle (tableau
   /// de bord). En arrière-plan : un échec réseau ou un refus (course déjà
   /// partie) ne doit jamais gêner l'utilisateur.
-  void _envoyerPronostic(List<Horse> resultats, double? terrain, EngineParams params) {
+  void _envoyerPronostic(List<Horse> resultats, Combinaisons combinaisons, double? terrain, EngineParams params) {
     final contexte = ref.read(pronosticContextProvider);
     final courseId = contexte.courseId;
     if (courseId == null) return;
@@ -50,8 +50,19 @@ class ResultsNotifier extends Notifier<AnalyseResult?> {
       'installation_id': ref.read(installationIdProvider),
       'chevaux': [
         for (final h in resultats)
-          if (h.numPmu != null) {'num_pmu': h.numPmu, 'probabilite': h.probabilite, 'cote': h.cote},
+          if (h.numPmu != null)
+            {
+              'num_pmu': h.numPmu,
+              'probabilite': h.probabilite,
+              'cote': h.cote,
+              'top2': h.top2,
+              'top3': h.top3,
+              'top4': h.top4,
+              'value': h.value,
+              'mise': h.mise,
+            },
       ],
+      'combinaisons': _dossardsDesCombinaisons(combinaisons),
       'parametres': params.toJson(),
       'reglages_par_defaut': _reglagesMoteur(params) == _reglagesMoteur(const EngineParams()),
       'donnees_modifiees': contexte.donneesModifiees,
@@ -60,6 +71,23 @@ class ResultsNotifier extends Notifier<AnalyseResult?> {
     unawaited(ref.read(pronosticsApiProvider).envoyerPronostic(pronostic).catchError((Object e) {
       developer.log('Pronostic non transmis : $e', name: 'ResultsNotifier');
     }));
+  }
+
+  /// Mêmes clés et même forme (dossards seuls) que côté backend, pour que
+  /// chaque pari affiché puisse être jugé contre l'arrivée.
+  static Map<String, Object?> _dossardsDesCombinaisons(Combinaisons c) {
+    List<List<int>> dossards(List<ComboLabel> items) =>
+        [for (final item in items) item.dossards.whereType<int>().toList()];
+    Map<String, Object?> ordreDesordre(ComboOrdreDesordre o) =>
+        {'ordre': dossards(o.ordre), 'desordre': dossards(o.desordre)};
+    return {
+      'couple': ordreDesordre(c.couple),
+      'trio': ordreDesordre(c.trio),
+      'quarte': ordreDesordre(c.quarte),
+      'quinte': ordreDesordre(c.quinte),
+      'couple_place': dossards(c.couplePlace),
+      'deux_sur_quatre': dossards(c.deuxSurQuatre),
+    };
   }
 
   /// Bankroll et fraction de Kelly ne changent que la mise suggérée, pas les

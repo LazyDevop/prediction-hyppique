@@ -12,7 +12,7 @@ from app.data.models import (
 )
 from app.data.pmu_client import CourseInfo, PartantInfo, PerformancePassee, _normalize_name
 from app.engine.constants import terrain_coefficient
-from app.engine.evaluation import ChevalPredit, CoursePredite
+from app.engine.evaluation import ChevalPredit, CoursePredite, evaluer_paris
 from app.engine.scoring import HorseAnalysis, Performance
 
 DEFAULT_DATABASE_URL = "sqlite:///./hippique.db"
@@ -104,11 +104,18 @@ class Repository:
             "reglages_par_defaut": "BOOLEAN",
             "terrain_modifie": "BOOLEAN",
             "parametres": "TEXT",
+            "combinaisons": "TEXT",
         }
         for nom, type_sql in colonnes_app.items():
             if nom not in run_columns:
                 with self.engine.begin() as conn:
                     conn.execute(text(f"ALTER TABLE prediction_runs ADD COLUMN {nom} {type_sql}"))
+
+        cheval_columns = {col["name"] for col in inspect(self.engine).get_columns("prediction_chevaux")}
+        for nom in ("top2", "top3", "top4", "value", "mise"):
+            if nom not in cheval_columns:
+                with self.engine.begin() as conn:
+                    conn.execute(text(f"ALTER TABLE prediction_chevaux ADD COLUMN {nom} FLOAT"))
 
         perf_columns = {col["name"] for col in inspect(self.engine).get_columns("performances_historiques")}
         if "rang_impute" not in perf_columns:
@@ -362,6 +369,7 @@ class Repository:
         reglages_par_defaut: Optional[bool] = None,
         terrain_modifie: Optional[bool] = None,
         parametres: Optional[dict] = None,
+        combinaisons: Optional[dict] = None,
     ) -> int:
         with Session(self.engine) as session:
             run = PredictionRun(
@@ -375,8 +383,12 @@ class Repository:
                 reglages_par_defaut=reglages_par_defaut,
                 terrain_modifie=terrain_modifie,
                 parametres=json.dumps(parametres) if parametres is not None else None,
+                combinaisons=json.dumps(combinaisons) if combinaisons is not None else None,
                 chevaux=[
-                    PredictionCheval(num_pmu=a.num_pmu, probabilite=a.probabilite, cote=a.cote)
+                    PredictionCheval(
+                        num_pmu=a.num_pmu, probabilite=a.probabilite, cote=a.cote,
+                        top2=a.top2, top3=a.top3, top4=a.top4, value=a.value, mise=a.mise,
+                    )
                     # Les outsiders virtuels (num_pmu None) ne servent qu'au
                     # calcul des probabilités : ils n'ont pas d'arrivée.
                     for a in analyses if a.num_pmu is not None
@@ -407,12 +419,16 @@ class Repository:
             resultat = []
             for run, course in dernier_par_course.values():
                 rangs = {p.num_pmu: p.rang_arrivee for p in course.participations}
+                arrivee = [n for n, r in sorted(((n, r) for n, r in rangs.items() if r), key=lambda x: x[1])]
                 resultat.append(CoursePredite(
                     discipline=course.discipline,
                     degradee=run.degradee,
                     course_id=course.id,
                     installation_id=run.installation_id,
                     donnees_modifiees=bool(run.donnees_modifiees),
+                    combinaisons=json.loads(run.combinaisons) if run.combinaisons else None,
+                    arrivee=arrivee,
+                    nb_partants=course.nb_partants or len(course.participations),
                     chevaux=[
                         ChevalPredit(
                             num_pmu=c.num_pmu, probabilite=c.probabilite, cote=c.cote,
@@ -444,6 +460,8 @@ class Repository:
             for run, course in retenus.values():
                 noms = {p.num_pmu: p.cheval.nom_normalise for p in course.participations}
                 gagnant = next((p.num_pmu for p in course.participations if p.rang_arrivee == 1), None)
+                arrivee = [p.num_pmu for p in sorted(
+                    (p for p in course.participations if p.rang_arrivee), key=lambda p: p.rang_arrivee)]
                 classement = [c.num_pmu for c in sorted(run.chevaux, key=lambda c: c.probabilite, reverse=True)]
                 probas = {c.num_pmu: c.probabilite for c in run.chevaux}
                 if gagnant is None:
@@ -470,6 +488,10 @@ class Repository:
                     ],
                     "gagnant": {"num_pmu": gagnant, "nom": noms.get(gagnant)} if gagnant is not None else None,
                     "statut": statut,
+                    "paris": evaluer_paris(
+                        json.loads(run.combinaisons) if run.combinaisons else None, arrivee,
+                        course.nb_partants or len(course.participations), classement[0] if classement else None,
+                    ) if gagnant is not None else {},
                 })
             return sorted(lignes, key=lambda l: (l["heure_depart"] or "", l["reunion"] or 0, l["course"] or 0,
                                                  l["installation_id"] or ""))

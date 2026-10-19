@@ -36,13 +36,13 @@ JOUR = date(2026, 10, 18)
 
 
 def ajouter_course(repo, numero, heure, discipline="plat", terrain="Bon", partants=None):
+    partants = partants if partants is not None else [(1, False, 2), (2, False, 5)]
     course = repo.upsert_course(CourseInfo(
         date=JOUR, numero_reunion=1, numero_course=numero, hippodrome="ParisLongchamp", pays="FRA",
         libelle=f"Prix {numero}", discipline=discipline, discipline_brute=discipline.upper(), distance=1600.0,
-        allocation=20000.0, corde=None, nb_partants_declares=2, arrivee_definitive=False,
+        allocation=20000.0, corde=None, nb_partants_declares=len(partants), arrivee_definitive=False,
         heure_depart=datetime.combine(JOUR, heure) if heure else None, terrain=terrain,
     ))
-    partants = partants if partants is not None else [(1, False, 2), (2, False, 5)]
     repo.save_partants(course.id, [
         PartantInfo(num_pmu=num, nom=f"Cheval {numero}-{num}", age=4, sexe=None, statut="PARTANT",
                     driver_jockey=None, entraineur=None, musique=None, nombre_courses=3, inedit=inedit,
@@ -125,3 +125,39 @@ def test_rejouer_n_utilise_que_les_performances_anterieures_a_la_course(repo):
 
     [predite] = repo.courses_evaluables("rejeu")
     assert predite.chevaux[0].probabilite == pytest.approx(predite.chevaux[1].probabilite)
+
+
+def test_predire_course_enregistre_toutes_les_sorties_et_permet_d_evaluer_les_paris(repo):
+    from sqlalchemy.orm import selectinload
+
+    partants = [(1, False, 1), (2, False, 2), (3, False, 4), (4, False, 6), (5, False, 8), (6, False, 9)]
+    course = ajouter_course(repo, 1, time(15, 0), partants=partants)
+
+    predict.predire_course(repo, course, "live", datetime.combine(JOUR, time(12, 0)))
+
+    with Session(repo.engine) as session:
+        run = session.query(PredictionRun).options(selectinload(PredictionRun.chevaux)).one()
+        combinaisons = json.loads(run.combinaisons)
+        premier = next(c for c in run.chevaux if c.num_pmu == 1)
+        assert premier.top2 >= premier.probabilite
+        assert premier.top3 >= premier.top2 and premier.top4 >= premier.top3
+        assert premier.value is not None and premier.mise is not None
+    assert len(combinaisons["couple"]["ordre"]) == 3
+    assert all(len(c) == 5 for c in combinaisons["quinte"]["desordre"])
+    assert len(combinaisons["deux_sur_quatre"]) == 3
+    assert all(isinstance(n, int) for c in combinaisons["trio"]["ordre"] for n in c)
+
+    from app.data.pmu_client import PartantInfo as P
+    repo.update_resultats(course.id, [
+        P(num_pmu=n, nom="", age=4, sexe=None, statut=None, driver_jockey=None, entraineur=None, musique=None,
+          nombre_courses=0, inedit=False, handicap_poids=None, cote_reference=None, cote_direct=None,
+          ordre_arrivee=n, incident=None)
+        for n, _, _ in partants
+    ], True)
+
+    from app.engine.evaluation import evaluer_course
+    [predite] = repo.courses_evaluables("live")
+    assert predite.arrivee == [1, 2, 3, 4, 5, 6] and predite.nb_partants == 6
+    paris = evaluer_course(predite).paris
+    assert paris["couple_ordre"] is True      # le moteur voit 1 puis 2, l'arrivée aussi
+    assert paris["place"] is True
