@@ -220,18 +220,19 @@ class Repository:
                 selectinload(Cheval.performances_historiques)
             ).filter(Cheval.id == cheval_id).one_or_none()
 
-    def get_hippodromes_connus(self, cheval_id: int) -> List[str]:
-        """Hippodromes déjà présents dans l'historique de ce cheval — sert de
-        point de départ au backfill ciblé (POST /chevaux/{id}/backfill) :
-        interroger open-pmu-api par hippodrome connu plutôt que de scanner
-        des mois de dates une par une (section performances-detaillees
-        limitée à 5 courses, backfill open_pmu_client.py)."""
+    def derniere_participation(self, cheval_id: int) -> Optional[Course]:
+        """Course la plus récente (par date) à laquelle ce cheval a participé,
+        ou None s'il n'est connu que par son historique. Sert de point d'entrée
+        au rafraîchissement de son historique (POST /chevaux/{id}/backfill) :
+        performances-detaillees de cette course donne ses dernières courses."""
         with Session(self.engine) as session:
-            rows = session.query(PerformanceHistorique.hippodrome).filter(
-                PerformanceHistorique.cheval_id == cheval_id,
-                PerformanceHistorique.hippodrome.isnot(None),
-            ).distinct().all()
-            return [r[0] for r in rows if r[0]]
+            # Sans numéro de réunion/course, l'URL turfinfo est impossible à
+            # construire : une telle course n'est jamais retenue.
+            return session.query(Course).join(Participation).filter(
+                Participation.cheval_id == cheval_id,
+                Course.numero_reunion.isnot(None),
+                Course.numero_course.isnot(None),
+            ).order_by(Course.date.desc(), Course.heure_depart.desc(), Course.id.desc()).first()
 
     def save_partants(self, course_id: int, partants: List[PartantInfo]) -> None:
         with Session(self.engine) as session:
@@ -263,8 +264,8 @@ class Repository:
         """historique: dict[num_pmu, list[PerformancePassee]] issu de pmu_client.get_historique.
         Upsert par (cheval_id, date_course, hippodrome) : source='pmu'
         (turfinfo, la plus proche du PMU officiel) écrase toujours une ligne
-        en conflit sur cette clé, y compris une ligne issue du backfill
-        open-pmu-api - voir la contrainte d'unicité dans models.py."""
+        en conflit sur cette clé, y compris une ancienne ligne open-pmu-api
+        - voir la contrainte d'unicité dans models.py."""
         with Session(self.engine) as session:
             course = session.get(Course, course_id)
             participations = {p.num_pmu: p for p in course.participations}
@@ -295,47 +296,6 @@ class Repository:
                     )
                     session.execute(stmt)
             session.commit()
-
-    def ajouter_performance_historique_backfill(
-        self,
-        nom_cheval: str,
-        date_course: Optional[date],
-        hippodrome: Optional[str],
-        discipline: Optional[str],
-        allocation: Optional[float],
-        distance: Optional[float],
-        nb_participants: Optional[int],
-        rang: Optional[int],
-        incident: Optional[str],
-    ) -> bool:
-        """Ajoute une ligne d'historique issue du backfill (open_pmu_client),
-        pour un cheval identifié par son nom — crée le cheval s'il n'existe
-        pas encore (aucune participation requise). Upsert silencieux : si une
-        ligne existe déjà pour (cheval, date, hippodrome), elle est conservée
-        telle quelle (jamais écrasée par le backfill, quelle que soit sa
-        source — contrainte d'unicité dans models.py) et la méthode renvoie
-        False ; True si la ligne a bien été ajoutée."""
-        with Session(self.engine) as session:
-            cheval = self.upsert_cheval(session, nom_cheval)
-
-            stmt = sqlite_insert(PerformanceHistorique).values(
-                cheval_id=cheval.id,
-                participation_id=None,
-                date_course=date_course,
-                hippodrome=hippodrome,
-                discipline=discipline,
-                allocation=allocation,
-                distance=distance,
-                nb_participants=nb_participants,
-                rang=rang,
-                terrain=None,
-                incident=incident,
-                source="open_pmu_api",
-            )
-            stmt = stmt.on_conflict_do_nothing(index_elements=["cheval_id", "date_course", "hippodrome"])
-            result = session.execute(stmt)
-            session.commit()
-            return result.rowcount > 0
 
     def update_resultats(self, course_id: int, partants: List[PartantInfo], arrivee_definitive: bool) -> None:
         with Session(self.engine) as session:

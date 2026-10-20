@@ -71,18 +71,15 @@ class Participation(Base):
 class PerformanceHistorique(Base):
     # Rattachée au CHEVAL (pas à une participation précise) : son historique
     # lui appartient, indépendamment de la course pour laquelle on l'a
-    # consultée. participation_id reste renseigné quand la ligne vient du
-    # flux d'ingestion normal (traçabilité), mais est nullable : le backfill
-    # (open_pmu_client.py) peuple des chevaux qui n'ont pas forcément de
-    # participation en base.
+    # consultée. participation_id reste renseigné par le flux d'ingestion
+    # (traçabilité) ; il est nullable car d'anciennes lignes n'en ont pas.
     #
-    # Contrainte d'unicité (cheval_id, date_course, hippodrome) : les deux
-    # sources (job quotidien pmu_client.py, backfill open_pmu_client.py)
-    # écrivent dans cette même table sans jamais produire de doublon pour une
-    # même course. En cas de conflit : le job quotidien (source="pmu",
-    # donnée turfinfo, la plus proche du PMU officiel) écrase toujours ;
-    # le backfill (source="open_pmu_api") ne remplace jamais une ligne
-    # existante, quelle que soit sa source - voir repository.py.
+    # Contrainte d'unicité (cheval_id, date_course, hippodrome) : une seule
+    # ligne par course passée d'un cheval. Seules des lignes source="pmu"
+    # (turfinfo performances-detaillees, via repository.save_historique,
+    # upsert) sont écrites désormais. Les anciennes lignes "open_pmu_api"
+    # (backfill retiré : Quinté+ et premiers arrivés seulement, historique
+    # biaisé) sont supprimées par jobs/purge_open_pmu.py.
     __tablename__ = "performances_historiques"
     __table_args__ = (
         UniqueConstraint("cheval_id", "date_course", "hippodrome", name="uq_perf_hist_cheval_date_hippo"),

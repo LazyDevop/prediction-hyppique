@@ -70,7 +70,8 @@ class CourseRepository {
   /// Historique complet d'un cheval (bouton "Voir tout l'historique",
   /// section 7.4). Cache-first : le cache local est renvoyé immédiatement
   /// s'il existe et que forceRefresh est faux, sinon on interroge le
-  /// backend (qui déclenche lui-même le backfill via open-pmu-api) puis on
+  /// backend (qui rafraîchit l'historique PMU du cheval, jusqu'à 10 courses
+  /// passées par appel, et renvoie tout ce qu'il a en base) puis on
   /// rafraîchit le cache avec le résultat.
   Future<List<HistoriquePerformance>> historiqueComplet(int chevalId, {bool forceRefresh = false}) async {
     if (!forceRefresh) {

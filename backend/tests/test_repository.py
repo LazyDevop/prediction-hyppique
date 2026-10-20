@@ -16,8 +16,7 @@ Reporté, pas oublié (voir aussi deferred-work.md pour les branches plus
 etroites laissees de cote apres la revue : succes/echec de participation
 absente dans save_historique/update_resultats, update_resultats(False),
 plusieurs performances en un seul appel, champs non asserted de
-save_partants/ajouter_performance_historique_backfill, appel sur un
-course_id inexistant).
+save_partants, appel sur un course_id inexistant).
 """
 
 import atexit
@@ -213,7 +212,7 @@ def test_save_partants_meme_cheval_deux_courses_identite_partagee_participations
     assert full_b.participations[0].num_pmu == 11
 
 
-# 4. save_historique : source="pmu" écrase toujours un conflit du backfill --
+# 4. save_historique : source="pmu" écrase toujours une ancienne ligne open-pmu
 
 def test_save_historique_source_pmu_ecrase_toujours(repo):
     course = repo.upsert_course(make_course_info())
@@ -222,18 +221,15 @@ def test_save_historique_source_pmu_ecrase_toujours(repo):
     perf_date = date(2025, 11, 1)
     hippodrome = "Enghien"
 
-    inserted = repo.ajouter_performance_historique_backfill(
-        nom_cheval="Bucephale",
-        date_course=perf_date,
-        hippodrome=hippodrome,
-        discipline="trot",
-        allocation=10000.0,
-        distance=2600.0,
-        nb_participants=12,
-        rang=7,
-        incident=None,
-    )
-    assert inserted is True
+    # Ancienne ligne open-pmu en conflit, écrite directement : plus aucun
+    # code applicatif n'écrit cette source.
+    with Session(repo.engine) as session:
+        cheval = session.query(Cheval).filter(Cheval.nom_normalise == "BUCEPHALE").one()
+        session.add(PerformanceHistorique(
+            cheval_id=cheval.id, date_course=perf_date, hippodrome=hippodrome, discipline="trot",
+            allocation=10000.0, distance=2600.0, nb_participants=12, rang=7, source="open_pmu_api",
+        ))
+        session.commit()
 
     performance_pmu = make_performance_passee(
         date=perf_date, hippodrome=hippodrome, allocation=25000.0, rang=1,
@@ -296,38 +292,6 @@ def test_save_historique_num_pmu_sans_participation_correspondante_est_ignore(re
 
     with Session(repo.engine) as session:
         assert session.query(PerformanceHistorique).count() == 0
-
-
-# 5. ajouter_performance_historique_backfill : ne jamais écraser -----------
-
-def test_backfill_ne_jamais_ecraser_ligne_existante(repo):
-    args = dict(
-        nom_cheval="Bucephale",
-        date_course=date(2025, 10, 1),
-        hippodrome="Longchamp",
-        discipline="plat",
-        allocation=10000.0,
-        distance=1600.0,
-        nb_participants=14,
-        rang=5,
-        incident=None,
-    )
-    first = repo.ajouter_performance_historique_backfill(**args)
-    assert first is True
-
-    args_maj = dict(args, allocation=99999.0, rang=1)
-    second = repo.ajouter_performance_historique_backfill(**args_maj)
-    assert second is False
-
-    with Session(repo.engine) as session:
-        cheval = session.query(Cheval).filter(Cheval.nom_normalise == "BUCEPHALE").one()
-        lignes = session.query(PerformanceHistorique).filter(
-            PerformanceHistorique.cheval_id == cheval.id
-        ).all()
-
-    assert len(lignes) == 1
-    assert lignes[0].allocation == 10000.0
-    assert lignes[0].rang == 5
 
 
 # 6. get_horses_for_course : tri le plus récent d'abord, terrain, niveau ---
@@ -465,37 +429,32 @@ def test_update_resultats_met_a_jour_par_num_pmu_et_finalise(repo):
     assert participation.incident == "D"
 
 
-# 9. get_hippodromes_connus : ensemble distinct des hippodromes connus -----
+# 9. derniere_participation : course la plus récente du cheval -------------
 
-def test_get_hippodromes_connus_retourne_ensemble_distinct(repo):
-    commun = dict(
-        nom_cheval="Bucephale", discipline="plat", allocation=None,
-        distance=None, nb_participants=None, rang=None, incident=None,
-    )
-    repo.ajouter_performance_historique_backfill(date_course=date(2025, 1, 1), hippodrome="Chantilly", **commun)
-    repo.ajouter_performance_historique_backfill(date_course=date(2025, 2, 1), hippodrome="Chantilly", **commun)
-    repo.ajouter_performance_historique_backfill(date_course=date(2025, 3, 1), hippodrome="Deauville", **commun)
-    repo.ajouter_performance_historique_backfill(date_course=date(2025, 4, 1), hippodrome=None, **commun)
+def test_derniere_participation_retourne_la_course_la_plus_recente(repo):
+    ancienne = repo.upsert_course(make_course_info(date=date(2026, 10, 1), numero_reunion=2, numero_course=4))
+    recente = repo.upsert_course(make_course_info(date=date(2026, 10, 18), numero_reunion=1, numero_course=7))
+    autre = repo.upsert_course(make_course_info(date=date(2026, 10, 19), numero_reunion=3, numero_course=1))
+    repo.save_partants(recente.id, [make_partant_info(num_pmu=5, nom="Bucephale")])
+    repo.save_partants(ancienne.id, [make_partant_info(num_pmu=2, nom="Bucephale")])
+    # Une course plus récente d'un autre cheval ne doit pas être retenue.
+    repo.save_partants(autre.id, [make_partant_info(num_pmu=1, nom="Ouragan")])
 
-    # Un second cheval, avec ses propres hippodromes distincts — sans lui, une
-    # implémentation buguée qui renverrait TOUS les hippodromes de la table
-    # (plutôt que ceux filtrés par cheval_id) passerait ce test à tort
-    # (verification-gap, revue de code).
-    commun_autre = dict(commun, nom_cheval="Ouragan")
-    repo.ajouter_performance_historique_backfill(date_course=date(2025, 5, 1), hippodrome="Auteuil", **commun_autre)
+    cheval_id = repo.get_course_by_id(recente.id).participations[0].cheval_id
+    course = repo.derniere_participation(cheval_id)
 
+    assert course.id == recente.id
+    assert (course.date, course.numero_reunion, course.numero_course) == (date(2026, 10, 18), 1, 7)
+
+
+def test_derniere_participation_sans_participation_retourne_none(repo):
     with Session(repo.engine) as session:
-        cheval = session.query(Cheval).filter(Cheval.nom_normalise == "BUCEPHALE").one()
+        cheval = Cheval(nom_normalise="SANS COURSE")
+        session.add(cheval)
+        session.commit()
         cheval_id = cheval.id
-        autre_cheval = session.query(Cheval).filter(Cheval.nom_normalise == "OURAGAN").one()
-        autre_cheval_id = autre_cheval.id
 
-    hippodromes = repo.get_hippodromes_connus(cheval_id)
-    assert sorted(hippodromes) == ["Chantilly", "Deauville"]
-    assert "Auteuil" not in hippodromes
-
-    hippodromes_autre = repo.get_hippodromes_connus(autre_cheval_id)
-    assert sorted(hippodromes_autre) == ["Auteuil"]
+    assert repo.derniere_participation(cheval_id) is None
 
 
 def test_repository_lit_database_url_a_la_construction(monkeypatch, tmp_path):
