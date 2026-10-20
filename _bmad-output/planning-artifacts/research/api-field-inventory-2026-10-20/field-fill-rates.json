@@ -1,0 +1,3961 @@
+{
+ "echantillon": {
+  "dates": 29,
+  "courses_FRA_programme": 1344,
+  "courses_participants": 173,
+  "partants": 1898,
+  "fichiers_perf": 58,
+  "chevaux_perf": 575,
+  "courses_open": 28,
+  "dates_open_vides": [
+   "18102026"
+  ],
+  "objets_par_strate_participants": {
+   "ALL": 1898,
+   "plat": 384,
+   "2014-17": 566,
+   "obstacle": 669,
+   "trot_attele": 448,
+   "trot_monte": 397,
+   "2018-21": 512,
+   "2025-26": 392,
+   "2022-24": 428
+  },
+  "objets_par_strate_course": {
+   "ALL": 1344,
+   "obstacle": 294,
+   "2014-17": 401,
+   "trot_attele": 711,
+   "trot_monte": 60,
+   "plat": 279,
+   "2018-21": 285,
+   "2025-26": 365,
+   "2022-24": 293
+  }
+ },
+ "course": [
+  {
+   "champ": "arriveeDefinitive",
+   "types": [
+    "bool"
+   ],
+   "exemple": true,
+   "ALL": 99,
+   "plat": 99,
+   "trot_attele": 100,
+   "trot_monte": 100,
+   "obstacle": 99,
+   "2014-17": 98,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "cached",
+   "types": [
+    "bool"
+   ],
+   "exemple": false,
+   "ALL": 100,
+   "plat": 100,
+   "trot_attele": 100,
+   "trot_monte": 100,
+   "obstacle": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "cagnottes",
+   "types": [
+    "list"
+   ],
+   "exemple": null,
+   "ALL": 0,
+   "plat": 0,
+   "trot_attele": 0,
+   "trot_monte": 0,
+   "obstacle": 0,
+   "2014-17": 0,
+   "2018-21": 0,
+   "2022-24": 0,
+   "2025-26": 0
+  },
+  {
+   "champ": "cagnottes[].cagnotteInternet",
+   "types": [
+    "bool"
+   ],
+   "exemple": false,
+   "ALL": 4,
+   "plat": 5,
+   "trot_attele": 2,
+   "trot_monte": 2,
+   "obstacle": 12,
+   "2014-17": 0,
+   "2018-21": 4,
+   "2022-24": 7,
+   "2025-26": 8
+  },
+  {
+   "champ": "cagnottes[].montant",
+   "types": [
+    "int"
+   ],
+   "exemple": 500000,
+   "ALL": 4,
+   "plat": 5,
+   "trot_attele": 2,
+   "trot_monte": 2,
+   "obstacle": 12,
+   "2014-17": 0,
+   "2018-21": 4,
+   "2022-24": 7,
+   "2025-26": 8
+  },
+  {
+   "champ": "cagnottes[].numCourse",
+   "types": [
+    "int"
+   ],
+   "exemple": 3,
+   "ALL": 4,
+   "plat": 5,
+   "trot_attele": 2,
+   "trot_monte": 2,
+   "obstacle": 12,
+   "2014-17": 0,
+   "2018-21": 4,
+   "2022-24": 7,
+   "2025-26": 8
+  },
+  {
+   "champ": "cagnottes[].typeCagnotte",
+   "types": [
+    "str"
+   ],
+   "exemple": "GARANTI",
+   "ALL": 2,
+   "plat": 4,
+   "trot_attele": 0,
+   "trot_monte": 0,
+   "obstacle": 5,
+   "2014-17": 0,
+   "2018-21": 0,
+   "2022-24": 2,
+   "2025-26": 5
+  },
+  {
+   "champ": "cagnottes[].typePari",
+   "types": [
+    "str"
+   ],
+   "exemple": "QUINTE_PLUS",
+   "ALL": 4,
+   "plat": 5,
+   "trot_attele": 2,
+   "trot_monte": 2,
+   "obstacle": 12,
+   "2014-17": 0,
+   "2018-21": 4,
+   "2022-24": 7,
+   "2025-26": 8
+  },
+  {
+   "champ": "categorieParticularite",
+   "types": [
+    "str"
+   ],
+   "exemple": "COURSE_A_CONDITIONS",
+   "ALL": 93,
+   "plat": 100,
+   "trot_attele": 88,
+   "trot_monte": 92,
+   "obstacle": 100,
+   "2014-17": 77,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "categorieStatut",
+   "types": [
+    "str"
+   ],
+   "exemple": "ARRIVEE",
+   "ALL": 100,
+   "plat": 100,
+   "trot_attele": 100,
+   "trot_monte": 100,
+   "obstacle": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "conditionAge",
+   "types": [
+    "str"
+   ],
+   "exemple": "QUATRE_ANS",
+   "ALL": 43,
+   "plat": 100,
+   "trot_attele": 0,
+   "trot_monte": 0,
+   "obstacle": 100,
+   "2014-17": 46,
+   "2018-21": 49,
+   "2022-24": 35,
+   "2025-26": 40
+  },
+  {
+   "champ": "conditionSexe",
+   "types": [
+    "str"
+   ],
+   "exemple": "TOUS_CHEVAUX",
+   "ALL": 100,
+   "plat": 100,
+   "trot_attele": 100,
+   "trot_monte": 100,
+   "obstacle": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "conditions",
+   "types": [
+    "str"
+   ],
+   "exemple": "Pour tous poulains et pouliches de 4 ans, n'ayant pas reçu 28.000 en steep le-chases (victo ires et places). Poi ds : 65 k. Surcharges accumulées pour les sommes reçues en steeple -chases  (victoires et places) : 1 k. par 5.0 00. Les Apprentis, Jeunes Jockeys et Jockeys n'ayant pas gagné quarante co urses recevront 2 k.",
+   "ALL": 100,
+   "plat": 100,
+   "trot_attele": 100,
+   "trot_monte": 100,
+   "obstacle": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "corde",
+   "types": [
+    "str"
+   ],
+   "exemple": "CORDE_GAUCHE",
+   "ALL": 78,
+   "plat": 98,
+   "trot_attele": 100,
+   "trot_monte": 100,
+   "obstacle": 0,
+   "2014-17": 74,
+   "2018-21": 73,
+   "2022-24": 83,
+   "2025-26": 81
+  },
+  {
+   "champ": "courseExclusiveInternet",
+   "types": [
+    "bool"
+   ],
+   "exemple": false,
+   "ALL": 100,
+   "plat": 100,
+   "trot_attele": 100,
+   "trot_monte": 100,
+   "obstacle": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "courseTrackee",
+   "types": [
+    "bool"
+   ],
+   "exemple": false,
+   "ALL": 100,
+   "plat": 100,
+   "trot_attele": 100,
+   "trot_monte": 100,
+   "obstacle": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "departImminent",
+   "types": [
+    "bool"
+   ],
+   "exemple": false,
+   "ALL": 100,
+   "plat": 100,
+   "trot_attele": 100,
+   "trot_monte": 100,
+   "obstacle": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "detailsIndicateurEvenementArriveeProvisoire",
+   "types": [
+    "str"
+   ],
+   "exemple": "TERMINEE AVEC MODIFICATION",
+   "ALL": 4,
+   "plat": 3,
+   "trot_attele": 5,
+   "trot_monte": 7,
+   "obstacle": 1,
+   "2014-17": 0,
+   "2018-21": 0,
+   "2022-24": 9,
+   "2025-26": 7
+  },
+  {
+   "champ": "discipline",
+   "types": [
+    "str"
+   ],
+   "exemple": "STEEPLECHASE",
+   "ALL": 100,
+   "plat": 100,
+   "trot_attele": 100,
+   "trot_monte": 100,
+   "obstacle": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "distance",
+   "types": [
+    "int"
+   ],
+   "exemple": 3600,
+   "ALL": 100,
+   "plat": 100,
+   "trot_attele": 100,
+   "trot_monte": 100,
+   "obstacle": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "distanceUnit",
+   "types": [
+    "str"
+   ],
+   "exemple": "METRE",
+   "ALL": 100,
+   "plat": 100,
+   "trot_attele": 100,
+   "trot_monte": 100,
+   "obstacle": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "dureeCourse",
+   "types": [
+    "int"
+   ],
+   "exemple": 299300,
+   "ALL": 98,
+   "plat": 99,
+   "trot_attele": 98,
+   "trot_monte": 98,
+   "obstacle": 99,
+   "2014-17": 98,
+   "2018-21": 100,
+   "2022-24": 99,
+   "2025-26": 96
+  },
+  {
+   "champ": "ecuries",
+   "types": [
+    "list"
+   ],
+   "exemple": null,
+   "ALL": 0,
+   "plat": 0,
+   "trot_attele": 0,
+   "trot_monte": 0,
+   "obstacle": 0,
+   "2014-17": 0,
+   "2018-21": 0,
+   "2022-24": 0,
+   "2025-26": 0
+  },
+  {
+   "champ": "epcPourTousParis",
+   "types": [
+    "bool"
+   ],
+   "exemple": true,
+   "ALL": 100,
+   "plat": 100,
+   "trot_attele": 100,
+   "trot_monte": 100,
+   "obstacle": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "formuleChampLibreIndisponible",
+   "types": [
+    "bool"
+   ],
+   "exemple": false,
+   "ALL": 100,
+   "plat": 100,
+   "trot_attele": 100,
+   "trot_monte": 100,
+   "obstacle": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "grandPrixNationalTrot",
+   "types": [
+    "bool"
+   ],
+   "exemple": false,
+   "ALL": 100,
+   "plat": 100,
+   "trot_attele": 100,
+   "trot_monte": 100,
+   "obstacle": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "hasEParis",
+   "types": [
+    "bool"
+   ],
+   "exemple": false,
+   "ALL": 100,
+   "plat": 100,
+   "trot_attele": 100,
+   "trot_monte": 100,
+   "obstacle": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "heureDepart",
+   "types": [
+    "int"
+   ],
+   "exemple": 1425214800000,
+   "ALL": 100,
+   "plat": 100,
+   "trot_attele": 100,
+   "trot_monte": 100,
+   "obstacle": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "hippodrome.codeHippodrome",
+   "types": [
+    "str"
+   ],
+   "exemple": "AUT",
+   "ALL": 100,
+   "plat": 100,
+   "trot_attele": 100,
+   "trot_monte": 100,
+   "obstacle": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "hippodrome.libelleCourt",
+   "types": [
+    "str"
+   ],
+   "exemple": "AUTEUIL",
+   "ALL": 100,
+   "plat": 100,
+   "trot_attele": 100,
+   "trot_monte": 100,
+   "obstacle": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "hippodrome.libelleLong",
+   "types": [
+    "str"
+   ],
+   "exemple": "HIPPODROME D'AUTEUIL",
+   "ALL": 100,
+   "plat": 100,
+   "trot_attele": 100,
+   "trot_monte": 100,
+   "obstacle": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "incidents[].numeroParticipants",
+   "types": [
+    "list"
+   ],
+   "exemple": [
+    7
+   ],
+   "ALL": 80,
+   "plat": 33,
+   "trot_attele": 95,
+   "trot_monte": 100,
+   "obstacle": 82,
+   "2014-17": 83,
+   "2018-21": 75,
+   "2022-24": 80,
+   "2025-26": 80
+  },
+  {
+   "champ": "incidents[].type",
+   "types": [
+    "str"
+   ],
+   "exemple": "NON_PARTANT",
+   "ALL": 80,
+   "plat": 33,
+   "trot_attele": 95,
+   "trot_monte": 100,
+   "obstacle": 82,
+   "2014-17": 83,
+   "2018-21": 75,
+   "2022-24": 80,
+   "2025-26": 80
+  },
+  {
+   "champ": "indicateurEvenementArriveeProvisoire",
+   "types": [
+    "str"
+   ],
+   "exemple": "ENQUETE",
+   "ALL": 4,
+   "plat": 3,
+   "trot_attele": 5,
+   "trot_monte": 7,
+   "obstacle": 1,
+   "2014-17": 0,
+   "2018-21": 0,
+   "2022-24": 9,
+   "2025-26": 7
+  },
+  {
+   "champ": "isArriveeDefinitive",
+   "types": [
+    "bool"
+   ],
+   "exemple": true,
+   "ALL": 99,
+   "plat": 99,
+   "trot_attele": 100,
+   "trot_monte": 100,
+   "obstacle": 99,
+   "2014-17": 98,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "isDepartAJPlusUn",
+   "types": [
+    "bool"
+   ],
+   "exemple": false,
+   "ALL": 100,
+   "plat": 100,
+   "trot_attele": 100,
+   "trot_monte": 100,
+   "obstacle": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "isDepartImminent",
+   "types": [
+    "bool"
+   ],
+   "exemple": false,
+   "ALL": 100,
+   "plat": 100,
+   "trot_attele": 100,
+   "trot_monte": 100,
+   "obstacle": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "libelle",
+   "types": [
+    "str"
+   ],
+   "exemple": "PRIX AGITATO",
+   "ALL": 100,
+   "plat": 100,
+   "trot_attele": 100,
+   "trot_monte": 100,
+   "obstacle": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "libelleCourt",
+   "types": [
+    "str"
+   ],
+   "exemple": "AGITATO",
+   "ALL": 100,
+   "plat": 100,
+   "trot_attele": 100,
+   "trot_monte": 100,
+   "obstacle": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "montantOffert1er",
+   "types": [
+    "int"
+   ],
+   "exemple": 26880,
+   "ALL": 100,
+   "plat": 100,
+   "trot_attele": 100,
+   "trot_monte": 100,
+   "obstacle": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "montantOffert2eme",
+   "types": [
+    "int"
+   ],
+   "exemple": 13440,
+   "ALL": 100,
+   "plat": 100,
+   "trot_attele": 100,
+   "trot_monte": 100,
+   "obstacle": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "montantOffert3eme",
+   "types": [
+    "int"
+   ],
+   "exemple": 7840,
+   "ALL": 100,
+   "plat": 100,
+   "trot_attele": 100,
+   "trot_monte": 100,
+   "obstacle": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "montantOffert4eme",
+   "types": [
+    "int"
+   ],
+   "exemple": 5320,
+   "ALL": 100,
+   "plat": 100,
+   "trot_attele": 100,
+   "trot_monte": 100,
+   "obstacle": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "montantOffert5eme",
+   "types": [
+    "int"
+   ],
+   "exemple": 2520,
+   "ALL": 100,
+   "plat": 100,
+   "trot_attele": 100,
+   "trot_monte": 100,
+   "obstacle": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "montantPrix",
+   "types": [
+    "int"
+   ],
+   "exemple": 56000,
+   "ALL": 100,
+   "plat": 100,
+   "trot_attele": 100,
+   "trot_monte": 100,
+   "obstacle": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "montantTotalOffert",
+   "types": [
+    "int"
+   ],
+   "exemple": 56000,
+   "ALL": 100,
+   "plat": 100,
+   "trot_attele": 100,
+   "trot_monte": 100,
+   "obstacle": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "nombreDeclaresPartants",
+   "types": [
+    "int"
+   ],
+   "exemple": 8,
+   "ALL": 100,
+   "plat": 100,
+   "trot_attele": 100,
+   "trot_monte": 100,
+   "obstacle": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "numCourseDedoublee",
+   "types": [
+    "int"
+   ],
+   "exemple": 0,
+   "ALL": 100,
+   "plat": 100,
+   "trot_attele": 100,
+   "trot_monte": 100,
+   "obstacle": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "numExterne",
+   "types": [
+    "int"
+   ],
+   "exemple": 1,
+   "ALL": 100,
+   "plat": 100,
+   "trot_attele": 100,
+   "trot_monte": 100,
+   "obstacle": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "numExterneReunion",
+   "types": [
+    "int"
+   ],
+   "exemple": 1,
+   "ALL": 100,
+   "plat": 100,
+   "trot_attele": 100,
+   "trot_monte": 100,
+   "obstacle": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "numOrdre",
+   "types": [
+    "int"
+   ],
+   "exemple": 1,
+   "ALL": 100,
+   "plat": 100,
+   "trot_attele": 100,
+   "trot_monte": 100,
+   "obstacle": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "numReunion",
+   "types": [
+    "int"
+   ],
+   "exemple": 1,
+   "ALL": 100,
+   "plat": 100,
+   "trot_attele": 100,
+   "trot_monte": 100,
+   "obstacle": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "numSocieteMere",
+   "types": [
+    "int"
+   ],
+   "exemple": 13,
+   "ALL": 100,
+   "plat": 100,
+   "trot_attele": 100,
+   "trot_monte": 100,
+   "obstacle": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "ordreArrivee",
+   "types": [
+    "list"
+   ],
+   "exemple": [
+    [
+     1
+    ],
+    [
+     5
+    ],
+    [
+     2
+    ],
+    [
+     4
+    ],
+    [
+     6
+    ],
+    [
+     8
+    ]
+   ],
+   "ALL": 99,
+   "plat": 99,
+   "trot_attele": 100,
+   "trot_monte": 100,
+   "obstacle": 99,
+   "2014-17": 98,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "parcours",
+   "types": [
+    "str"
+   ],
+   "exemple": "46",
+   "ALL": 26,
+   "plat": 59,
+   "trot_attele": 3,
+   "trot_monte": 7,
+   "obstacle": 53,
+   "2014-17": 16,
+   "2018-21": 29,
+   "2022-24": 27,
+   "2025-26": 32
+  },
+  {
+   "champ": "pariMultiCourses",
+   "types": [
+    "bool"
+   ],
+   "exemple": false,
+   "ALL": 100,
+   "plat": 100,
+   "trot_attele": 100,
+   "trot_monte": 100,
+   "obstacle": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "pariSpecial",
+   "types": [
+    "bool"
+   ],
+   "exemple": false,
+   "ALL": 100,
+   "plat": 100,
+   "trot_attele": 100,
+   "trot_monte": 100,
+   "obstacle": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "participants",
+   "types": [
+    "list"
+   ],
+   "exemple": null,
+   "ALL": 0,
+   "plat": 0,
+   "trot_attele": 0,
+   "trot_monte": 0,
+   "obstacle": 0,
+   "2014-17": 0,
+   "2018-21": 0,
+   "2022-24": 0,
+   "2025-26": 0
+  },
+  {
+   "champ": "penetrometre.commentaire",
+   "types": [
+    "str"
+   ],
+   "exemple": "Estimï¿½",
+   "ALL": 3,
+   "plat": 12,
+   "trot_attele": 0,
+   "trot_monte": 0,
+   "obstacle": 0,
+   "2014-17": 0,
+   "2018-21": 6,
+   "2022-24": 3,
+   "2025-26": 2
+  },
+  {
+   "champ": "penetrometre.heureMesure",
+   "types": [
+    "str"
+   ],
+   "exemple": "2015-03-01T11:00",
+   "ALL": 37,
+   "plat": 78,
+   "trot_attele": 9,
+   "trot_monte": 7,
+   "obstacle": 73,
+   "2014-17": 18,
+   "2018-21": 50,
+   "2022-24": 46,
+   "2025-26": 42
+  },
+  {
+   "champ": "penetrometre.intitule",
+   "types": [
+    "str"
+   ],
+   "exemple": "Collant",
+   "ALL": 49,
+   "plat": 98,
+   "trot_attele": 12,
+   "trot_monte": 7,
+   "obstacle": 98,
+   "2014-17": 56,
+   "2018-21": 50,
+   "2022-24": 46,
+   "2025-26": 42
+  },
+  {
+   "champ": "penetrometre.valeurMesure",
+   "types": [
+    "str"
+   ],
+   "exemple": "46",
+   "ALL": 46,
+   "plat": 85,
+   "trot_attele": 12,
+   "trot_monte": 7,
+   "obstacle": 98,
+   "2014-17": 56,
+   "2018-21": 47,
+   "2022-24": 38,
+   "2025-26": 40
+  },
+  {
+   "champ": "poolIds[].codePari",
+   "types": [
+    "str"
+   ],
+   "exemple": "EB5",
+   "ALL": 2,
+   "plat": 4,
+   "trot_attele": 0,
+   "trot_monte": 0,
+   "obstacle": 5,
+   "2014-17": 0,
+   "2018-21": 0,
+   "2022-24": 2,
+   "2025-26": 5
+  },
+  {
+   "champ": "poolIds[].poolId",
+   "types": [
+    "str"
+   ],
+   "exemple": "7b561c4c-42e2-4eec-beb5-ee8be3001db3",
+   "ALL": 2,
+   "plat": 4,
+   "trot_attele": 0,
+   "trot_monte": 0,
+   "obstacle": 5,
+   "2014-17": 0,
+   "2018-21": 0,
+   "2022-24": 2,
+   "2025-26": 5
+  },
+  {
+   "champ": "pronosticsExpires",
+   "types": [
+    "bool"
+   ],
+   "exemple": true,
+   "ALL": 100,
+   "plat": 100,
+   "trot_attele": 100,
+   "trot_monte": 100,
+   "obstacle": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "rapportsDefinitifsDisponibles",
+   "types": [
+    "bool"
+   ],
+   "exemple": true,
+   "ALL": 100,
+   "plat": 100,
+   "trot_attele": 100,
+   "trot_monte": 100,
+   "obstacle": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "replayDisponible",
+   "types": [
+    "bool"
+   ],
+   "exemple": false,
+   "ALL": 100,
+   "plat": 100,
+   "trot_attele": 100,
+   "trot_monte": 100,
+   "obstacle": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "specialite",
+   "types": [
+    "str"
+   ],
+   "exemple": "OBSTACLE",
+   "ALL": 100,
+   "plat": 100,
+   "trot_attele": 100,
+   "trot_monte": 100,
+   "obstacle": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "statut",
+   "types": [
+    "str"
+   ],
+   "exemple": "FIN_COURSE",
+   "ALL": 100,
+   "plat": 100,
+   "trot_attele": 100,
+   "trot_monte": 100,
+   "obstacle": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "timezoneOffset",
+   "types": [
+    "int"
+   ],
+   "exemple": 3600000,
+   "ALL": 100,
+   "plat": 100,
+   "trot_attele": 100,
+   "trot_monte": 100,
+   "obstacle": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "typePiste",
+   "types": [
+    "str"
+   ],
+   "exemple": "HERBE",
+   "ALL": 31,
+   "plat": 78,
+   "trot_attele": 0,
+   "trot_monte": 0,
+   "obstacle": 66,
+   "2014-17": 6,
+   "2018-21": 49,
+   "2022-24": 35,
+   "2025-26": 40
+  }
+ ],
+ "participants": [
+  {
+   "champ": "age",
+   "types": [
+    "int"
+   ],
+   "exemple": 3,
+   "ALL": 100,
+   "plat": 100,
+   "trot_attele": 100,
+   "trot_monte": 100,
+   "obstacle": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "allure",
+   "types": [
+    "str"
+   ],
+   "exemple": "GALOP",
+   "ALL": 100,
+   "plat": 100,
+   "trot_attele": 100,
+   "trot_monte": 100,
+   "obstacle": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "avisEntraineur",
+   "types": [
+    "str"
+   ],
+   "exemple": "NEUTRE",
+   "ALL": 20,
+   "plat": 0,
+   "trot_attele": 49,
+   "trot_monte": 40,
+   "obstacle": 0,
+   "2014-17": 0,
+   "2018-21": 0,
+   "2022-24": 46,
+   "2025-26": 46
+  },
+  {
+   "champ": "commentaireApresCourse.source",
+   "types": [
+    "str"
+   ],
+   "exemple": "DATAHIPPIQUE",
+   "ALL": 2,
+   "plat": 2,
+   "trot_attele": 2,
+   "trot_monte": 3,
+   "obstacle": 0,
+   "2014-17": 0,
+   "2018-21": 0,
+   "2022-24": 0,
+   "2025-26": 8
+  },
+  {
+   "champ": "commentaireApresCourse.texte",
+   "types": [
+    "str"
+   ],
+   "exemple": "Patiente en antépénultième position, n'a pas mal terminé, à défaut d'être dangereuse.",
+   "ALL": 2,
+   "plat": 2,
+   "trot_attele": 2,
+   "trot_monte": 3,
+   "obstacle": 0,
+   "2014-17": 0,
+   "2018-21": 0,
+   "2022-24": 0,
+   "2025-26": 8
+  },
+  {
+   "champ": "deferre",
+   "types": [
+    "str"
+   ],
+   "exemple": "DEFERRE_POSTERIEURS",
+   "ALL": 25,
+   "plat": 0,
+   "trot_attele": 51,
+   "trot_monte": 60,
+   "obstacle": 0,
+   "2014-17": 15,
+   "2018-21": 22,
+   "2022-24": 36,
+   "2025-26": 29
+  },
+  {
+   "champ": "dernierRapportDirect.dateRapport",
+   "types": [
+    "int"
+   ],
+   "exemple": 1425214968000,
+   "ALL": 93,
+   "plat": 93,
+   "trot_attele": 95,
+   "trot_monte": 94,
+   "obstacle": 91,
+   "2014-17": 81,
+   "2018-21": 97,
+   "2022-24": 100,
+   "2025-26": 98
+  },
+  {
+   "champ": "dernierRapportDirect.favoris",
+   "types": [
+    "bool"
+   ],
+   "exemple": false,
+   "ALL": 93,
+   "plat": 93,
+   "trot_attele": 95,
+   "trot_monte": 94,
+   "obstacle": 91,
+   "2014-17": 81,
+   "2018-21": 97,
+   "2022-24": 100,
+   "2025-26": 98
+  },
+  {
+   "champ": "dernierRapportDirect.grossePrise",
+   "types": [
+    "bool"
+   ],
+   "exemple": false,
+   "ALL": 93,
+   "plat": 93,
+   "trot_attele": 95,
+   "trot_monte": 94,
+   "obstacle": 91,
+   "2014-17": 81,
+   "2018-21": 97,
+   "2022-24": 100,
+   "2025-26": 98
+  },
+  {
+   "champ": "dernierRapportDirect.indicateurTendance",
+   "types": [
+    "str"
+   ],
+   "exemple": "-",
+   "ALL": 26,
+   "plat": 25,
+   "trot_attele": 29,
+   "trot_monte": 31,
+   "obstacle": 20,
+   "2014-17": 61,
+   "2018-21": 11,
+   "2022-24": 15,
+   "2025-26": 5
+  },
+  {
+   "champ": "dernierRapportDirect.nombreIndicateurTendance",
+   "types": [
+    "float"
+   ],
+   "exemple": -1.42,
+   "ALL": 93,
+   "plat": 93,
+   "trot_attele": 95,
+   "trot_monte": 94,
+   "obstacle": 91,
+   "2014-17": 81,
+   "2018-21": 97,
+   "2022-24": 100,
+   "2025-26": 98
+  },
+  {
+   "champ": "dernierRapportDirect.numPmu1",
+   "types": [
+    "int"
+   ],
+   "exemple": 1,
+   "ALL": 93,
+   "plat": 93,
+   "trot_attele": 95,
+   "trot_monte": 94,
+   "obstacle": 91,
+   "2014-17": 81,
+   "2018-21": 97,
+   "2022-24": 100,
+   "2025-26": 98
+  },
+  {
+   "champ": "dernierRapportDirect.permutation",
+   "types": [
+    "int"
+   ],
+   "exemple": 1,
+   "ALL": 91,
+   "plat": 90,
+   "trot_attele": 93,
+   "trot_monte": 91,
+   "obstacle": 89,
+   "2014-17": 81,
+   "2018-21": 97,
+   "2022-24": 100,
+   "2025-26": 87
+  },
+  {
+   "champ": "dernierRapportDirect.rapport",
+   "types": [
+    "float"
+   ],
+   "exemple": 6.9,
+   "ALL": 93,
+   "plat": 93,
+   "trot_attele": 95,
+   "trot_monte": 94,
+   "obstacle": 91,
+   "2014-17": 81,
+   "2018-21": 97,
+   "2022-24": 100,
+   "2025-26": 98
+  },
+  {
+   "champ": "dernierRapportDirect.typePari",
+   "types": [
+    "str"
+   ],
+   "exemple": "SIMPLE_GAGNANT",
+   "ALL": 93,
+   "plat": 93,
+   "trot_attele": 95,
+   "trot_monte": 94,
+   "obstacle": 91,
+   "2014-17": 81,
+   "2018-21": 97,
+   "2022-24": 100,
+   "2025-26": 98
+  },
+  {
+   "champ": "dernierRapportDirect.typeRapport",
+   "types": [
+    "str"
+   ],
+   "exemple": "DIRECT",
+   "ALL": 93,
+   "plat": 93,
+   "trot_attele": 95,
+   "trot_monte": 94,
+   "obstacle": 91,
+   "2014-17": 81,
+   "2018-21": 97,
+   "2022-24": 100,
+   "2025-26": 98
+  },
+  {
+   "champ": "dernierRapportReference.dateRapport",
+   "types": [
+    "int"
+   ],
+   "exemple": 1425209661000,
+   "ALL": 89,
+   "plat": 87,
+   "trot_attele": 95,
+   "trot_monte": 91,
+   "obstacle": 84,
+   "2014-17": 75,
+   "2018-21": 93,
+   "2022-24": 99,
+   "2025-26": 92
+  },
+  {
+   "champ": "dernierRapportReference.favoris",
+   "types": [
+    "bool"
+   ],
+   "exemple": false,
+   "ALL": 89,
+   "plat": 87,
+   "trot_attele": 95,
+   "trot_monte": 91,
+   "obstacle": 84,
+   "2014-17": 75,
+   "2018-21": 93,
+   "2022-24": 99,
+   "2025-26": 92
+  },
+  {
+   "champ": "dernierRapportReference.grossePrise",
+   "types": [
+    "bool"
+   ],
+   "exemple": false,
+   "ALL": 89,
+   "plat": 87,
+   "trot_attele": 95,
+   "trot_monte": 91,
+   "obstacle": 84,
+   "2014-17": 75,
+   "2018-21": 93,
+   "2022-24": 99,
+   "2025-26": 92
+  },
+  {
+   "champ": "dernierRapportReference.indicateurTendance",
+   "types": [
+    "str"
+   ],
+   "exemple": "+",
+   "ALL": 69,
+   "plat": 62,
+   "trot_attele": 78,
+   "trot_monte": 74,
+   "obstacle": 64,
+   "2014-17": 56,
+   "2018-21": 74,
+   "2022-24": 82,
+   "2025-26": 66
+  },
+  {
+   "champ": "dernierRapportReference.nombreIndicateurTendance",
+   "types": [
+    "float"
+   ],
+   "exemple": 0.0,
+   "ALL": 89,
+   "plat": 87,
+   "trot_attele": 95,
+   "trot_monte": 91,
+   "obstacle": 84,
+   "2014-17": 75,
+   "2018-21": 93,
+   "2022-24": 99,
+   "2025-26": 92
+  },
+  {
+   "champ": "dernierRapportReference.numPmu1",
+   "types": [
+    "int"
+   ],
+   "exemple": 1,
+   "ALL": 89,
+   "plat": 87,
+   "trot_attele": 95,
+   "trot_monte": 91,
+   "obstacle": 84,
+   "2014-17": 75,
+   "2018-21": 93,
+   "2022-24": 99,
+   "2025-26": 92
+  },
+  {
+   "champ": "dernierRapportReference.permutation",
+   "types": [
+    "int"
+   ],
+   "exemple": 1,
+   "ALL": 87,
+   "plat": 85,
+   "trot_attele": 93,
+   "trot_monte": 88,
+   "obstacle": 83,
+   "2014-17": 75,
+   "2018-21": 93,
+   "2022-24": 99,
+   "2025-26": 83
+  },
+  {
+   "champ": "dernierRapportReference.rapport",
+   "types": [
+    "float"
+   ],
+   "exemple": 6.0,
+   "ALL": 89,
+   "plat": 87,
+   "trot_attele": 95,
+   "trot_monte": 91,
+   "obstacle": 84,
+   "2014-17": 75,
+   "2018-21": 93,
+   "2022-24": 99,
+   "2025-26": 92
+  },
+  {
+   "champ": "dernierRapportReference.typePari",
+   "types": [
+    "str"
+   ],
+   "exemple": "SIMPLE_GAGNANT",
+   "ALL": 89,
+   "plat": 87,
+   "trot_attele": 95,
+   "trot_monte": 91,
+   "obstacle": 84,
+   "2014-17": 75,
+   "2018-21": 93,
+   "2022-24": 99,
+   "2025-26": 92
+  },
+  {
+   "champ": "dernierRapportReference.typeRapport",
+   "types": [
+    "str"
+   ],
+   "exemple": "REFERENCE",
+   "ALL": 89,
+   "plat": 87,
+   "trot_attele": 95,
+   "trot_monte": 91,
+   "obstacle": 84,
+   "2014-17": 75,
+   "2018-21": 93,
+   "2022-24": 99,
+   "2025-26": 92
+  },
+  {
+   "champ": "distanceChevalPrecedent.code",
+   "types": [
+    "int"
+   ],
+   "exemple": 2,
+   "ALL": 41,
+   "plat": 88,
+   "trot_attele": 0,
+   "trot_monte": 0,
+   "obstacle": 65,
+   "2014-17": 41,
+   "2018-21": 42,
+   "2022-24": 39,
+   "2025-26": 41
+  },
+  {
+   "champ": "distanceChevalPrecedent.identifiant",
+   "types": [
+    "str"
+   ],
+   "exemple": "UNE_LONGUEUR_ET_DEMIE",
+   "ALL": 41,
+   "plat": 88,
+   "trot_attele": 0,
+   "trot_monte": 0,
+   "obstacle": 65,
+   "2014-17": 41,
+   "2018-21": 42,
+   "2022-24": 39,
+   "2025-26": 41
+  },
+  {
+   "champ": "distanceChevalPrecedent.libelleCourt",
+   "types": [
+    "str"
+   ],
+   "exemple": "1 L 1/2",
+   "ALL": 41,
+   "plat": 88,
+   "trot_attele": 0,
+   "trot_monte": 0,
+   "obstacle": 65,
+   "2014-17": 41,
+   "2018-21": 42,
+   "2022-24": 39,
+   "2025-26": 41
+  },
+  {
+   "champ": "distanceChevalPrecedent.libelleLong",
+   "types": [
+    "str"
+   ],
+   "exemple": "1 longueur 1/2",
+   "ALL": 41,
+   "plat": 88,
+   "trot_attele": 0,
+   "trot_monte": 0,
+   "obstacle": 65,
+   "2014-17": 41,
+   "2018-21": 42,
+   "2022-24": 39,
+   "2025-26": 41
+  },
+  {
+   "champ": "driver",
+   "types": [
+    "str"
+   ],
+   "exemple": "C.GROSBOIS",
+   "ALL": 100,
+   "plat": 100,
+   "trot_attele": 100,
+   "trot_monte": 100,
+   "obstacle": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "driverChange",
+   "types": [
+    "bool"
+   ],
+   "exemple": false,
+   "ALL": 100,
+   "plat": 100,
+   "trot_attele": 100,
+   "trot_monte": 100,
+   "obstacle": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "ecurie",
+   "types": [
+    "str"
+   ],
+   "exemple": "A",
+   "ALL": 4,
+   "plat": 2,
+   "trot_attele": 7,
+   "trot_monte": 8,
+   "obstacle": 2,
+   "2014-17": 6,
+   "2018-21": 5,
+   "2022-24": 4,
+   "2025-26": 2
+  },
+  {
+   "champ": "eleveur",
+   "types": [
+    "str"
+   ],
+   "exemple": "MR ARNAUD CHARRIE",
+   "ALL": 87,
+   "plat": 93,
+   "trot_attele": 84,
+   "trot_monte": 75,
+   "obstacle": 93,
+   "2014-17": 65,
+   "2018-21": 93,
+   "2022-24": 99,
+   "2025-26": 99
+  },
+  {
+   "champ": "engagement",
+   "types": [
+    "bool"
+   ],
+   "exemple": false,
+   "ALL": 100,
+   "plat": 100,
+   "trot_attele": 100,
+   "trot_monte": 100,
+   "obstacle": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "entraineur",
+   "types": [
+    "str"
+   ],
+   "exemple": "ARM .LEFEUVRE",
+   "ALL": 100,
+   "plat": 100,
+   "trot_attele": 100,
+   "trot_monte": 100,
+   "obstacle": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "gainsParticipant.gainsAnneeEnCours",
+   "types": [
+    "int"
+   ],
+   "exemple": 800000,
+   "ALL": 95,
+   "plat": 95,
+   "trot_attele": 100,
+   "trot_monte": 91,
+   "obstacle": 93,
+   "2014-17": 88,
+   "2018-21": 93,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "gainsParticipant.gainsAnneePrecedente",
+   "types": [
+    "int"
+   ],
+   "exemple": 180000,
+   "ALL": 95,
+   "plat": 95,
+   "trot_attele": 100,
+   "trot_monte": 91,
+   "obstacle": 93,
+   "2014-17": 88,
+   "2018-21": 93,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "gainsParticipant.gainsCarriere",
+   "types": [
+    "int"
+   ],
+   "exemple": 980000,
+   "ALL": 95,
+   "plat": 95,
+   "trot_attele": 100,
+   "trot_monte": 91,
+   "obstacle": 93,
+   "2014-17": 88,
+   "2018-21": 93,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "gainsParticipant.gainsPlace",
+   "types": [
+    "int"
+   ],
+   "exemple": 180000,
+   "ALL": 95,
+   "plat": 95,
+   "trot_attele": 100,
+   "trot_monte": 91,
+   "obstacle": 93,
+   "2014-17": 88,
+   "2018-21": 93,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "gainsParticipant.gainsVictoires",
+   "types": [
+    "int"
+   ],
+   "exemple": 800000,
+   "ALL": 95,
+   "plat": 95,
+   "trot_attele": 100,
+   "trot_monte": 91,
+   "obstacle": 93,
+   "2014-17": 88,
+   "2018-21": 93,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "handicapDistance",
+   "types": [
+    "int"
+   ],
+   "exemple": 2800,
+   "ALL": 45,
+   "plat": 0,
+   "trot_attele": 100,
+   "trot_monte": 100,
+   "obstacle": 0,
+   "2014-17": 41,
+   "2018-21": 41,
+   "2022-24": 52,
+   "2025-26": 46
+  },
+  {
+   "champ": "handicapPoids",
+   "types": [
+    "int"
+   ],
+   "exemple": 580,
+   "ALL": 75,
+   "plat": 100,
+   "trot_attele": 0,
+   "trot_monte": 95,
+   "obstacle": 100,
+   "2014-17": 81,
+   "2018-21": 76,
+   "2022-24": 70,
+   "2025-26": 73
+  },
+  {
+   "champ": "handicapValeur",
+   "types": [
+    "float"
+   ],
+   "exemple": 33.0,
+   "ALL": 28,
+   "plat": 58,
+   "trot_attele": 0,
+   "trot_monte": 0,
+   "obstacle": 45,
+   "2014-17": 18,
+   "2018-21": 33,
+   "2022-24": 30,
+   "2025-26": 31
+  },
+  {
+   "champ": "idCheval",
+   "types": [
+    "str"
+   ],
+   "exemple": "MATADOR FOREZ-EN AVANT FOREZ-SAGEBURG",
+   "ALL": 18,
+   "plat": 16,
+   "trot_attele": 21,
+   "trot_monte": 16,
+   "obstacle": 18,
+   "2014-17": 0,
+   "2018-21": 0,
+   "2022-24": 0,
+   "2025-26": 85
+  },
+  {
+   "champ": "incident",
+   "types": [
+    "str"
+   ],
+   "exemple": "ARRETE",
+   "ALL": 19,
+   "plat": 2,
+   "trot_attele": 17,
+   "trot_monte": 29,
+   "obstacle": 24,
+   "2014-17": 23,
+   "2018-21": 20,
+   "2022-24": 17,
+   "2025-26": 15
+  },
+  {
+   "champ": "indicateurInedit",
+   "types": [
+    "bool"
+   ],
+   "exemple": false,
+   "ALL": 100,
+   "plat": 100,
+   "trot_attele": 100,
+   "trot_monte": 100,
+   "obstacle": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "jumentPleine",
+   "types": [
+    "bool"
+   ],
+   "exemple": false,
+   "ALL": 100,
+   "plat": 100,
+   "trot_attele": 100,
+   "trot_monte": 100,
+   "obstacle": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "musique",
+   "types": [
+    "str"
+   ],
+   "exemple": "1p145p5p6p7p",
+   "ALL": 95,
+   "plat": 89,
+   "trot_attele": 100,
+   "trot_monte": 100,
+   "obstacle": 93,
+   "2014-17": 94,
+   "2018-21": 96,
+   "2022-24": 96,
+   "2025-26": 95
+  },
+  {
+   "champ": "nom",
+   "types": [
+    "str"
+   ],
+   "exemple": "ROCK ZURAFA",
+   "ALL": 100,
+   "plat": 100,
+   "trot_attele": 100,
+   "trot_monte": 100,
+   "obstacle": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "nomMere",
+   "types": [
+    "str"
+   ],
+   "exemple": "PASADA",
+   "ALL": 100,
+   "plat": 100,
+   "trot_attele": 100,
+   "trot_monte": 100,
+   "obstacle": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "nomPere",
+   "types": [
+    "str"
+   ],
+   "exemple": "HIGH ROCK",
+   "ALL": 100,
+   "plat": 100,
+   "trot_attele": 100,
+   "trot_monte": 100,
+   "obstacle": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "nomPereMere",
+   "types": [
+    "str"
+   ],
+   "exemple": "Diableneyev",
+   "ALL": 55,
+   "plat": 100,
+   "trot_attele": 0,
+   "trot_monte": 0,
+   "obstacle": 100,
+   "2014-17": 59,
+   "2018-21": 59,
+   "2022-24": 48,
+   "2025-26": 54
+  },
+  {
+   "champ": "nombreCourses",
+   "types": [
+    "int"
+   ],
+   "exemple": 5,
+   "ALL": 100,
+   "plat": 100,
+   "trot_attele": 100,
+   "trot_monte": 100,
+   "obstacle": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "nombrePlaces",
+   "types": [
+    "int"
+   ],
+   "exemple": 2,
+   "ALL": 100,
+   "plat": 100,
+   "trot_attele": 100,
+   "trot_monte": 100,
+   "obstacle": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "nombrePlacesSecond",
+   "types": [
+    "int"
+   ],
+   "exemple": 0,
+   "ALL": 90,
+   "plat": 89,
+   "trot_attele": 94,
+   "trot_monte": 87,
+   "obstacle": 90,
+   "2014-17": 74,
+   "2018-21": 93,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "nombrePlacesTroisieme",
+   "types": [
+    "int"
+   ],
+   "exemple": 0,
+   "ALL": 90,
+   "plat": 89,
+   "trot_attele": 94,
+   "trot_monte": 87,
+   "obstacle": 90,
+   "2014-17": 74,
+   "2018-21": 93,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "nombreVictoires",
+   "types": [
+    "int"
+   ],
+   "exemple": 1,
+   "ALL": 100,
+   "plat": 100,
+   "trot_attele": 100,
+   "trot_monte": 100,
+   "obstacle": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "numPmu",
+   "types": [
+    "int"
+   ],
+   "exemple": 1,
+   "ALL": 100,
+   "plat": 100,
+   "trot_attele": 100,
+   "trot_monte": 100,
+   "obstacle": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "oeilleres",
+   "types": [
+    "str"
+   ],
+   "exemple": "SANS_OEILLERES",
+   "ALL": 100,
+   "plat": 100,
+   "trot_attele": 100,
+   "trot_monte": 100,
+   "obstacle": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "ordreArrivee",
+   "types": [
+    "int"
+   ],
+   "exemple": 5,
+   "ALL": 81,
+   "plat": 98,
+   "trot_attele": 83,
+   "trot_monte": 70,
+   "obstacle": 76,
+   "2014-17": 77,
+   "2018-21": 79,
+   "2022-24": 83,
+   "2025-26": 85
+  },
+  {
+   "champ": "pays",
+   "types": [
+    "str"
+   ],
+   "exemple": "France",
+   "ALL": 10,
+   "plat": 16,
+   "trot_attele": 0,
+   "trot_monte": 0,
+   "obstacle": 18,
+   "2014-17": 0,
+   "2018-21": 0,
+   "2022-24": 0,
+   "2025-26": 46
+  },
+  {
+   "champ": "paysEntrainement",
+   "types": [
+    "str"
+   ],
+   "exemple": "France",
+   "ALL": 22,
+   "plat": 44,
+   "trot_attele": 0,
+   "trot_monte": 0,
+   "obstacle": 37,
+   "2014-17": 0,
+   "2018-21": 0,
+   "2022-24": 48,
+   "2025-26": 54
+  },
+  {
+   "champ": "placeCorde",
+   "types": [
+    "int"
+   ],
+   "exemple": 7,
+   "ALL": 30,
+   "plat": 100,
+   "trot_attele": 40,
+   "trot_monte": 0,
+   "obstacle": 0,
+   "2014-17": 33,
+   "2018-21": 31,
+   "2022-24": 28,
+   "2025-26": 25
+  },
+  {
+   "champ": "poidsConditionMonte",
+   "types": [
+    "int"
+   ],
+   "exemple": 525,
+   "ALL": 14,
+   "plat": 19,
+   "trot_attele": 1,
+   "trot_monte": 0,
+   "obstacle": 29,
+   "2014-17": 11,
+   "2018-21": 17,
+   "2022-24": 10,
+   "2025-26": 21
+  },
+  {
+   "champ": "poidsConditionMonteChange",
+   "types": [
+    "bool"
+   ],
+   "exemple": false,
+   "ALL": 100,
+   "plat": 100,
+   "trot_attele": 100,
+   "trot_monte": 100,
+   "obstacle": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "proprietaire",
+   "types": [
+    "str"
+   ],
+   "exemple": "ARM .LEFEUVRE",
+   "ALL": 100,
+   "plat": 100,
+   "trot_attele": 100,
+   "trot_monte": 100,
+   "obstacle": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "race",
+   "types": [
+    "str"
+   ],
+   "exemple": "PUR-SANG",
+   "ALL": 100,
+   "plat": 100,
+   "trot_attele": 100,
+   "trot_monte": 100,
+   "obstacle": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "reductionKilometrique",
+   "types": [
+    "int"
+   ],
+   "exemple": 79700,
+   "ALL": 34,
+   "plat": 0,
+   "trot_attele": 83,
+   "trot_monte": 70,
+   "obstacle": 0,
+   "2014-17": 30,
+   "2018-21": 31,
+   "2022-24": 40,
+   "2025-26": 37
+  },
+  {
+   "champ": "robe.code",
+   "types": [
+    "str"
+   ],
+   "exemple": "001",
+   "ALL": 100,
+   "plat": 100,
+   "trot_attele": 100,
+   "trot_monte": 100,
+   "obstacle": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "robe.libelleCourt",
+   "types": [
+    "str"
+   ],
+   "exemple": "ALEZAN",
+   "ALL": 100,
+   "plat": 100,
+   "trot_attele": 100,
+   "trot_monte": 100,
+   "obstacle": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "robe.libelleLong",
+   "types": [
+    "str"
+   ],
+   "exemple": "ALEZAN",
+   "ALL": 100,
+   "plat": 100,
+   "trot_attele": 100,
+   "trot_monte": 100,
+   "obstacle": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "sexe",
+   "types": [
+    "str"
+   ],
+   "exemple": "HONGRES",
+   "ALL": 100,
+   "plat": 100,
+   "trot_attele": 100,
+   "trot_monte": 100,
+   "obstacle": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "statut",
+   "types": [
+    "str"
+   ],
+   "exemple": "PARTANT",
+   "ALL": 100,
+   "plat": 100,
+   "trot_attele": 100,
+   "trot_monte": 100,
+   "obstacle": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "supplement",
+   "types": [
+    "int"
+   ],
+   "exemple": 0,
+   "ALL": 100,
+   "plat": 100,
+   "trot_attele": 100,
+   "trot_monte": 100,
+   "obstacle": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "tauxReclamation",
+   "types": [
+    "int"
+   ],
+   "exemple": 2800000,
+   "ALL": 2,
+   "plat": 0,
+   "trot_attele": 0,
+   "trot_monte": 0,
+   "obstacle": 5,
+   "2014-17": 0,
+   "2018-21": 0,
+   "2022-24": 3,
+   "2025-26": 5
+  },
+  {
+   "champ": "tempsObtenu",
+   "types": [
+    "int"
+   ],
+   "exemple": 223220,
+   "ALL": 34,
+   "plat": 0,
+   "trot_attele": 83,
+   "trot_monte": 70,
+   "obstacle": 0,
+   "2014-17": 30,
+   "2018-21": 31,
+   "2022-24": 40,
+   "2025-26": 37
+  },
+  {
+   "champ": "urlCasaque",
+   "types": [
+    "str"
+   ],
+   "exemple": "https://www.pmu.fr/back-assets/hippique/casaques/01032015/R1/C1/P1.gif",
+   "ALL": 92,
+   "plat": 87,
+   "trot_attele": 97,
+   "trot_monte": 95,
+   "obstacle": 91,
+   "2014-17": 84,
+   "2018-21": 93,
+   "2022-24": 100,
+   "2025-26": 96
+  }
+ ],
+ "perf_cheval": [
+  {
+   "champ": "nomCheval",
+   "types": [
+    "str"
+   ],
+   "exemple": "GROOVE",
+   "ALL": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "numPmu",
+   "types": [
+    "NoneType",
+    "int"
+   ],
+   "exemple": 1,
+   "ALL": 89,
+   "2014-17": 59,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  }
+ ],
+ "perf_course_passee": [
+  {
+   "champ": "_lui.corde",
+   "types": [
+    "NoneType",
+    "int"
+   ],
+   "exemple": 2,
+   "ALL": 27,
+   "2014-17": 57,
+   "2018-21": 15,
+   "2022-24": 18,
+   "2025-26": 6
+  },
+  {
+   "champ": "_lui.distanceAvecPrecedent",
+   "types": [
+    "NoneType"
+   ],
+   "exemple": null,
+   "ALL": 0,
+   "2014-17": 0,
+   "2018-21": 0,
+   "2022-24": 0,
+   "2025-26": 0
+  },
+  {
+   "champ": "_lui.distanceAvecPrecedent.knownValue",
+   "types": [
+    "str"
+   ],
+   "exemple": "COURTE_TETE",
+   "ALL": 42,
+   "2014-17": 65,
+   "2018-21": 43,
+   "2022-24": 32,
+   "2025-26": 13
+  },
+  {
+   "champ": "_lui.distanceAvecPrecedent.rawValue",
+   "types": [
+    "str"
+   ],
+   "exemple": "7/4",
+   "ALL": 1,
+   "2014-17": 2,
+   "2018-21": 1,
+   "2022-24": 2,
+   "2025-26": 0
+  },
+  {
+   "champ": "_lui.distanceParcourue",
+   "types": [
+    "NoneType",
+    "int"
+   ],
+   "exemple": 2975,
+   "ALL": 29,
+   "2014-17": 0,
+   "2018-21": 19,
+   "2022-24": 46,
+   "2025-26": 75
+  },
+  {
+   "champ": "_lui.itsHim",
+   "types": [
+    "bool"
+   ],
+   "exemple": true,
+   "ALL": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "_lui.nomCheval",
+   "types": [
+    "str"
+   ],
+   "exemple": "GROOVE",
+   "ALL": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "_lui.nomJockey",
+   "types": [
+    "NoneType",
+    "str"
+   ],
+   "exemple": "N.DESOUTTER",
+   "ALL": 99,
+   "2014-17": 99,
+   "2018-21": 99,
+   "2022-24": 99,
+   "2025-26": 100
+  },
+  {
+   "champ": "_lui.numPmu",
+   "types": [
+    "NoneType",
+    "int"
+   ],
+   "exemple": 5,
+   "ALL": 76,
+   "2014-17": 100,
+   "2018-21": 81,
+   "2022-24": 54,
+   "2025-26": 56
+  },
+  {
+   "champ": "_lui.oeillere",
+   "types": [
+    "NoneType",
+    "str"
+   ],
+   "exemple": "SANS_OEILLERES",
+   "ALL": 72,
+   "2014-17": 100,
+   "2018-21": 81,
+   "2022-24": 54,
+   "2025-26": 29
+  },
+  {
+   "champ": "_lui.place.place",
+   "types": [
+    "NoneType",
+    "int"
+   ],
+   "exemple": 1,
+   "ALL": 85,
+   "2014-17": 93,
+   "2018-21": 88,
+   "2022-24": 78,
+   "2025-26": 76
+  },
+  {
+   "champ": "_lui.place.rawValue",
+   "types": [
+    "NoneType",
+    "str"
+   ],
+   "exemple": "DI",
+   "ALL": 6,
+   "2014-17": 0,
+   "2018-21": 0,
+   "2022-24": 0,
+   "2025-26": 31
+  },
+  {
+   "champ": "_lui.place.statusArrivee",
+   "types": [
+    "str"
+   ],
+   "exemple": "PLACE",
+   "ALL": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "_lui.poidsJockey",
+   "types": [
+    "NoneType",
+    "float"
+   ],
+   "exemple": 66.0,
+   "ALL": 73,
+   "2014-17": 100,
+   "2018-21": 81,
+   "2022-24": 53,
+   "2025-26": 36
+  },
+  {
+   "champ": "_lui.reductionKilometrique",
+   "types": [
+    "NoneType",
+    "int"
+   ],
+   "exemple": 7830,
+   "ALL": 17,
+   "2014-17": 0,
+   "2018-21": 13,
+   "2022-24": 24,
+   "2025-26": 46
+  },
+  {
+   "champ": "_nb_participants_listes",
+   "types": [
+    "int"
+   ],
+   "exemple": 5,
+   "ALL": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "allocation",
+   "types": [
+    "int"
+   ],
+   "exemple": 36000,
+   "ALL": 98,
+   "2014-17": 95,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 99
+  },
+  {
+   "champ": "date",
+   "types": [
+    "int"
+   ],
+   "exemple": 1421967600000,
+   "ALL": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "discipline",
+   "types": [
+    "str"
+   ],
+   "exemple": "STEEPLECHASE",
+   "ALL": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "distance",
+   "types": [
+    "int"
+   ],
+   "exemple": 3400,
+   "ALL": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "etatTerrain",
+   "types": [
+    "str"
+   ],
+   "exemple": "collant",
+   "ALL": 67,
+   "2014-17": 88,
+   "2018-21": 79,
+   "2022-24": 53,
+   "2025-26": 25
+  },
+  {
+   "champ": "hippodrome",
+   "types": [
+    "str"
+   ],
+   "exemple": "PAU",
+   "ALL": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "nbParticipants",
+   "types": [
+    "int"
+   ],
+   "exemple": 9,
+   "ALL": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "nomPrix",
+   "types": [
+    "str"
+   ],
+   "exemple": "LALANNE",
+   "ALL": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "tempsDuPremier",
+   "types": [
+    "int"
+   ],
+   "exemple": 26500,
+   "ALL": 91,
+   "2014-17": 90,
+   "2018-21": 95,
+   "2022-24": 87,
+   "2025-26": 89
+  },
+  {
+   "champ": "timezoneOffset",
+   "types": [
+    "int"
+   ],
+   "exemple": 3600000,
+   "ALL": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  }
+ ],
+ "profondeur_historique": {
+  "n": 575,
+  "min": 0,
+  "p10": 1,
+  "median": 5,
+  "p90": 10,
+  "max": 10
+ },
+ "open_course": [
+  {
+   "champ": "arrivee",
+   "types": [
+    "list"
+   ],
+   "exemple": [
+    1,
+    5,
+    2,
+    12,
+    7,
+    6,
+    9
+   ],
+   "ALL": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "date",
+   "types": [
+    "str"
+   ],
+   "exemple": "2015-03-01",
+   "ALL": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "details",
+   "types": [
+    "str"
+   ],
+   "exemple": "HANDICAP  Réf. +060 +080   STEEPLE-CHASE   4.400 mètres- Pour tous chevaux de 5 ans et au-dessus   ayant couru depuis le 1er janvier de l'année dernière inclus et ayant  lors de l'une de leurs six dernières courses en obstacles  soit été cla s sés dans les sept premiers d'une course Premium  soit ayant reçu une allocation de 7.500  soit été classés d ans les trois premiers d'un prix (à réclamer excepté) couru sur un hippodrome de 1èr e Catégorie. Les référence s applicables dans ce handicap sero",
+   "ALL": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "distance",
+   "types": [
+    "int"
+   ],
+   "exemple": 4400,
+   "ALL": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "heure_depart",
+   "types": [
+    "str"
+   ],
+   "exemple": "15:08:00",
+   "ALL": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "lieu",
+   "types": [
+    "str"
+   ],
+   "exemple": "Auteuil",
+   "ALL": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "montant",
+   "types": [
+    "int"
+   ],
+   "exemple": 95000,
+   "ALL": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "non_partants",
+   "types": [
+    "list"
+   ],
+   "exemple": [
+    1
+   ],
+   "ALL": 32,
+   "2014-17": 38,
+   "2018-21": 38,
+   "2022-24": 17,
+   "2025-26": 33
+  },
+  {
+   "champ": "partants",
+   "types": [
+    "int"
+   ],
+   "exemple": 13,
+   "ALL": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "prix",
+   "types": [
+    "str"
+   ],
+   "exemple": "PRIX KARCIMONT",
+   "ALL": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "r/c",
+   "types": [
+    "str"
+   ],
+   "exemple": "R1/C3",
+   "ALL": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "statistiques.cote_max",
+   "types": [
+    "float",
+    "int"
+   ],
+   "exemple": 17.5,
+   "ALL": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "statistiques.cote_mediane",
+   "types": [
+    "float",
+    "int"
+   ],
+   "exemple": 9.2,
+   "ALL": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "statistiques.cote_min",
+   "types": [
+    "float",
+    "int"
+   ],
+   "exemple": 2.8,
+   "ALL": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "statistiques.cote_moyenne",
+   "types": [
+    "float"
+   ],
+   "exemple": 10.39,
+   "ALL": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "statistiques.ecart_cote_favori",
+   "types": [
+    "float",
+    "int"
+   ],
+   "exemple": 7.59,
+   "ALL": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "statistiques.ecart_cote_gagnant",
+   "types": [
+    "float",
+    "int"
+   ],
+   "exemple": 0,
+   "ALL": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "statistiques.favori.cote",
+   "types": [
+    "float",
+    "int"
+   ],
+   "exemple": 2.8,
+   "ALL": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "statistiques.favori.nom_cheval",
+   "types": [
+    "str"
+   ],
+   "exemple": "JEMY BAIE",
+   "ALL": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "statistiques.favori.numero",
+   "types": [
+    "int"
+   ],
+   "exemple": 1,
+   "ALL": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "statistiques.favori.position",
+   "types": [
+    "int"
+   ],
+   "exemple": 1,
+   "ALL": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "statistiques.gagnant.cote",
+   "types": [
+    "float",
+    "int"
+   ],
+   "exemple": 2.8,
+   "ALL": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "statistiques.gagnant.nom_cheval",
+   "types": [
+    "str"
+   ],
+   "exemple": "JEMY BAIE",
+   "ALL": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "statistiques.gagnant.numero",
+   "types": [
+    "int"
+   ],
+   "exemple": 1,
+   "ALL": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "statistiques.nombre_arrivants",
+   "types": [
+    "int"
+   ],
+   "exemple": 7,
+   "ALL": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "statistiques.nombre_non_partants",
+   "types": [
+    "int"
+   ],
+   "exemple": 1,
+   "ALL": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "statistiques.nombre_partants",
+   "types": [
+    "int"
+   ],
+   "exemple": 13,
+   "ALL": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "statistiques.repartition_positions.1",
+   "types": [
+    "int"
+   ],
+   "exemple": 1,
+   "ALL": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "statistiques.repartition_positions.2",
+   "types": [
+    "int"
+   ],
+   "exemple": 1,
+   "ALL": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "statistiques.repartition_positions.3",
+   "types": [
+    "int"
+   ],
+   "exemple": 1,
+   "ALL": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "statistiques.repartition_positions.4",
+   "types": [
+    "int"
+   ],
+   "exemple": 1,
+   "ALL": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "statistiques.repartition_positions.5",
+   "types": [
+    "int"
+   ],
+   "exemple": 1,
+   "ALL": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "statistiques.repartition_positions.6",
+   "types": [
+    "int"
+   ],
+   "exemple": 1,
+   "ALL": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "statistiques.repartition_positions.7",
+   "types": [
+    "int"
+   ],
+   "exemple": 1,
+   "ALL": 93,
+   "2014-17": 100,
+   "2018-21": 88,
+   "2022-24": 100,
+   "2025-26": 83
+  },
+  {
+   "champ": "statistiques.taux_favori_gagnant",
+   "types": [
+    "int"
+   ],
+   "exemple": 100,
+   "ALL": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "statistiques.taux_favori_place",
+   "types": [
+    "int"
+   ],
+   "exemple": 100,
+   "ALL": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "type",
+   "types": [
+    "str"
+   ],
+   "exemple": "Steeple-Chase",
+   "ALL": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  }
+ ],
+ "open_cheval": [
+  {
+   "champ": "annee_de_naissance",
+   "types": [
+    "int"
+   ],
+   "exemple": 2009,
+   "ALL": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "corde",
+   "types": [
+    "int"
+   ],
+   "exemple": 0,
+   "ALL": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "cotes",
+   "types": [
+    "list"
+   ],
+   "exemple": [
+    2.8,
+    2.8,
+    2.9
+   ],
+   "ALL": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "discipline",
+   "types": [
+    "str"
+   ],
+   "exemple": "Steeple-Chase",
+   "ALL": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "distance",
+   "types": [
+    "int"
+   ],
+   "exemple": 4400,
+   "ALL": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "gains",
+   "types": [
+    "int"
+   ],
+   "exemple": 184310,
+   "ALL": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "musique",
+   "types": [
+    "str"
+   ],
+   "exemple": "1h 1h (14) 4s 6s 1s 2s Ts 2s 2s (13) 3s 1s 7s",
+   "ALL": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "nom_cheval",
+   "types": [
+    "str"
+   ],
+   "exemple": "JEMY BAIE",
+   "ALL": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "nom_entraineur",
+   "types": [
+    "str"
+   ],
+   "exemple": "POSTIC M.",
+   "ALL": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "nom_jockey",
+   "types": [
+    "str"
+   ],
+   "exemple": "LESTRADE B.",
+   "ALL": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "poids_cheval",
+   "types": [
+    "int"
+   ],
+   "exemple": 720,
+   "ALL": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "position",
+   "types": [
+    "int"
+   ],
+   "exemple": 1,
+   "ALL": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "sexe",
+   "types": [
+    "str"
+   ],
+   "exemple": "H",
+   "ALL": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "statistiques.cote_favorite",
+   "types": [
+    "bool"
+   ],
+   "exemple": true,
+   "ALL": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "statistiques.cote_max",
+   "types": [
+    "float",
+    "int"
+   ],
+   "exemple": 2.9,
+   "ALL": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "statistiques.cote_mediane",
+   "types": [
+    "float",
+    "int"
+   ],
+   "exemple": 2.8,
+   "ALL": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "statistiques.cote_min",
+   "types": [
+    "float",
+    "int"
+   ],
+   "exemple": 2.8,
+   "ALL": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "statistiques.cote_moyenne",
+   "types": [
+    "float",
+    "int"
+   ],
+   "exemple": 2.83,
+   "ALL": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "statistiques.ecart_cote_moyenne",
+   "types": [
+    "float",
+    "int"
+   ],
+   "exemple": -7.56,
+   "ALL": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "statistiques.est_gagnant",
+   "types": [
+    "bool"
+   ],
+   "exemple": true,
+   "ALL": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "statistiques.est_place",
+   "types": [
+    "bool"
+   ],
+   "exemple": true,
+   "ALL": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "statistiques.musique_analyse.cinq_dernieres.courses",
+   "types": [
+    "int"
+   ],
+   "exemple": 5,
+   "ALL": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "statistiques.musique_analyse.cinq_dernieres.places",
+   "types": [
+    "int"
+   ],
+   "exemple": 3,
+   "ALL": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "statistiques.musique_analyse.cinq_dernieres.taux_place",
+   "types": [
+    "float",
+    "int"
+   ],
+   "exemple": 60,
+   "ALL": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "statistiques.musique_analyse.cinq_dernieres.taux_victoire",
+   "types": [
+    "float",
+    "int"
+   ],
+   "exemple": 60,
+   "ALL": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "statistiques.musique_analyse.cinq_dernieres.victoires",
+   "types": [
+    "int"
+   ],
+   "exemple": 3,
+   "ALL": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "statistiques.musique_analyse.courses",
+   "types": [
+    "int"
+   ],
+   "exemple": 12,
+   "ALL": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "statistiques.musique_analyse.derniere_position",
+   "types": [
+    "NoneType",
+    "int"
+   ],
+   "exemple": 1,
+   "ALL": 85,
+   "2014-17": 82,
+   "2018-21": 91,
+   "2022-24": 88,
+   "2025-26": 78
+  },
+  {
+   "champ": "statistiques.musique_analyse.incidents",
+   "types": [
+    "int"
+   ],
+   "exemple": 1,
+   "ALL": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "statistiques.musique_analyse.places",
+   "types": [
+    "int"
+   ],
+   "exemple": 8,
+   "ALL": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "statistiques.musique_analyse.taux_place",
+   "types": [
+    "float",
+    "int"
+   ],
+   "exemple": 66.67,
+   "ALL": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "statistiques.musique_analyse.taux_victoire",
+   "types": [
+    "float",
+    "int"
+   ],
+   "exemple": 33.33,
+   "ALL": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "statistiques.musique_analyse.victoires",
+   "types": [
+    "int"
+   ],
+   "exemple": 4,
+   "ALL": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "statistiques.musique_forme.courses",
+   "types": [
+    "int"
+   ],
+   "exemple": 4,
+   "ALL": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "statistiques.musique_forme.places",
+   "types": [
+    "int"
+   ],
+   "exemple": 2,
+   "ALL": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "statistiques.musique_forme.taux_place",
+   "types": [
+    "float",
+    "int"
+   ],
+   "exemple": 50,
+   "ALL": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "statistiques.musique_forme.taux_victoire",
+   "types": [
+    "float",
+    "int"
+   ],
+   "exemple": 25,
+   "ALL": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "statistiques.musique_forme.victoires",
+   "types": [
+    "int"
+   ],
+   "exemple": 1,
+   "ALL": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "statistiques.position",
+   "types": [
+    "int"
+   ],
+   "exemple": 1,
+   "ALL": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  },
+  {
+   "champ": "statistiques.rang_cote",
+   "types": [
+    "int"
+   ],
+   "exemple": 1,
+   "ALL": 100,
+   "2014-17": 100,
+   "2018-21": 100,
+   "2022-24": 100,
+   "2025-26": 100
+  }
+ ],
+ "open_couverture": {
+  "courses": 28,
+  "details_sur_partants_%": 46,
+  "details_par_course": {
+   "n": 28,
+   "min": 6,
+   "p10": 7,
+   "median": 7.0,
+   "p90": 7,
+   "max": 7
+  },
+  "partants_par_course": {
+   "n": 28,
+   "min": 12,
+   "p10": 13,
+   "median": 15.0,
+   "p90": 16,
+   "max": 18
+  }
+ },
+ "open_cotes_appariement": {
+  "cotes0=ref": 17,
+  "cotes0=direct": 3,
+  "cotes1=ref": 24,
+  "cotes1=direct": 16,
+  "cotes2=ref": 8,
+  "cotes2=direct": 102,
+  "compares": 125
+ },
+ "cotes_pmu": {
+  "2014-17": {
+   "partants": 551,
+   "ref_%": 76,
+   "direct_%": 82,
+   "direct_minutes_vs_depart": {
+    "n": 452,
+    "min": 1,
+    "p10": 1,
+    "median": 2.0,
+    "p90": 4,
+    "max": 12
+   },
+   "ref_minutes_vs_depart": {
+    "n": 417,
+    "min": -368,
+    "p10": -235,
+    "median": -59,
+    "p90": -28,
+    "max": -24
+   }
+  },
+  "2018-21": {
+   "partants": 497,
+   "ref_%": 94,
+   "direct_%": 98,
+   "direct_minutes_vs_depart": {
+    "n": 488,
+    "min": 0,
+    "p10": 1,
+    "median": 2.0,
+    "p90": 6,
+    "max": 8
+   },
+   "ref_minutes_vs_depart": {
+    "n": 467,
+    "min": -35,
+    "p10": -32,
+    "median": -30,
+    "p90": -20,
+    "max": 0
+   }
+  },
+  "2022-24": {
+   "partants": 424,
+   "ref_%": 99,
+   "direct_%": 100,
+   "direct_minutes_vs_depart": {
+    "n": 424,
+    "min": 1,
+    "p10": 1,
+    "median": 2.0,
+    "p90": 3,
+    "max": 5
+   },
+   "ref_minutes_vs_depart": {
+    "n": 420,
+    "min": -35,
+    "p10": -32,
+    "median": -30.0,
+    "p90": -5,
+    "max": -3
+   }
+  },
+  "2025-26": {
+   "partants": 380,
+   "ref_%": 94,
+   "direct_%": 100,
+   "direct_minutes_vs_depart": {
+    "n": 380,
+    "min": 1,
+    "p10": 1,
+    "median": 1.0,
+    "p90": 4,
+    "max": 8
+   },
+   "ref_minutes_vs_depart": {
+    "n": 356,
+    "min": -36,
+    "p10": -33,
+    "median": -30.0,
+    "p90": -21,
+    "max": 0
+   }
+  }
+ },
+ "favori_gagne": {
+  "ref": {
+   "courses": 140,
+   "taux_%": 26
+  },
+  "direct": {
+   "courses": 154,
+   "taux_%": 27
+  }
+ },
+ "parite_online_offline": [
+  {
+   "fichier": "online_01032026_R1C1",
+   "online_seul": [],
+   "offline_seul": []
+  },
+  {
+   "fichier": "online_01032026_R1C2",
+   "online_seul": [],
+   "offline_seul": []
+  },
+  {
+   "fichier": "online_02032025_R1C1",
+   "online_seul": [],
+   "offline_seul": []
+  },
+  {
+   "fichier": "online_02032025_R1C2",
+   "online_seul": [],
+   "offline_seul": []
+  },
+  {
+   "fichier": "online_06072026_R1C1",
+   "online_seul": [],
+   "offline_seul": []
+  },
+  {
+   "fichier": "online_06072026_R1C7",
+   "online_seul": [],
+   "offline_seul": []
+  },
+  {
+   "fichier": "online_07062026_R1C1",
+   "online_seul": [],
+   "offline_seul": []
+  },
+  {
+   "fichier": "online_07062026_R4C1",
+   "online_seul": [],
+   "offline_seul": []
+  },
+  {
+   "fichier": "online_09092026_R1C1",
+   "online_seul": [],
+   "offline_seul": []
+  },
+  {
+   "fichier": "online_09092026_R1C6",
+   "online_seul": [],
+   "offline_seul": []
+  },
+  {
+   "fichier": "online_10092025_R1C1",
+   "online_seul": [],
+   "offline_seul": []
+  },
+  {
+   "fichier": "online_10092025_R1C6",
+   "online_seul": [],
+   "offline_seul": []
+  },
+  {
+   "fichier": "online_18102026_R1C1",
+   "online_seul": [],
+   "offline_seul": []
+  },
+  {
+   "fichier": "online_18102026_R3C1",
+   "online_seul": [],
+   "offline_seul": []
+  }
+ ]
+}

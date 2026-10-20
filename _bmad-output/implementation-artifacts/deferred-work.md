@@ -164,3 +164,15 @@
 - source_spec: `_bmad-output/planning-artifacts/architecture/architecture-prediction-hyppique-2026-09-04/ARCHITECTURE-SPINE.md` (AD-12, update 2026-10-17)
   summary: HIGH IMPACT for the Multi module — `backend/app/data/pmu_client.py` (`_epoch_ms_to_datetime`, and the date helper above it) converts PMU epoch milliseconds with a naive `datetime.fromtimestamp`, i.e. in the container's local zone (UTC under Docker); the mobile app then reads the string as local time. Departure times are off by the Paris offset, which breaks the retained-play freeze, "logged before departure" and backtest cut-offs (AD-9, AD-10, AD-11). Should produce timezone-aware UTC instants and transmit ISO-8601 with offset.
   evidence: Adversarial and rubric reviews of the Multi spine update both found it in the existing code; AD-12 now fixes the convention.
+
+- source_spec: none
+  summary: Rebuild 5 years of French race history from the PMU turfinfo API (programme → participants for every day, all runners with arrival order, incident, reference and closing odds with their dateRapport timestamps), as a throttled, resumable CLI job (--date-debut/--date-fin) persisting into courses/participations, with post-race fields kept as labels or benchmark only and never as features.
+  evidence: Split from the 2026-10-20 build intent (user chose [S]); independently shippable from the per-horse backfill redirect. Decided by the user on 2026-10-20 (5 years), see _bmad-output/planning-artifacts/briefs/brief-prediction-hyppique-backoffice-2026-10-18/brief.md and _bmad-output/planning-artifacts/research/api-field-inventory-2026-10-20/inventory.md.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-backfill-cheval-turfinfo.md`
+  summary: The mobile app ignores `rang_impute` returned by `POST /chevaux/{id}/backfill` (`HistoriquePerformance` model and local history cache neither parse nor store it), so an imputed NON_PLACE rank is shown to the user as a real finishing position.
+  evidence: Verification-gap and blind-hunter reviews; no `rang_impute`/`rangImpute` match in `mobile/lib`. Mobile contract change was "Ask First" in the spec.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-backfill-cheval-turfinfo.md`
+  summary: `backend/app/data/open_pmu_client.py`, `backend/tests/test_open_pmu_client.py` and `backend/tests/fixtures/open_pmu/` have no caller any more; decide whether to keep the adapter (e.g. Quinté+ result checks) or delete it.
+  evidence: Edge-case and blind-hunter reviews; its only consumer `backfill_historique.py` was deleted. Removing the adapter was "Ask First" in the spec.
