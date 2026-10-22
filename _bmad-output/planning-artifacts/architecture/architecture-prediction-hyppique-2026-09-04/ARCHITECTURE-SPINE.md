@@ -7,7 +7,7 @@ paradigm: 'hexagonal (ports and adapters)'
 scope: 'Backend FastAPI + mobile Flutter — invariants keeping the two independently-built engines (Python/Dart) and the epics that will be carved from the PRD consistent.'
 status: final
 created: '2026-09-04'
-updated: '2026-10-18'
+updated: '2026-10-22'
 binds: []
 sources:
   - '_bmad-output/planning-artifacts/prds/prd-prediction-hyppique-2026-08-22/prd.md'
@@ -210,6 +210,22 @@ flowchart LR
 - **Binds:** `backend/alembic/` (environment and revisions), `backend/app/data/models.py`, `backend/app/data/repository.py`, the `api` service start-up, backend tests.
 - **Prevents:** new columns (M1's allocation, raw rank, arrival status…) never reaching the existing production SQLite file because `create_all` only creates missing tables; two services migrating the same SQLite file at the same time; a model change shipped without its migration.
 - **Rule:** every server schema change ships as an Alembic revision under `backend/alembic/` (inside the Docker build context). The existing production schema is the baseline revision, stamped once on the live database. `alembic upgrade head` runs at start-up of the `api` service only, before uvicorn; the `ingestion` service never migrates. `repository.py` no longer calls `create_all` against a real database (tests on a throw-away database may). A backend test asserts that the models and the head revision agree (empty autogenerate diff). [decided this run]
+
+### AD-14 — A trained model is a backend reference engine; the Dart engine becomes the expert mode (conditional)
+
+- **Condition:** this decision activates only when a backend-trained model (for example a gradient-boosted model fitted on the rebuilt turfinfo history) beats the market benchmark: closing-odds log-loss, out-of-time backtest, a bootstrap confidence interval that excludes zero, then confirmed on live predictions. Until then AD-2 and AD-6 apply unchanged: both engines compute the same scoring, and the phone always computes locally.
+- **Binds:** `backend/app/engine/` (the model's inference path), the race payload served to the app, `mobile/lib/engine/`, `mobile/lib/providers/`, the prediction log and dashboard (`prediction_runs`, `/dashboard`).
+- **Prevents:**
+  - a trained model reimplemented, approximated or shipped as a binary in Dart;
+  - two "official" probabilities shown for the same race;
+  - value, Kelly, combinations and the Multi computed twice from different inputs;
+  - the offline mode, photo-imported races and the user's sliders lost because the reference moved to the server.
+- **Rule:** once the condition is met:
+  - **Backend.** The model runs only on the backend, where it is trained and measured. Its win probabilities are the **reference probabilities**: they are logged before the start (the existing dashboard measures them) and served with the race's runners, versioned (model version, data timestamp). The phone caches them with the race, as it caches the Multi race context.
+  - **Phone, Dart engine.** The current scoring engine stays on the phone and becomes the **expert engine**: the user's "make my own pronostic" mode with adjustable coefficients, and the fallback for photo-imported races, offline races and races with no reference probabilities. AD-2 parity fixtures keep binding it to its Python twin.
+  - **Display.** The reference probabilities are the default. The expert engine's are shown only when the user chose that mode, and they are always labelled as such. The two are never blended silently.
+  - **Downstream of probabilities.** Value, Kelly, combinations and the Multi forecast (AD-6) stay single implementations on the phone. They take whichever probability set is active as input, and nothing downstream is duplicated.
+- **Review trigger:** if the model stops beating the market on live predictions over the evaluation window, the reference falls back to the scoring engine and the dashboard says so. [decided 2026-10-22, conditional — Lazyd with Winston, Mary, John]
 
 ## Consistency Conventions
 
