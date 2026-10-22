@@ -20,15 +20,22 @@ Sur le serveur, par tranches (environ un jour et demi pour 5 ans) :
 import argparse
 import logging
 import sys
+import time
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 from app.data import pmu_client
 from app.jobs import predict
 from app.data.repository import Repository
 
 logger = logging.getLogger(__name__)
+
+# Pauses avant de retenter un jour quand le réseau ou l'API semble en panne
+# (programme en échec, ou toutes les courses tentées en échec) : sans elles,
+# une coupure de quelques minutes faisait défiler tous les jours restants en
+# échec.
+PAUSES_PANNE_SECONDES = (60, 300, 900, 1800)
 
 
 @dataclass
@@ -42,7 +49,8 @@ class Bilan:
     jours_rejoues: int = 0
 
 
-def _traiter_jour(repository: Repository, jour: date, bilan: Bilan, rejouer: bool = True) -> None:
+def _traiter_jour(repository: Repository, jour: date, bilan: Bilan, rejouer: bool = True) -> Tuple[int, int, int]:
+    """Renvoie (récupérées, sautées, en échec) ; lève si le programme échoue."""
     courses = pmu_client.get_programme(jour)
     recuperees = sautees = echecs = 0
     for info in courses:
@@ -78,12 +86,36 @@ def _traiter_jour(repository: Repository, jour: date, bilan: Bilan, rejouer: boo
         except Exception:
             logger.exception("Echec du rejeu du %s", jour)
 
-    bilan.courses_recuperees += recuperees
+    return recuperees, sautees, echecs
+
+
+def _traiter_jour_avec_reprise(repository: Repository, jour: date, bilan: Bilan, rejouer: bool) -> None:
+    recuperees_total = 0
+    for pause in PAUSES_PANNE_SECONDES + (None,):
+        try:
+            recuperees, sautees, echecs = _traiter_jour(repository, jour, bilan, rejouer)
+            programme_ok = True
+        except Exception:
+            logger.exception("Echec du programme du %s", jour)
+            recuperees = sautees = echecs = 0
+            programme_ok = False
+        recuperees_total += recuperees
+        panne = not programme_ok or (echecs > 0 and recuperees == 0)
+        if not panne or pause is None:
+            break
+        logger.warning("Panne probable le %s : nouvelle tentative dans %d s", jour, pause)
+        time.sleep(pause)
+
+    if not programme_ok:
+        bilan.jours_en_echec += 1
+    # Les courses récupérées lors d'une tentative précédente sont sautées
+    # à la suivante : sautées et échecs viennent de la dernière tentative.
+    bilan.courses_recuperees += recuperees_total
     bilan.courses_sautees += sautees
     bilan.courses_en_echec += echecs
     logger.info(
         "%s : %d course(s) récupérée(s), %d sautée(s), %d en échec | cumul : %d récupérées, %d sautées, %d en échec",
-        jour, recuperees, sautees, echecs,
+        jour, recuperees_total, sautees, echecs,
         bilan.courses_recuperees, bilan.courses_sautees, bilan.courses_en_echec,
     )
 
@@ -93,11 +125,7 @@ def rebuild_plage(repository: Repository, date_debut: date, date_fin: date, rejo
     jour = date_debut
     while jour <= date_fin:
         bilan.jours += 1
-        try:
-            _traiter_jour(repository, jour, bilan, rejouer)
-        except Exception:
-            bilan.jours_en_echec += 1
-            logger.exception("Echec du programme du %s", jour)
+        _traiter_jour_avec_reprise(repository, jour, bilan, rejouer)
         jour += timedelta(days=1)
 
     logger.info(

@@ -20,6 +20,14 @@ from app.jobs import rebuild_historique
 JOUR = date(2026, 3, 1)
 
 
+@pytest.fixture(autouse=True)
+def pauses(monkeypatch):
+    """Les pauses de reprise après panne ne sont jamais réellement attendues."""
+    attentes = []
+    monkeypatch.setattr(rebuild_historique.time, "sleep", attentes.append)
+    return attentes
+
+
 @pytest.fixture
 def repo():
     fd, path = tempfile.mkstemp(suffix=".db", prefix="test_rebuild_historique_")
@@ -347,3 +355,27 @@ def test_echec_du_rejeu_n_arrete_pas_la_reconstruction(repo, caplog):
 
     assert bilan.courses_recuperees == 2 and bilan.jours_rejoues == 0
     assert "Echec du rejeu" in caplog.text
+
+
+def test_panne_reseau_attend_puis_reprend_le_meme_jour(repo, pauses):
+    appels = {"n": 0}
+
+    def programme(d):
+        appels["n"] += 1
+        if appels["n"] <= 2:
+            raise ConnectionError("réseau coupé")
+        return _programme_jour()
+
+    with patch.object(rebuild_historique.pmu_client, "get_programme", side_effect=programme),          patch.object(rebuild_historique.pmu_client, "get_participants", side_effect=_participants):
+        bilan = rebuild_historique.rebuild_plage(repo, JOUR, JOUR, rejouer=False)
+
+    assert pauses == list(rebuild_historique.PAUSES_PANNE_SECONDES[:2])
+    assert (bilan.jours_en_echec, bilan.courses_recuperees, bilan.courses_en_echec) == (0, 2, 0)
+
+
+def test_panne_qui_dure_abandonne_le_jour_apres_toutes_les_pauses(repo, pauses):
+    with patch.object(rebuild_historique.pmu_client, "get_programme", side_effect=ConnectionError("coupé")):
+        bilan = rebuild_historique.rebuild_plage(repo, JOUR, JOUR)
+
+    assert pauses == list(rebuild_historique.PAUSES_PANNE_SECONDES)
+    assert bilan.jours_en_echec == 1
