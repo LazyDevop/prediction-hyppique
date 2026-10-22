@@ -25,9 +25,10 @@ import tempfile
 from datetime import date, datetime
 
 import pytest
+from sqlalchemy import inspect, text
 from sqlalchemy.orm import Session
 
-from app.data.models import Cheval, Course, PerformanceHistorique
+from app.data.models import Cheval, Course, Participation, PerformanceHistorique
 from app.data.pmu_client import CourseInfo, PartantInfo, PerformancePassee
 from app.data.repository import Repository
 from app.engine.constants import terrain_coefficient
@@ -553,3 +554,131 @@ def test_courses_evaluables_live_porte_l_identifiant_de_course(repo):
     [predite] = repo.courses_evaluables("live")
 
     assert (predite.course_id, predite.installation_id) == (course.id, None)
+
+
+# Reconstruction de l'historique (spec-rebuild-historique-turfinfo.md) -----
+
+def test_save_partants_stocke_l_horodatage_des_cotes(repo):
+    course = repo.upsert_course(make_course_info())
+    repo.save_partants(course.id, [make_partant_info(
+        cote_reference_le=datetime(2026, 1, 15, 12, 30), cote_direct_le=datetime(2026, 1, 15, 13, 2),
+    )])
+
+    with Session(repo.engine) as session:
+        participation = session.query(Participation).one()
+    assert participation.cote_reference_le == datetime(2026, 1, 15, 12, 30)
+    assert participation.cote_direct_le == datetime(2026, 1, 15, 13, 2)
+
+
+def test_migration_ajoute_les_horodatages_de_cote_sans_perte(tmp_path):
+    url = f"sqlite:///{tmp_path / 'ancienne.db'}"
+    repo = Repository(database_url=url)
+    course = repo.upsert_course(make_course_info())
+    repo.save_partants(course.id, [make_partant_info()])
+    # Base créée avant le changement : colonnes absentes.
+    with repo.engine.begin() as conn:
+        conn.execute(text("ALTER TABLE participations DROP COLUMN cote_reference_le"))
+        conn.execute(text("ALTER TABLE participations DROP COLUMN cote_direct_le"))
+    repo.engine.dispose()
+
+    repo = Repository(database_url=url)
+
+    colonnes = {c["name"] for c in inspect(repo.engine).get_columns("participations")}
+    assert {"cote_reference_le", "cote_direct_le"} <= colonnes
+    with Session(repo.engine) as session:
+        participation = session.query(Participation).one()
+    assert (participation.num_pmu, participation.cote_reference, participation.cote_reference_le) == (5, 4.5, None)
+    repo.engine.dispose()
+
+
+def test_save_historique_remplace_la_ligne_du_jour_sous_un_autre_nom(repo):
+    course = repo.upsert_course(make_course_info())
+    repo.save_partants(course.id, [make_partant_info(num_pmu=5, nom="Bucephale")])
+    jour = date(2025, 12, 1)
+    repo.save_historique(course.id, {5: [make_performance_passee(date=jour, hippodrome="CAGNES/MER", rang=4)]})
+
+    repo.save_historique(course.id, {5: [
+        make_performance_passee(date=jour, hippodrome="CAGNES-SUR-MER", rang=3),
+        make_performance_passee(date=date(2025, 11, 1), hippodrome="BORELY", rang=1),
+    ]})
+
+    with Session(repo.engine) as session:
+        lignes = session.query(PerformanceHistorique).order_by(PerformanceHistorique.date_course).all()
+    assert [(l.date_course, l.hippodrome, l.rang) for l in lignes] == [
+        (date(2025, 11, 1), "BORELY", 1), (jour, "CAGNES-SUR-MER", 3),
+    ]
+
+
+def test_save_historique_sans_hippodrome_ne_supprime_rien(repo):
+    course = repo.upsert_course(make_course_info())
+    repo.save_partants(course.id, [make_partant_info(num_pmu=5, nom="Bucephale")])
+    jour = date(2025, 12, 1)
+    repo.save_historique(course.id, {5: [make_performance_passee(date=jour, hippodrome="CAGNES/MER", rang=4)]})
+
+    repo.save_historique(course.id, {5: [make_performance_passee(date=jour, hippodrome=None, rang=3)]})
+
+    with Session(repo.engine) as session:
+        hippodromes = sorted(str(l.hippodrome) for l in session.query(PerformanceHistorique))
+    assert hippodromes == ["CAGNES/MER", "None"]
+
+
+def test_save_historique_deux_lignes_du_meme_jour_dans_un_appel_sont_gardees(repo):
+    course = repo.upsert_course(make_course_info())
+    repo.save_partants(course.id, [make_partant_info(num_pmu=5, nom="Bucephale")])
+    jour = date(2025, 12, 1)
+
+    repo.save_historique(course.id, {5: [
+        make_performance_passee(date=jour, hippodrome="CAGNES/MER", rang=4),
+        make_performance_passee(date=jour, hippodrome="CAGNES-SUR-MER", rang=3),
+    ]})
+
+    with Session(repo.engine) as session:
+        assert session.query(PerformanceHistorique).count() == 2
+
+
+def test_course_complete_exige_stockage_finalisation_et_participations(repo):
+    info = make_course_info()
+    assert not repo.course_complete(info.date, info.numero_reunion, info.numero_course)
+
+    course = repo.upsert_course(info)
+    repo.marquer_finalisee(course.id)
+    assert not repo.course_complete(info.date, info.numero_reunion, info.numero_course)  # sans participations
+
+    autre = repo.upsert_course(make_course_info(numero_course=4))
+    repo.save_partants(autre.id, [make_partant_info()])
+    assert not repo.course_complete(info.date, info.numero_reunion, 4)  # non finalisée
+
+    repo.save_partants(course.id, [make_partant_info()])
+    assert repo.course_complete(info.date, info.numero_reunion, info.numero_course)
+
+
+def test_deriver_historique_course_partants_effectifs_seulement(repo, caplog):
+    course = repo.upsert_course(make_course_info(hippodrome="VINCENNES", terrain=None))
+    partants = [
+        make_partant_info(num_pmu=1, nom="Un", ordre_arrivee=1),
+        make_partant_info(num_pmu=2, nom="Deux", incident="ARRETE"),
+        make_partant_info(num_pmu=3, nom="Trois", incident="INCONNU_X"),
+        make_partant_info(num_pmu=4, nom="Quatre", statut="NON_PARTANT"),
+    ]
+    repo.save_partants(course.id, partants)
+
+    assert repo.deriver_historique_course(course.id, partants) == 3
+
+    with Session(repo.engine) as session:
+        lignes = session.query(PerformanceHistorique, Participation.num_pmu).join(
+            Participation, Participation.id == PerformanceHistorique.participation_id
+        ).all()
+    par_num = {num: ligne for ligne, num in lignes}
+    assert set(par_num) == {1, 2, 3}
+    assert (par_num[1].rang, par_num[1].incident) == (1, None)
+    assert (par_num[2].rang, par_num[2].incident) == (None, "A")
+    assert par_num[3].incident is None
+    assert "INCONNU_X" in caplog.text
+    ligne = par_num[1]
+    assert (ligne.date_course, ligne.hippodrome, ligne.discipline, ligne.allocation, ligne.distance) == (
+        date(2026, 1, 15), "VINCENNES", "trot", 20000.0, 2700.0,
+    )
+    assert (ligne.nb_participants, ligne.rang_impute, ligne.source) == (3, False, "pmu")
+
+    # Idempotent : une seconde dérivation n'ajoute rien.
+    assert repo.deriver_historique_course(course.id, partants) == 0

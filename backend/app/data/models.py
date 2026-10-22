@@ -58,6 +58,9 @@ class Participation(Base):
     poids: Mapped[Optional[float]] = mapped_column(Float)
     cote_reference: Mapped[Optional[float]] = mapped_column(Float)
     cote_direct: Mapped[Optional[float]] = mapped_column(Float)
+    # Instants des cotes (dateRapport PMU), en UTC naïf.
+    cote_reference_le: Mapped[Optional[datetime]] = mapped_column(DateTime)
+    cote_direct_le: Mapped[Optional[datetime]] = mapped_column(DateTime)
     rang_arrivee: Mapped[Optional[int]] = mapped_column(Integer)
     incident: Mapped[Optional[str]] = mapped_column(String(16))
     inedit: Mapped[bool] = mapped_column(Boolean, default=False)

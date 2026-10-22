@@ -93,6 +93,14 @@ def _epoch_ms_to_datetime(value: Optional[int]) -> Optional[datetime]:
     return datetime.fromtimestamp(value / 1000)
 
 
+def _epoch_ms_to_utc_naive(value: Optional[int]) -> Optional[datetime]:
+    """Horodatage d'une cote (dateRapport) : stocké en UTC naïf, indépendant
+    du fuseau de la machine qui ingère."""
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return None
+    return datetime.fromtimestamp(value / 1000, tz=timezone.utc).replace(tzinfo=None)
+
+
 @dataclass
 class CourseInfo:
     date: date
@@ -130,6 +138,10 @@ class PartantInfo:
     ordre_arrivee: Optional[int]
     incident: Optional[str]
     raw: Dict[str, Any] = field(default_factory=dict)
+    # Instant de chaque cote (dateRapport, UTC naïf) : la cote de référence
+    # est prise ~30 min avant le départ, la cote directe est la cote finale.
+    cote_reference_le: Optional[datetime] = None
+    cote_direct_le: Optional[datetime] = None
 
 
 @dataclass
@@ -186,8 +198,10 @@ def get_participants(target_date: date, reunion: int, course: int) -> List[Parta
 
     partants: List[PartantInfo] = []
     for cheval in data.get("participants", []):
-        cote_ref = (cheval.get("dernierRapportReference") or {}).get("rapport")
-        cote_direct = (cheval.get("dernierRapportDirect") or {}).get("rapport")
+        rapport_ref = cheval.get("dernierRapportReference") or {}
+        rapport_direct = cheval.get("dernierRapportDirect") or {}
+        cote_ref = rapport_ref.get("rapport")
+        cote_direct = rapport_direct.get("rapport")
         handicap_poids_brut = cheval.get("handicapPoids")
         # handicapPoids est exprimé en dixièmes de kg (ex. 575 = 57.5 kg).
         handicap_poids = handicap_poids_brut / 10.0 if handicap_poids_brut is not None else None
@@ -208,6 +222,8 @@ def get_participants(target_date: date, reunion: int, course: int) -> List[Parta
             ordre_arrivee=cheval.get("ordreArrivee"),
             incident=cheval.get("incident"),
             raw=cheval,
+            cote_reference_le=_epoch_ms_to_utc_naive(rapport_ref.get("dateRapport")),
+            cote_direct_le=_epoch_ms_to_utc_naive(rapport_direct.get("dateRapport")),
         ))
     return partants
 

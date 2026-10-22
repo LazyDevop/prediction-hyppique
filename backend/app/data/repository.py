@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 from datetime import date, datetime
 from typing import List, Optional
@@ -10,10 +11,14 @@ from sqlalchemy.orm import Session, selectinload
 from app.data.models import (
     Base, Course, Cheval, Participation, PerformanceHistorique, PredictionCheval, PredictionRun,
 )
-from app.data.pmu_client import CourseInfo, PartantInfo, PerformancePassee, _normalize_name
+from app.data.pmu_client import (
+    STATUS_TO_INCIDENT, CourseInfo, PartantInfo, PerformancePassee, _normalize_name,
+)
 from app.engine.constants import terrain_coefficient
 from app.engine.evaluation import ChevalPredit, CoursePredite, evaluer_paris
 from app.engine.scoring import HorseAnalysis, Performance
+
+logger = logging.getLogger(__name__)
 
 DEFAULT_DATABASE_URL = "sqlite:///./hippique.db"
 
@@ -123,6 +128,12 @@ class Repository:
                 conn.execute(text(
                     "ALTER TABLE performances_historiques ADD COLUMN rang_impute BOOLEAN NOT NULL DEFAULT 0"
                 ))
+
+        participation_columns = {col["name"] for col in inspect(self.engine).get_columns("participations")}
+        for nom in ("cote_reference_le", "cote_direct_le"):
+            if nom not in participation_columns:
+                with self.engine.begin() as conn:
+                    conn.execute(text(f"ALTER TABLE participations ADD COLUMN {nom} DATETIME"))
 
     def list_courses_for_date(self, target_date: date) -> List[Course]:
         with Session(self.engine) as session:
@@ -252,6 +263,8 @@ class Repository:
                 participation.poids = partant.handicap_poids
                 participation.cote_reference = partant.cote_reference
                 participation.cote_direct = partant.cote_direct
+                participation.cote_reference_le = partant.cote_reference_le
+                participation.cote_direct_le = partant.cote_direct_le
                 participation.rang_arrivee = partant.ordre_arrivee
                 participation.incident = partant.incident
                 participation.inedit = partant.inedit
@@ -265,10 +278,16 @@ class Repository:
         Upsert par (cheval_id, date_course, hippodrome) : source='pmu'
         (turfinfo, la plus proche du PMU officiel) écrase toujours une ligne
         en conflit sur cette clé, y compris une ancienne ligne open-pmu-api
-        - voir la contrainte d'unicité dans models.py."""
+        - voir la contrainte d'unicité dans models.py.
+
+        Une seule ligne par cheval et par jour : performances-detaillees
+        nomme les hippodromes autrement que le programme (CAGNES-SUR-MER vs
+        CAGNES/MER), donc une ligne du même jour sous un autre nom (dérivée
+        par deriver_historique_course) est remplacée, pas doublée."""
         with Session(self.engine) as session:
             course = session.get(Course, course_id)
             participations = {p.num_pmu: p for p in course.participations}
+            ecrits = set()
             for num_pmu, performances in historique.items():
                 participation = participations.get(num_pmu)
                 if participation is None:
@@ -289,13 +308,93 @@ class Repository:
                         "incident": perf.incident,
                         "source": "pmu",
                     }
+                    # Le même jour sous un autre nom d'hippodrome (le programme et
+                    # performances-detaillees ne l'écrivent pas pareil) : une
+                    # seule ligne par cheval et par jour. Sans hippodrome, ou si
+                    # cet appel a déjà écrit ce jour pour ce cheval, on ne
+                    # supprime rien.
+                    jour_cheval = (participation.cheval_id, perf.date)
+                    if perf.date is not None and perf.hippodrome is not None and jour_cheval not in ecrits:
+                        session.query(PerformanceHistorique).filter(
+                            PerformanceHistorique.cheval_id == participation.cheval_id,
+                            PerformanceHistorique.date_course == perf.date,
+                            PerformanceHistorique.hippodrome.is_distinct_from(perf.hippodrome),
+                        ).delete(synchronize_session=False)
                     stmt = sqlite_insert(PerformanceHistorique).values(**valeurs)
                     stmt = stmt.on_conflict_do_update(
                         index_elements=["cheval_id", "date_course", "hippodrome"],
                         set_={k: v for k, v in valeurs.items() if k not in ("cheval_id", "date_course", "hippodrome")},
                     )
                     session.execute(stmt)
+                    ecrits.add(jour_cheval)
             session.commit()
+
+    def course_complete(self, target_date: date, numero_reunion: int, numero_course: int) -> bool:
+        """Course déjà stockée, finalisée et avec ses participations : la
+        reconstruction de l'historique n'a pas à la redemander."""
+        with Session(self.engine) as session:
+            return session.query(Participation.id).join(Course).filter(
+                Course.date == target_date,
+                Course.numero_reunion == numero_reunion,
+                Course.numero_course == numero_course,
+                Course.finalisee.is_(True),
+            ).first() is not None
+
+    def marquer_finalisee(self, course_id: int) -> None:
+        with Session(self.engine) as session:
+            course = session.get(Course, course_id)
+            course.finalisee = True
+            session.commit()
+
+    def deriver_historique_course(self, course_id: int, partants: List[PartantInfo]) -> int:
+        """Une ligne d'historique par partant effectif (statut PARTANT) d'une
+        course à l'arrivée définitive, tirée de la course elle-même et de
+        son arrivée. Jamais écrite si le cheval a déjà une ligne ce jour-là
+        (souvent la même course sous un autre nom d'hippodrome, venue de
+        performances-detaillees). Retourne le nombre de lignes écrites."""
+        partants_effectifs = [p for p in partants if p.statut == "PARTANT"]
+        nb_participants = len(partants_effectifs)
+        ecrites = 0
+        with Session(self.engine) as session:
+            course = session.get(Course, course_id)
+            participations = {p.num_pmu: p for p in course.participations}
+            for partant in partants_effectifs:
+                participation = participations.get(partant.num_pmu)
+                if participation is None:
+                    continue
+                deja_la = session.query(PerformanceHistorique.id).filter(
+                    PerformanceHistorique.cheval_id == participation.cheval_id,
+                    PerformanceHistorique.date_course == course.date,
+                ).first()
+                if deja_la is not None:
+                    continue
+                incident = None
+                if partant.incident:
+                    incident = STATUS_TO_INCIDENT.get(partant.incident)
+                    if incident is None:
+                        # Jamais deviné : un incident inconnu reste absent.
+                        logger.warning(
+                            "incident non traduit : %r (course %s, num %s)",
+                            partant.incident, course_id, partant.num_pmu,
+                        )
+                session.add(PerformanceHistorique(
+                    cheval_id=participation.cheval_id,
+                    participation_id=participation.id,
+                    date_course=course.date,
+                    hippodrome=course.hippodrome,
+                    discipline=course.discipline,
+                    allocation=course.allocation,
+                    distance=course.distance,
+                    nb_participants=nb_participants,
+                    rang=partant.ordre_arrivee,
+                    rang_impute=False,
+                    terrain=course.terrain,
+                    incident=incident,
+                    source="pmu",
+                ))
+                ecrites += 1
+            session.commit()
+        return ecrites
 
     def update_resultats(self, course_id: int, partants: List[PartantInfo], arrivee_definitive: bool) -> None:
         with Session(self.engine) as session:

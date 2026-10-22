@@ -176,3 +176,15 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-backfill-cheval-turfinfo.md`
   summary: `backend/app/data/open_pmu_client.py`, `backend/tests/test_open_pmu_client.py` and `backend/tests/fixtures/open_pmu/` have no caller any more; decide whether to keep the adapter (e.g. Quinté+ result checks) or delete it.
   evidence: Edge-case and blind-hunter reviews; its only consumer `backfill_historique.py` was deleted. Removing the adapter was "Ask First" in the spec.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-rebuild-historique-turfinfo.md`
+  summary: Derived history rows for PARTANT runners with neither `ordreArrivee` nor an incident (about 7 in 1,898 sampled runners) are stored with `rang=None, incident=None`, which the engine scores like a last place, the same bias the NON_PLACE fix removed.
+  evidence: Edge-case review; inventory sample `('PARTANT', None, no ordreArrivee)` = 7. The frozen spec derives rows for every PARTANT runner, so skipping or imputing them needs a decision.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-rebuild-historique-turfinfo.md`
+  summary: Raw participant incidents not in `pmu_client.STATUS_TO_INCIDENT` (seen: `DEROBE`) are stored as `None` with a warning; the engine code for a run-out is not decided (`RO`?).
+  evidence: Inventory sample (5 DEROBE in 1,898 runners) and blind-hunter review.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-rebuild-historique-turfinfo.md`
+  summary: `pmu_client.normaliser_terrain` does not recognise the race-day going label `PSF TRES RAPIDE` (warning logged, going left neutral).
+  evidence: Seen in the live programme of 2026-10-01 during verification; pre-existing normaliser, not changed by this spec.

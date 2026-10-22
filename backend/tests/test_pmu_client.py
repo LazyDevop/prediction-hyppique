@@ -194,3 +194,46 @@ def test_get_historique_statut_sans_rang_inconnu_est_journalise(monkeypatch, no_
 
     assert (perf.incident, perf.rang) == (None, None)
     assert "NOUVEAU_STATUT" in caplog.text
+
+
+@pytest.fixture
+def fuseau_paris(monkeypatch):
+    """Fuseau local forcé hors UTC quand la plateforme le permet (pas de
+    tzset sous Windows) : une conversion en heure locale donnerait alors
+    une autre heure que l'UTC attendu."""
+    import time
+    if not hasattr(time, "tzset"):
+        yield
+        return
+    monkeypatch.setenv("TZ", "Europe/Paris")
+    time.tzset()
+    yield
+    monkeypatch.undo()
+    time.tzset()
+
+
+def test_get_participants_horodate_les_cotes_en_utc_naif(monkeypatch, no_network, fuseau_paris):
+    monkeypatch.setattr(pmu_client, "_get", lambda endpoint: _load("participants_15012022_R1_C1.json"))
+
+    partants = pmu_client.get_participants(pmu_client.date(2022, 1, 15), 1, 1)
+
+    cheval = next(p for p in partants if p.num_pmu == 1)
+    # dateRapport 1642249685000 / 1642251809000 (epoch ms) : indépendant du
+    # fuseau de la machine.
+    assert cheval.cote_reference_le == pmu_client.datetime(2022, 1, 15, 12, 28, 5)
+    assert cheval.cote_direct_le == pmu_client.datetime(2022, 1, 15, 13, 3, 29)
+    assert cheval.cote_reference_le.tzinfo is None
+    assert cheval.cote_direct_le.tzinfo is None
+
+
+@pytest.mark.parametrize("brut", ["1642249685000", True, None])
+def test_horodatage_non_numerique_ignore(brut):
+    assert pmu_client._epoch_ms_to_utc_naive(brut) is None
+
+
+def test_get_participants_sans_rapport_horodatage_absent(monkeypatch, no_network):
+    monkeypatch.setattr(pmu_client, "_get", lambda endpoint: {"participants": [{"numPmu": 1, "nom": "X"}]})
+
+    [cheval] = pmu_client.get_participants(pmu_client.date(2022, 1, 15), 1, 1)
+
+    assert (cheval.cote_reference_le, cheval.cote_direct_le) == (None, None)
