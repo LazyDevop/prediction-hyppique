@@ -311,7 +311,7 @@ def test_course_sans_numero_comptee_en_echec_sans_requete(repo, caplog):
 @pytest.mark.parametrize("echec, code", [(False, 0), (True, 1)])
 def test_main_code_de_sortie_selon_les_echecs(monkeypatch, repo, echec, code):
     monkeypatch.setattr(rebuild_historique, "Repository", lambda: repo)
-    monkeypatch.setattr(rebuild_historique, "parse_args", lambda argv: type("A", (), {"date_debut": JOUR, "date_fin": JOUR})())
+    monkeypatch.setattr(rebuild_historique, "parse_args", lambda argv: type("A", (), {"date_debut": JOUR, "date_fin": JOUR, "sans_rejeu": True})())
 
     def participants(d, reunion, course):
         if echec:
@@ -321,3 +321,29 @@ def test_main_code_de_sortie_selon_les_echecs(monkeypatch, repo, echec, code):
     with patch.object(rebuild_historique.pmu_client, "get_programme", return_value=_programme_jour()), \
          patch.object(rebuild_historique.pmu_client, "get_participants", side_effect=participants):
         assert rebuild_historique.main([]) == code
+
+
+def test_jour_recupere_est_rejoue_puis_visible_en_rejeu(repo):
+    with patch.object(rebuild_historique.pmu_client, "get_programme", return_value=_programme_jour()),          patch.object(rebuild_historique.pmu_client, "get_participants", side_effect=_participants):
+        bilan = rebuild_historique.rebuild_plage(repo, JOUR, JOUR)
+
+    assert bilan.jours_rejoues == 1
+    assert {c.course_id for c in repo.courses_evaluables("rejeu")} == {c.id for c in _courses(repo)}
+
+
+def test_jour_deja_complet_n_est_pas_rejoue(repo):
+    with patch.object(rebuild_historique.pmu_client, "get_programme", return_value=_programme_jour()),          patch.object(rebuild_historique.pmu_client, "get_participants", side_effect=_participants):
+        rebuild_historique.rebuild_plage(repo, JOUR, JOUR, rejouer=False)
+        with patch.object(rebuild_historique.predict, "rejouer") as rejeu:
+            bilan = rebuild_historique.rebuild_plage(repo, JOUR, JOUR)
+
+    rejeu.assert_not_called()
+    assert bilan.jours_rejoues == 0
+
+
+def test_echec_du_rejeu_n_arrete_pas_la_reconstruction(repo, caplog):
+    with patch.object(rebuild_historique.pmu_client, "get_programme", return_value=_programme_jour()),          patch.object(rebuild_historique.pmu_client, "get_participants", side_effect=_participants),          patch.object(rebuild_historique.predict, "rejouer", side_effect=RuntimeError("moteur")):
+        bilan = rebuild_historique.rebuild_plage(repo, JOUR, JOUR)
+
+    assert bilan.courses_recuperees == 2 and bilan.jours_rejoues == 0
+    assert "Echec du rejeu" in caplog.text

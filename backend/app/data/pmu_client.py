@@ -1,4 +1,6 @@
 import logging
+import os
+import random
 import time
 from dataclasses import dataclass, field
 from datetime import date, datetime, timezone
@@ -14,7 +16,13 @@ BASE_URL = "https://offline.turfinfo.api.pmu.fr/rest/client/61/programme"
 HEADERS = {
     "User-Agent": "prediction-hippique-backend/1.0 (personal project; contact: rogerbertrand360@gmail.com)"
 }
-REQUEST_DELAY_SECONDS = 1.0
+# Pause après chaque requête, plus un aléa (0 à REQUEST_JITTER_SECONDS) pour
+# ne pas frapper l'API à rythme fixe. Réglables par l'environnement pour les
+# longs jobs (reconstruction de l'historique).
+REQUEST_DELAY_SECONDS = float(os.environ.get("PMU_REQUEST_DELAY", "1.0"))
+REQUEST_JITTER_SECONDS = float(os.environ.get("PMU_REQUEST_JITTER", "0"))
+# Les dates anciennes répondent lentement (10 s observées) : délai réglable.
+REQUEST_TIMEOUT_SECONDS = float(os.environ.get("PMU_REQUEST_TIMEOUT", "15"))
 
 DISCIPLINE_MAP = {
     "ATTELE": "trot",
@@ -71,9 +79,9 @@ def normaliser_terrain(libelle: Optional[str]) -> Optional[str]:
 
 
 def _get(endpoint: str) -> Any:
-    response = requests.get(endpoint, headers=HEADERS, timeout=15)
+    response = requests.get(endpoint, headers=HEADERS, timeout=REQUEST_TIMEOUT_SECONDS)
     response.raise_for_status()
-    time.sleep(REQUEST_DELAY_SECONDS)
+    time.sleep(REQUEST_DELAY_SECONDS + random.uniform(0, REQUEST_JITTER_SECONDS))
     return response.json()
 
 
