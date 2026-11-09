@@ -188,3 +188,11 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-rebuild-historique-turfinfo.md`
   summary: `pmu_client.normaliser_terrain` does not recognise the race-day going label `PSF TRES RAPIDE` (warning logged, going left neutral).
   evidence: Seen in the live programme of 2026-10-01 during verification; pre-existing normaliser, not changed by this spec.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-features-modele.md`
+  summary: Harness (ATTELE) and mounted (MONTE) trot, and autostart vs standing starts, are mixed in the trot speed features because `courses.discipline` stores only "trot"; store `discipline_brute` (and the start type) on courses so `f_rk_*` can be keyed on them.
+  evidence: Edge-case and blind-hunter reviews; reduction kilométrique differs strongly between these race types.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-features-modele.md`
+  summary: Training rows and `f_nb_partants` reflect the final runner list (late scratches removed), while a live prediction sees the declared list; serving must recompute field features on the live list, and the backtest should measure the gap.
+  evidence: Blind-hunter review; documented in the registry note.
