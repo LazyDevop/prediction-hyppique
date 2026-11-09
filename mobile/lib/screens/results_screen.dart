@@ -6,22 +6,33 @@ import '../providers/horses_provider.dart';
 import '../providers/race_provider.dart';
 import '../providers/results_provider.dart';
 import '../widgets/combo_block.dart';
+import '../widgets/experimental_banner.dart';
 import '../widgets/option_lists.dart';
 import '../widgets/probability_gauge.dart';
 import '../widgets/transparency_label.dart';
 
-class ResultsScreen extends ConsumerWidget {
-  const ResultsScreen({super.key});
-
-  String _reco(Horse h, int index) {
-    if (h.nbPerfs == 0 && !h.inedit) return 'Données non saisies';
-    if (h.value == null) return 'Cote manquante';
-    if (h.value! >= 0.15 && h.probabilite >= 0.07) return '🔥 Value forte — jouable';
-    if (h.value! > 0.05) return 'Léger avantage';
-    if (h.value! > 0) return 'Avantage marginal';
-    if (index < 2) return 'Favori du modèle, cote trop courte';
-    return 'Pas d\'avantage';
+/// Verdict affiché sous chaque carte. Formulation neutre (constat d'écart
+/// avec la cote, jamais une incitation à jouer) : le moteur ne bat pas encore
+/// le marché (spec-value-experimentale), et le reste même une fois
+/// [kValueExperimental] levé.
+String recoLabel(Horse h, int index) {
+  if (h.nbPerfs == 0 && !h.inedit) return 'Données non saisies';
+  if (h.value == null) return 'Cote manquante';
+  if (h.value! >= 0.15 && h.probabilite >= 0.07) {
+    return 'Écart positif marqué avec la cote';
   }
+  if (h.value! > 0.05) return 'Écart positif avec la cote';
+  if (h.value! > 0) return 'Écart faible avec la cote';
+  if (index < 2) return 'Favori du modèle, cote plus courte que son estimation';
+  return "Pas d'écart positif avec la cote";
+}
+
+class ResultsScreen extends ConsumerWidget {
+  /// Traitement "expérimental" de la value et des mises ; par défaut
+  /// l'interrupteur unique [kValueExperimental] (paramètre exposé pour les tests).
+  const ResultsScreen({super.key, this.experimental = kValueExperimental});
+
+  final bool experimental;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -102,6 +113,10 @@ class ResultsScreen extends ConsumerWidget {
                 ),
               ),
             ),
+          // Épinglé lui aussi (visible sans scroller), après le bandeau de
+          // péremption : value et mises restent expérimentales tant que le
+          // modèle combiné ne bat pas le marché.
+          if (experimental) const ExperimentalBanner(),
           Expanded(
             child: ListView(
               padding: const EdgeInsets.all(12),
@@ -217,6 +232,11 @@ class ResultsScreen extends ConsumerWidget {
                   final i = entry.key;
                   final h = entry.value;
                   final label = transparencyLabel(h, h.nbPerfs);
+                  final valueFigure = h.value != null
+                      ? '${h.value! > 0 ? '+' : ''}${(h.value! * 100).toStringAsFixed(1)} %'
+                      : null;
+                  final hasStake = h.mise != null && h.mise! > 0.01;
+                  final stakeFigure = hasStake ? '${h.mise!.toStringAsFixed(1)} u' : null;
                   return Card(
                     color: i == 0
                         ? Theme.of(
@@ -299,31 +319,53 @@ class ResultsScreen extends ConsumerWidget {
                             ],
                           ),
                           const SizedBox(height: 6),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          // Wrap plutôt que Row : les préfixes "Value exp." /
+                          // "Mise exp." passent à la ligne sur écran étroit ou
+                          // grand texte au lieu de déborder (aucun chiffre tronqué).
+                          Wrap(
+                            alignment: WrapAlignment.spaceBetween,
+                            spacing: 12,
+                            runSpacing: 2,
                             children: [
                               Text(
                                 'Cote : ${h.cote?.toStringAsFixed(1) ?? '—'}',
                               ),
-                              Text(
-                                h.value != null
-                                    ? '${h.value! > 0 ? '+' : ''}${(h.value! * 100).toStringAsFixed(1)} %'
-                                    : '—',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: h.value == null
-                                      ? Colors.grey
-                                      : (h.value! > 0
-                                            ? Colors.greenAccent
-                                            : Colors.redAccent),
+                              if (h.value != null)
+                                Text(
+                                  '${experimental ? 'Value $kExperimentalMark ' : ''}$valueFigure',
+                                  // "exp." serait lu tel quel par un lecteur d'écran.
+                                  semanticsLabel: experimental
+                                      ? 'Value expérimentale $valueFigure'
+                                      : null,
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    // Expérimental : pas de vert "positif" sur
+                                    // une value que le moteur ne justifie pas
+                                    // encore ; le rouge négatif reste.
+                                    color: h.value! > 0
+                                        ? (experimental ? null : Colors.greenAccent)
+                                        : Colors.redAccent,
+                                  ),
+                                )
+                              else
+                                const Text(
+                                  '—',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.grey,
+                                  ),
                                 ),
-                              ),
                               Text(
-                                h.mise != null && h.mise! > 0.01
-                                    ? '${h.mise!.toStringAsFixed(1)} u'
+                                hasStake
+                                    ? '${experimental ? 'Mise $kExperimentalMark ' : ''}$stakeFigure'
                                     : '—',
-                                style: const TextStyle(
-                                  color: Colors.greenAccent,
+                                semanticsLabel: hasStake && experimental
+                                    ? 'Mise expérimentale $stakeFigure'
+                                    : null,
+                                // Expérimental : pas de vert "positif" sur une
+                                // mise que le moteur ne justifie pas encore.
+                                style: TextStyle(
+                                  color: experimental ? null : Colors.greenAccent,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
@@ -331,7 +373,7 @@ class ResultsScreen extends ConsumerWidget {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            _reco(h, i),
+                            recoLabel(h, i),
                             style: const TextStyle(
                               fontSize: 12,
                               fontStyle: FontStyle.italic,

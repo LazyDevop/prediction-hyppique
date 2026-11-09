@@ -3,12 +3,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/engine_params.dart';
 import '../providers/params_provider.dart';
+import '../widgets/experimental_banner.dart';
 import '../widgets/option_lists.dart';
 
 /// Réglages du moteur — mêmes défauts que backend/app/engine/constants.py
 /// (section 7 du document backend, sections 7.3 à 7.11).
 class SettingsScreen extends ConsumerStatefulWidget {
-  const SettingsScreen({super.key});
+  /// Libellé "expérimental" de la fraction de Kelly ; par défaut
+  /// l'interrupteur unique [kValueExperimental] (paramètre exposé pour les tests).
+  const SettingsScreen({super.key, this.experimental = kValueExperimental});
+
+  final bool experimental;
 
   @override
   ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
@@ -113,7 +118,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           const SizedBox(height: 12),
           DropdownButtonFormField<double>(
             initialValue: params.fractionKelly,
-            decoration: const InputDecoration(labelText: 'Fraction de Kelly'),
+            decoration: InputDecoration(
+              labelText: widget.experimental ? 'Fraction de Kelly (expérimental)' : 'Fraction de Kelly',
+            ),
             items: const [
               DropdownMenuItem(value: 0.1, child: Text('Prudent (10 %)')),
               DropdownMenuItem(value: 0.25, child: Text('Standard (25 %)')),

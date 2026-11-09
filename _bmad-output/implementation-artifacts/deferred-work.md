@@ -188,3 +188,7 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-rebuild-historique-turfinfo.md`
   summary: `pmu_client.normaliser_terrain` does not recognise the race-day going label `PSF TRES RAPIDE` (warning logged, going left neutral).
   evidence: Seen in the live programme of 2026-10-01 during verification; pre-existing normaliser, not changed by this spec.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-value-experimentale.md`
+  summary: The results screen overflows on narrow phones with large text (320 px, text scale 1.3) in pre-existing widgets: `combo_block.dart:25` (Column, 15–173 px bottom), `probability_gauge.dart:24` (Row) and the T2–T4 percentages Row at `results_screen.dart:311` (up to 391 px right). The value/stake row introduced here uses a Wrap and does not overflow.
+  evidence: Widget test written during the review of this spec; removed because the overflow is not caused by it.
