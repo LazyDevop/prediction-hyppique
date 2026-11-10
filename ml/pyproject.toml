@@ -1,0 +1,23 @@
+[project]
+name = "hippique-ml"
+version = "0.1.0"
+description = "Offline training of the fundamental model (roadmap stage 2)"
+requires-python = "==3.12.*"
+dependencies = [
+    "catboost==1.2.10",
+    "pandas==3.1.1",
+    "numpy==2.5.4",
+]
+
+[dependency-groups]
+dev = ["pytest==9.2.0"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["hippique_ml"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

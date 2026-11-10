@@ -196,3 +196,23 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-features-modele.md`
   summary: Training rows and `f_nb_partants` reflect the final runner list (late scratches removed), while a live prediction sees the declared list; serving must recompute field features on the live list, and the backtest should measure the gap.
   evidence: Blind-hunter review; documented in the registry note.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-modele-fondamental.md`
+  summary: CatBoost shuffles training rows for ordered boosting and categorical target statistics, so a train row can use labels from later train dates (never from validation or test). Try `has_time=True` (keeps the date-sorted order) and compare validation log-loss before stage 3.
+  evidence: Verification-gap review; changing it needs a full retrain (about 19 h on the dev machine), so it was not done in the review loop.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-modele-fondamental.md`
+  summary: The stage-2 gate is an absolute log-loss (≤ 2.30), which depends on field size (log 10 = 2.303); a model that knows nothing can pass when fields are small. Future gates should be relative (model − uniform or model − market, CI excluding 0). The report now prints the model − uniform CI under the gate line.
+  evidence: Blind-hunter review. The threshold is in the frozen spec and roadmap; the 2026-11-09 run passes on both counts (2.072, model − uniform −0.358 [−0.373, −0.346]).
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-modele-fondamental.md`
+  summary: Training is slow (about 19 h for the 6-point grid on 330k rows) and silent (`verbose=0`). Log CatBoost progress every N iterations, fix `thread_count`, and consider running the grid points in parallel or narrowing the grid now that all six points land within 0.01 of each other.
+  evidence: Full run of 2026-11-09; validation log-loss 2.064 to 2.073 across the grid.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-modele-fondamental.md`
+  summary: Small subsets get falsely precise bootstrap CIs (one race gives [x, x]); flag or omit CIs below about 30 races. Also pin the `hatchling` build backend in `ml/pyproject.toml`.
+  evidence: Edge-case and verification-gap reviews; minor.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-modele-fondamental.md`
+  summary: Concurrent writers starve on SQLite's rollback journal: on 2026-11-09 a long-lived read lock held by the `api` container blocked every rebuild and scheduler write for about 17 h ("database is locked") until the container was restarted. Enable WAL mode (`PRAGMA journal_mode=WAL`) and a busy timeout in `Repository`.
+  evidence: Rebuild log `/app/data/rebuild_2022-11-06_2023-10-19.log` (474 lock errors, 2023-02-27 → 2023-03-01 failed) and ingestion scheduler errors on 2026-11-10. Backend change, outside this spec.

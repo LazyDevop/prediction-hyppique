@@ -39,3 +39,10 @@ Thumbs.db
 
 # BMad -- installer-managed, personal install answers, regenerated per machine
 _bmad/config.user.toml
+
+# ML training (data and model binaries never committed)
+ml/runs/
+ml/**/*.csv.gz
+ml/**/*.registry.json
+ml/**/*.cbm
+ml/catboost_info/
