@@ -40,5 +40,23 @@ services:
       - hippique_data:/app/data
     restart: unless-stopped
 
+  # File de reconstruction de l'historique turfinfo : reprend seule après un
+  # redémarrage du PC ou de Docker (jours complets sautés), puis reste au
+  # repos une fois terminée (marqueur /app/data/rebuild_file_terminee).
+  rebuild:
+    build: ./backend
+    command: ["sh", "/app/app/jobs/rebuild_file.sh"]
+    environment:
+      - DATABASE_URL=sqlite:////app/data/hippique.db
+      - PMU_REQUEST_DELAY=2
+      - PMU_REQUEST_JITTER=2
+      - PMU_REQUEST_TIMEOUT=45
+    env_file:
+      - path: .env
+        required: false
+    volumes:
+      - hippique_data:/app/data
+    restart: unless-stopped
+
 volumes:
   hippique_data:
