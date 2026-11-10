@@ -71,6 +71,49 @@ overwritten: pick a new `--sortie`.
 
 Data files and model binaries are git-ignored.
 
+## 3. Combine with the market (roadmap stage 3, Benter)
+
+```sh
+cd ml
+uv run python -m hippique_ml.combine --run runs/<stage2_dir> --features data/features_2022-26.csv.gz --sortie runs/<date>-combine
+```
+
+Fits a conditional logit per race,
+`p_i ∝ exp(α · log p_fund_i + β · log p_mkt_i)`, where `p_fund` is the stage-2
+probability and `p_mkt` is 1/`cote_reference` (H-30 odds) normalised within
+the race. Probabilities are floored at 1e-6 before the log.
+
+- **Inputs and checks.** The stage-2 run folder (`model.cbm`, `params.json`,
+  `test_predictions.csv.gz`) and the feature CSV it was trained on. Validation
+  and test probabilities are recomputed from `model.cbm`, the temperature and
+  the periods in `params.json`. The run is refused (exit 2, before fitting)
+  when the registry `git_sha` differs from `registre_git_sha`, when the
+  feature list differs, or when any recomputed test probability differs from
+  `test_predictions.csv.gz` by more than 1e-9.
+- **Fit.** α and β by maximum conditional likelihood on validation races
+  where every runner has a finite positive `cote_reference`. Pure numpy
+  Newton (analytic gradient and Hessian, step halving), starting from the
+  market alone (α = 0, β = 1). Standard errors come from the inverse Hessian.
+  The test period is never used for fitting. `cote_direct` (closing odds) is
+  never an input.
+- **Evaluation**, per period (validation, test) and discipline, on races
+  where every runner has odds (others are counted as `excl.`): log-loss of the
+  combined model, the market and the fundamental model; bootstrap 95% CIs of
+  combined − market and combined − fundamental; top-pick win rate of the
+  combined model against the market favourite (ties 1/k); calibration buckets.
+  The closing-odds market log-loss is shown for information only.
+- **Gate.** PASSED when the test combined − market mean and its CI upper bound
+  are both below 0.
+  The verdict line warns when the fit did not converge or the coefficients are
+  not identifiable.
+
+`--sortie` must be a new folder (an existing `report.json` is never
+overwritten). It then holds `combine.json` (α, β, standard errors, input run
+path, sha256 of `params.json`, `model.cbm` and the feature CSV, convergence
+flag, package versions), `report.json`, `report.md` and
+`test_predictions.csv.gz` (stage-2 columns plus `proba_marche` and
+`proba_combinee`, market-complete test races only, for stage 4).
+
 ## Tests
 
 ```sh

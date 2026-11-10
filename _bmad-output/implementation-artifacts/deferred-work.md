@@ -216,3 +216,15 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-modele-fondamental.md`
   summary: Concurrent writers starve on SQLite's rollback journal: on 2026-11-09 a long-lived read lock held by the `api` container blocked every rebuild and scheduler write for about 17 h ("database is locked") until the container was restarted. Enable WAL mode (`PRAGMA journal_mode=WAL`) and a busy timeout in `Repository`.
   evidence: Rebuild log `/app/data/rebuild_2022-11-06_2023-10-19.log` (474 lock errors, 2023-02-27 → 2023-03-01 failed) and ingestion scheduler errors on 2026-11-10. Backend change, outside this spec.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-modele-combine.md`
+  summary: The stage-3 bootstrap resamples races independently, but races of the same day or meeting share going and market conditions, so the combined − market CI may be too narrow. Add a day-level (cluster) bootstrap and compare it before relying on the margin in stage 4.
+  evidence: Blind-hunter review; the test margin is small (−0.016 [−0.020, −0.012]).
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-modele-combine.md`
+  summary: One runner without H-30 odds removes the whole race from the stage-3 fit, evaluation and stage-4 output (1,967 of 11,465 test races, mostly trot). Measure whether those races differ (late scratches, small meetings), and decide whether to drop only the runner and renormalise.
+  evidence: Blind-hunter review; trot loses 1,725 of 6,647 test races to this rule.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-modele-combine.md`
+  summary: The closing-odds market (`cote_direct`, 1.924 on test) still beats the combined model (1.983), so the edge exists only at H-30 information. Stage 4 must simulate bets at the odds actually paid (final pari-mutuel dividends), and live odds snapshots (H-60/H-30/H-10/H-2) are needed to fit the combination at the decision time.
+  evidence: Full stage-3 run of 2026-11-10 (`ml/runs/2026-11-10-combine-r1/report.md`), closing races 10,962.
