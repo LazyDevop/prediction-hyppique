@@ -2,14 +2,14 @@ import json
 import logging
 import os
 from datetime import date, datetime
-from typing import List, Optional
+from typing import List, Optional, Set, Tuple
 
-from sqlalchemy import create_engine, inspect, text
+from sqlalchemy import create_engine, event, inspect, text
 from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 from sqlalchemy.orm import Session, selectinload
 
 from app.data.models import (
-    Base, Course, Cheval, Participation, PerformanceHistorique, PredictionCheval, PredictionRun,
+    Base, CoteInstantanee, Course, Cheval, Participation, PerformanceHistorique, PredictionCheval, PredictionRun,
 )
 from app.data.pmu_client import (
     STATUS_TO_INCIDENT, CourseInfo, PartantInfo, PerformancePassee, _normalize_name,
@@ -23,11 +23,29 @@ logger = logging.getLogger(__name__)
 DEFAULT_DATABASE_URL = "sqlite:///./hippique.db"
 
 
+def _pragmas_sqlite(dbapi_connection, _connection_record) -> None:
+    """WAL : les lectures du tableau de bord ne bloquent plus les écritures
+    des instantanés de cotes (et inversement) ; busy_timeout fait attendre
+    un verrou au lieu d'échouer aussitôt."""
+    cursor = dbapi_connection.cursor()
+    try:
+        # busy_timeout d'abord : le passage en WAL lui-même attend un verrou.
+        cursor.execute("PRAGMA busy_timeout=30000")
+        cursor.execute("PRAGMA journal_mode=WAL")
+        mode = cursor.fetchone()
+        if not mode or str(mode[0]).lower() != "wal":
+            logger.warning("SQLite : mode WAL indisponible (journal_mode=%s)", mode[0] if mode else None)
+    finally:
+        cursor.close()
+
+
 class Repository:
     def __init__(self, database_url: Optional[str] = None):
         if database_url is None:
             database_url = os.environ.get("DATABASE_URL", DEFAULT_DATABASE_URL)
         self.engine = create_engine(database_url, connect_args={"check_same_thread": False})
+        if self.engine.dialect.name == "sqlite":
+            event.listen(self.engine, "connect", _pragmas_sqlite)
         Base.metadata.create_all(self.engine)
         self._migrate()
 
@@ -134,6 +152,66 @@ class Repository:
             if nom not in participation_columns:
                 with self.engine.begin() as conn:
                     conn.execute(text(f"ALTER TABLE participations ADD COLUMN {nom} DATETIME"))
+
+        inspector = inspect(self.engine)
+        if not inspector.has_table("cotes_instantanees"):
+            CoteInstantanee.__table__.create(self.engine, checkfirst=True)
+            inspector = inspect(self.engine)
+        index_cotes = {idx["name"] for idx in inspector.get_indexes("cotes_instantanees")}
+        if "uq_cotes_inst_participation_cible" not in index_cotes:
+            with self.engine.begin() as conn:
+                conn.execute(text("""
+                    CREATE UNIQUE INDEX IF NOT EXISTS uq_cotes_inst_participation_cible
+                    ON cotes_instantanees (participation_id, cible_minutes)
+                """))
+
+    def instantanes_pris(self, course_id: int) -> Set[Tuple[int, int]]:
+        """Paires (participation_id, cible_minutes) déjà relevées pour cette course."""
+        with Session(self.engine) as session:
+            return set(session.query(CoteInstantanee.participation_id, CoteInstantanee.cible_minutes).filter(
+                CoteInstantanee.course_id == course_id,
+            ).all())
+
+    def enregistrer_instantanes(
+        self, course_id: int, cible_minutes: int, pris_le: datetime, partants: List[PartantInfo],
+    ) -> Tuple[int, int]:
+        """Un relevé de cotes d'une course à une cible, en une transaction :
+        une ligne par partant connu. Un partant dont le num_pmu n'a pas de
+        participation est ignoré, jamais créé ; une paire déjà relevée n'est
+        jamais réécrite. Retourne (lignes écrites, partants ignorés)."""
+        with Session(self.engine) as session:
+            participations = {
+                num: pid for pid, num in session.query(Participation.id, Participation.num_pmu).filter(
+                    Participation.course_id == course_id,
+                    Participation.num_pmu.isnot(None),
+                )
+            }
+            ecrites = ignores = 0
+            for partant in partants:
+                participation_id = participations.get(partant.num_pmu)
+                if participation_id is None:
+                    ignores += 1
+                    logger.warning(
+                        "Instantané H-%d : num_pmu %r sans participation (course %s), ignoré",
+                        cible_minutes, partant.num_pmu, course_id,
+                    )
+                    continue
+                stmt = sqlite_insert(CoteInstantanee).values(
+                    course_id=course_id,
+                    participation_id=participation_id,
+                    num_pmu=partant.num_pmu,
+                    cible_minutes=cible_minutes,
+                    pris_le=pris_le,
+                    cote_direct=partant.cote_direct,
+                    cote_direct_le=partant.cote_direct_le,
+                    cote_reference=partant.cote_reference,
+                    cote_reference_le=partant.cote_reference_le,
+                    statut=partant.statut,
+                    brut=json.dumps(partant.rapports_bruts, ensure_ascii=False) if partant.rapports_bruts else None,
+                ).on_conflict_do_nothing(index_elements=["participation_id", "cible_minutes"])
+                ecrites += session.execute(stmt).rowcount
+            session.commit()
+            return ecrites, ignores
 
     def list_courses_for_date(self, target_date: date) -> List[Course]:
         with Session(self.engine) as session:

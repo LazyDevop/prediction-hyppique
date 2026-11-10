@@ -25,5 +25,20 @@ services:
       - hippique_data:/app/data
     restart: unless-stopped
 
+  # Instantanés de cotes à H-60, H-30, H-10 et H-2 : service à part pour que
+  # le passage horaire des pronostics ne puisse pas retarder le H-2.
+  cotes:
+    build: ./backend
+    command: ["python", "-m", "app.jobs.cotes_instantanees"]
+    environment:
+      - DATABASE_URL=sqlite:////app/data/hippique.db
+      - COTES_POLL_SECONDS=30
+    env_file:
+      - path: .env
+        required: false
+    volumes:
+      - hippique_data:/app/data
+    restart: unless-stopped
+
 volumes:
   hippique_data:

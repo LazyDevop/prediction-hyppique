@@ -150,6 +150,10 @@ class PartantInfo:
     # est prise ~30 min avant le départ, la cote directe est la cote finale.
     cote_reference_le: Optional[datetime] = None
     cote_direct_le: Optional[datetime] = None
+    # Objets bruts dernierRapportDirect / dernierRapportReference, sous ces
+    # clés et seulement s'ils sont présents (favoris, grossePrise,
+    # nombreIndicateurTendance...) : relevés tels quels par les instantanés.
+    rapports_bruts: Dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -232,6 +236,11 @@ def get_participants(target_date: date, reunion: int, course: int) -> List[Parta
             raw=cheval,
             cote_reference_le=_epoch_ms_to_utc_naive(rapport_ref.get("dateRapport")),
             cote_direct_le=_epoch_ms_to_utc_naive(rapport_direct.get("dateRapport")),
+            rapports_bruts={
+                cle: cheval[cle]
+                for cle in ("dernierRapportDirect", "dernierRapportReference")
+                if cheval.get(cle) is not None
+            },
         ))
     return partants
 

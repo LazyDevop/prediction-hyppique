@@ -228,3 +228,11 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-modele-combine.md`
   summary: The closing-odds market (`cote_direct`, 1.924 on test) still beats the combined model (1.983), so the edge exists only at H-30 information. Stage 4 must simulate bets at the odds actually paid (final pari-mutuel dividends), and live odds snapshots (H-60/H-30/H-10/H-2) are needed to fit the combination at the decision time.
   evidence: Full stage-3 run of 2026-11-10 (`ml/runs/2026-11-10-combine-r1/report.md`), closing races 10,962.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-cotes-instantanees.md`
+  summary: The `cotes` service has no Docker healthcheck, alerting or runbook (README entry for the service, `COTES_POLL_SECONDS`, WAL side files `-wal`/`-shm`, how to read the missed counts). Add them once the service has run for a few race days.
+  evidence: Blind-hunter review; today the only signal is the per-pass log line.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-cotes-instantanees.md`
+  summary: `cotes_instantanees` foreign keys have no `ON DELETE` rule, so a purge of courses or participations (for example `purge_open_pmu`) will fail on rows that have snapshots; delete snapshots first in any purge, or add cascading deletes.
+  evidence: Blind-hunter review; open-pmu courses never get snapshots today (source pmu only), so no current purge is affected.

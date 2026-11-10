@@ -1,7 +1,7 @@
 from datetime import date, datetime
 from typing import Optional
 
-from sqlalchemy import Boolean, Date, DateTime, Float, ForeignKey, Integer, String, Text, UniqueConstraint
+from sqlalchemy import Boolean, Date, DateTime, Float, ForeignKey, Index, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
@@ -150,3 +150,31 @@ class PredictionCheval(Base):
     value: Mapped[Optional[float]] = mapped_column(Float)
     mise: Mapped[Optional[float]] = mapped_column(Float)
     run: Mapped[PredictionRun] = relationship(back_populates="chevaux")
+
+
+class CoteInstantanee(Base):
+    # Cote en direct d'un partant relevée par jobs/cotes_instantanees.py à
+    # une cible avant le départ (60, 30, 10 ou 2 min). Une ligne par
+    # participation et par cible, jamais réécrite ; les colonnes de cotes de
+    # `participations` n'en sont jamais mises à jour.
+    __tablename__ = "cotes_instantanees"
+    __table_args__ = (
+        Index("uq_cotes_inst_participation_cible", "participation_id", "cible_minutes", unique=True),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    course_id: Mapped[int] = mapped_column(ForeignKey("courses.id"), nullable=False, index=True)
+    participation_id: Mapped[int] = mapped_column(ForeignKey("participations.id"), nullable=False)
+    num_pmu: Mapped[Optional[int]] = mapped_column(Integer)
+    cible_minutes: Mapped[int] = mapped_column(Integer, nullable=False)
+    # Instant du relevé, en UTC naïf.
+    pris_le: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    cote_direct: Mapped[Optional[float]] = mapped_column(Float)
+    # dateRapport PMU, en UTC naïf (comme dans Participation).
+    cote_direct_le: Mapped[Optional[datetime]] = mapped_column(DateTime)
+    cote_reference: Mapped[Optional[float]] = mapped_column(Float)
+    cote_reference_le: Mapped[Optional[datetime]] = mapped_column(DateTime)
+    statut: Mapped[Optional[str]] = mapped_column(String(32))
+    # JSON des objets bruts dernierRapportDirect et dernierRapportReference
+    # (favoris, grossePrise, nombreIndicateurTendance...).
+    brut: Mapped[Optional[str]] = mapped_column(Text)
