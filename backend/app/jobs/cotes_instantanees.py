@@ -23,7 +23,7 @@ from app.data.repository import Repository
 
 logger = logging.getLogger(__name__)
 
-CIBLES_MINUTES = (60, 30, 10, 2)
+CIBLES_MINUTES = (60, 30, 15, 10, 2)
 POLL_DEFAUT_SECONDS = 30.0
 POLL_MAX_SECONDS = 60.0  # au-delà, la fenêtre de 2 min de H-10 et H-2 peut être sautée
 

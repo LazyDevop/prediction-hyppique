@@ -117,6 +117,7 @@ context:
   - `brut` is NULL when no raw data exists.
   - New tests: the 5-min tolerance for H-60 and H-30, the H-2 bound at the start, the clock re-check, urgency order, empty response, midnight, per-race isolation, and the `boucle` loop.
   - Deferred: healthcheck and runbook, FK delete rules.
+- 2026-11-13, approved by Lazyd (Ask First item "other targets"): H-15 added, so the targets are 60, 30, 15, 10 and 2. Predictions will be published in the morning, then at H-60, H-30, H-15 and H-10; H-2 is kept as research data, the closest proxy to the closing odds. H-15 uses the 2-min tolerance, so its window never overlaps H-10. First live day (2026-11-13): the offline endpoint's odds do move between targets, so there is no need for the online endpoint.
 
 ## Suggested Review Order
 

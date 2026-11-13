@@ -147,7 +147,7 @@ def test_manque_signale_une_seule_fois_par_la_boucle(repo):
     assert (premier.manques, second.manques) == (2, 0)
 
 
-def test_reveil_tardif_prend_h10_et_manque_h60_h30(repo):
+def test_reveil_tardif_prend_h10_et_manque_h60_h30_h15(repo):
     creer_course(repo)
     with patch.object(cotes_instantanees.pmu_client, "get_participants", side_effect=_participants()) as part:
         bilan = cotes_instantanees.prendre_instantanes(repo, DEPART - timedelta(minutes=9))
@@ -155,7 +155,7 @@ def test_reveil_tardif_prend_h10_et_manque_h60_h30(repo):
     part.assert_called_once()
     assert {l.cible_minutes for l in _lignes(repo)} == {10}
     assert bilan.pris == 3
-    assert bilan.manques == 2
+    assert bilan.manques == 3  # H-60, H-30, H-15
 
 
 def test_fenetre_h2_tolerance_deux_minutes(repo):
@@ -313,7 +313,7 @@ def test_h2_ferme_au_depart(repo):
     with patch.object(cotes_instantanees.pmu_client, "get_participants", side_effect=_participants()) as part:
         bilan = cotes_instantanees.prendre_instantanes(repo, DEPART + timedelta(seconds=1))
     part.assert_not_called()
-    assert bilan.manques == 4 + 4 - 1  # course 2 : 4 cibles ; course 1 : H-60, H-30, H-10
+    assert bilan.manques == 5 + 5 - 1  # course 2 : 5 cibles ; course 1 : H-60, H-30, H-15, H-10
 
 
 def test_fenetre_revérifiee_au_retour_de_la_requete(repo):
@@ -322,7 +322,7 @@ def test_fenetre_revérifiee_au_retour_de_la_requete(repo):
     with patch.object(cotes_instantanees.pmu_client, "get_participants", side_effect=_participants()):
         bilan = cotes_instantanees.prendre_instantanes(
             repo, DEPART - timedelta(seconds=30), horloge=lambda: next(instants))
-    assert bilan.pris == 0 and bilan.manques == 1 + 3
+    assert bilan.pris == 0 and bilan.manques == 1 + 4
     assert _lignes(repo) == []
 
 
@@ -419,3 +419,15 @@ def test_boucle_oublie_les_manques_au_changement_de_jour(repo):
 def test_poll_seconds_valide(monkeypatch, valeur, attendu):
     monkeypatch.setenv("COTES_POLL_SECONDS", valeur)
     assert cotes_instantanees._poll_seconds() == attendu
+
+
+def test_h15_prise_avec_tolerance_deux_minutes(repo):
+    creer_course(repo)
+    with patch.object(cotes_instantanees.pmu_client, "get_participants", side_effect=_participants()):
+        bilan = cotes_instantanees.prendre_instantanes(repo, DEPART - timedelta(minutes=13, seconds=30))
+    assert bilan.pris == 3
+    assert {l.cible_minutes for l in _lignes(repo)} == {15}
+    creer_course(repo, numero_course=2)
+    with patch.object(cotes_instantanees.pmu_client, "get_participants", side_effect=_participants()) as part:
+        cotes_instantanees.prendre_instantanes(repo, DEPART - timedelta(minutes=12, seconds=30))
+    part.assert_not_called()  # H-15 fermée après 2 min, H-10 pas encore ouverte
