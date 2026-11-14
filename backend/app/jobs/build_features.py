@@ -29,7 +29,7 @@ import sys
 import time
 from collections import Counter
 from datetime import date, datetime, timezone
-from typing import Any, Dict, Iterator, List, Optional
+from typing import Any, Dict, Iterator, List, Optional, Tuple
 
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
@@ -46,6 +46,37 @@ logger = logging.getLogger(__name__)
 TAILLE_LOT = 5000
 
 
+_COLONNES_LECTURE = (
+    Course.id, Course.date, Course.discipline, Course.distance, Course.allocation,
+    Course.terrain, Course.hippodrome,
+    Participation.num_pmu, Participation.cheval_id, Participation.driver, Participation.entraineur,
+    Participation.rang_arrivee, Participation.incident, Participation.cote_reference,
+    Participation.cote_direct, Participation.donnees_brutes,
+)
+
+
+def _course_record(row) -> CourseRecord:
+    return CourseRecord(
+        course_id=row.id, date=row.date, discipline=row.discipline, distance=row.distance,
+        allocation=row.allocation, terrain=row.terrain, hippodrome=row.hippodrome,
+    )
+
+
+def _brut(row) -> Tuple[Dict[str, Any], bool]:
+    """(donnees_brutes décodé, illisible). Illisible ou non objet JSON : brut vide."""
+    if not row.donnees_brutes:
+        return {}, False
+    try:
+        brut = json.loads(row.donnees_brutes)
+    except (ValueError, TypeError):
+        logger.warning("donnees_brutes illisibles (course %s, num %s)", row.id, row.num_pmu)
+        return {}, True
+    if not isinstance(brut, dict):
+        logger.warning("donnees_brutes non objet (course %s, num %s)", row.id, row.num_pmu)
+        return {}, True
+    return brut, False
+
+
 def lire_jours(
     repository: Repository, date_fin: date, compteurs: Optional[Counter] = None,
     date_debut: Optional[date] = None,
@@ -56,13 +87,7 @@ def lire_jours(
     date_debut (la plage émise)."""
     compteurs = compteurs if compteurs is not None else Counter()
     requete = (
-        select(
-            Course.id, Course.date, Course.discipline, Course.distance, Course.allocation,
-            Course.terrain, Course.hippodrome,
-            Participation.num_pmu, Participation.cheval_id, Participation.driver, Participation.entraineur,
-            Participation.rang_arrivee, Participation.incident, Participation.cote_reference,
-            Participation.cote_direct, Participation.donnees_brutes,
-        )
+        select(*_COLONNES_LECTURE)
         .join(Participation, Participation.course_id == Course.id)
         .where(Course.finalisee.is_(True), Course.source == "pmu", Course.date <= date_fin)
         .order_by(Course.date, Course.id, Participation.num_pmu)
@@ -78,26 +103,11 @@ def lire_jours(
                     yield courses
                 jour, courses, course = row.date, [], None
             if course is None or course.course_id != row.id:
-                course = CourseRecord(
-                    course_id=row.id, date=row.date, discipline=row.discipline, distance=row.distance,
-                    allocation=row.allocation, terrain=row.terrain, hippodrome=row.hippodrome,
-                )
+                course = _course_record(row)
                 courses.append(course)
-            dans_plage = date_debut is None or row.date >= date_debut
-            brut: Any = {}
-            if row.donnees_brutes:
-                try:
-                    brut = json.loads(row.donnees_brutes)
-                except (ValueError, TypeError):
-                    logger.warning("donnees_brutes illisibles (course %s, num %s)", row.id, row.num_pmu)
-                    if dans_plage:
-                        compteurs["brut_illisible"] += 1
-                    brut = {}
-            if not isinstance(brut, dict):
-                logger.warning("donnees_brutes non objet (course %s, num %s)", row.id, row.num_pmu)
-                if dans_plage:
-                    compteurs["brut_illisible"] += 1
-                brut = {}
+            brut, illisible = _brut(row)
+            if illisible and (date_debut is None or row.date >= date_debut):
+                compteurs["brut_illisible"] += 1
             # Un dossard absent (num_pmu NULL) reste dans le champ et
             # l'historique : seule sa ligne de sortie est écartée, par le
             # constructeur, qui la compte.
@@ -108,6 +118,33 @@ def lire_jours(
             ))
     if courses:
         yield courses
+
+
+def lire_courses_du_jour(repository: Repository, jour: date) -> List[Tuple[CourseRecord, datetime]]:
+    """Courses du jour à pronostiquer (source pmu, heure_depart renseignée),
+    finalisées ou non, avec leur heure de départ, dans l'ordre (course,
+    dossard). Aucun champ après course n'est lu : rang, cotes et incident
+    restent vides, sauf l'incident NON_PARTANT, déclaré avant la course."""
+    requete = (
+        select(*_COLONNES_LECTURE, Course.heure_depart)
+        .join(Participation, Participation.course_id == Course.id)
+        .where(Course.source == "pmu", Course.date == jour, Course.heure_depart.isnot(None))
+        .order_by(Course.id, Participation.num_pmu)
+    )
+    resultat: List[Tuple[CourseRecord, datetime]] = []
+    course: Optional[CourseRecord] = None
+    with Session(repository.engine) as session:
+        for row in session.execute(requete):
+            if course is None or course.course_id != row.id:
+                course = _course_record(row)
+                resultat.append((course, row.heure_depart))
+            brut, _ = _brut(row)
+            course.partants.append(PartantRecord(
+                num_pmu=row.num_pmu, cheval_id=row.cheval_id, brut=brut,
+                driver=row.driver, entraineur=row.entraineur,
+                incident="NON_PARTANT" if row.incident == "NON_PARTANT" else None,
+            ))
+    return resultat
 
 
 def formater(valeur: Any) -> str:

@@ -40,6 +40,26 @@ services:
       - hippique_data:/app/data
     restart: unless-stopped
 
+  # Pronostics du modèle ML (variante "ml") : matin à PRONOSTICS_HEURE, puis
+  # H-60, H-30, H-15 et H-10 dès que `cotes` a stocké l'instantané. Le modèle
+  # et l'ajustement alpha/beta sont montés en lecture seule (jamais copiés
+  # dans l'image ni commités).
+  pronostics:
+    build: ./backend
+    command: ["python", "-m", "app.jobs.pronostics_ml"]
+    environment:
+      - DATABASE_URL=sqlite:////app/data/hippique.db
+      - PRONOSTICS_HEURE=7
+      - PRONOSTICS_POLL_SECONDS=30
+    env_file:
+      - path: .env
+        required: false
+    volumes:
+      - hippique_data:/app/data
+      - ./ml/runs/2026-11-09:/app/modele/fondamental:ro
+      - ./ml/runs/2026-11-10-combine-r1:/app/modele/combine:ro
+    restart: unless-stopped
+
   # File de reconstruction de l'historique turfinfo : reprend seule après un
   # redémarrage du PC ou de Docker (jours complets sautés), puis reste au
   # repos une fois terminée (marqueur /app/data/rebuild_file_terminee).

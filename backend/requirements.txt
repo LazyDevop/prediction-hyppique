@@ -10,3 +10,6 @@ requests
 # dont le wheel manylinux reste compatible SSE2-only.
 numpy==1.26.4
 python-multipart
+# Inférence du modèle fondamental (service pronostics, jobs/pronostics_ml.py).
+# Même version que ml/ ; compatible numpy 1.26.4.
+catboost==1.2.10

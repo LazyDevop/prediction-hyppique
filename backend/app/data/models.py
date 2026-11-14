@@ -1,7 +1,7 @@
 from datetime import date, datetime
 from typing import Optional
 
-from sqlalchemy import Boolean, Date, DateTime, Float, ForeignKey, Index, Integer, String, Text, UniqueConstraint
+from sqlalchemy import text, Boolean, Date, DateTime, Float, ForeignKey, Index, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
@@ -113,6 +113,12 @@ class PredictionRun(Base):
     # sépare les pronostics réellement enregistrés avant la course ("live")
     # des recalculs a posteriori ("rejeu"), qui ne prouvent rien.
     __tablename__ = "prediction_runs"
+    __table_args__ = (
+        # Un seul pronostic ML par course et horizon (index partiel : les
+        # autres variantes ajoutent une ligne à chaque calcul).
+        Index("uq_prediction_runs_ml_horizon", "course_id", "horizon", unique=True,
+              sqlite_where=text("variante = 'ml'")),
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     course_id: Mapped[int] = mapped_column(ForeignKey("courses.id"), nullable=False, index=True)
@@ -131,6 +137,10 @@ class PredictionRun(Base):
     # dépendent des outsiders virtuels et d'une simulation, on ne peut pas
     # les recalculer à l'identique après coup.
     combinaisons: Mapped[Optional[str]] = mapped_column(Text)
+    # Variante "ml" uniquement (jobs/pronostics_ml.py) : moment du pronostic,
+    # "matin" (fondamental seul) ou "h60", "h30", "h15", "h10" (combiné aux
+    # cotes de l'instantané de cette cible).
+    horizon: Mapped[Optional[str]] = mapped_column(String(8))
     chevaux: Mapped[list["PredictionCheval"]] = relationship(back_populates="run", cascade="all, delete-orphan")
 
 
@@ -149,6 +159,9 @@ class PredictionCheval(Base):
     top4: Mapped[Optional[float]] = mapped_column(Float)
     value: Mapped[Optional[float]] = mapped_column(Float)
     mise: Mapped[Optional[float]] = mapped_column(Float)
+    # Variante "ml" : probabilité du modèle fondamental seul ; `probabilite`
+    # est la valeur publiée (combinée aux cotes à un horizon).
+    probabilite_fondamentale: Mapped[Optional[float]] = mapped_column(Float)
     run: Mapped[PredictionRun] = relationship(back_populates="chevaux")
 
 

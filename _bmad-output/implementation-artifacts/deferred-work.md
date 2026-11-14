@@ -236,3 +236,27 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-cotes-instantanees.md`
   summary: `cotes_instantanees` foreign keys have no `ON DELETE` rule, so a purge of courses or participations (for example `purge_open_pmu`) will fail on rows that have snapshots; delete snapshots first in any purge, or add cascading deletes.
   evidence: Blind-hunter review; open-pmu courses never get snapshots today (source pmu only), so no current purge is affected.
+
+- source_spec: none
+  summary: Serve the per-horizon ML predictions (morning, H-60, H-30, H-15, H-10) through the API, dashboard and mobile app in place of the legacy scoring engine (`app.engine.scoring`), once a few days of live ML runs have been checked.
+  evidence: Split from the "prédictions par horizon" intent on 2026-11-13 (Lazyd chose S); producing and storing the predictions ships independently and lets them be checked before customers see them.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-predictions-horizon.md`
+  summary: Retrain stages 2 and 3 on the rebuilt history before relying on live ML predictions; the live features no longer match the 2026-11-09 training table (`--verifier 2026-03-14` gives a max gap of 0.086 on the current DB, versus 5e-11 on the training-time DB copy).
+  evidence: The `rebuild` service has added history since the training table was built, so history-based features (`f_nb_courses_connues`, `f_pere_nb_disc`, km reductions) differ for the same race.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-predictions-horizon.md`
+  summary: `catboost==1.2.10` is unverified on the SSE2-only VPS CPU (the reason numpy is pinned to 1.26.4), and adds about 300 MB to the shared backend image used by every service; check on the VPS, and consider a separate image for `pronostics`.
+  evidence: Review of the `requirements.txt` change; the numpy pin comment documents the VPS CPU limit.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-predictions-horizon.md`
+  summary: The `pronostics` service has no healthcheck, and when the model mounts are missing it exits 1 and `restart: unless-stopped` loops forever; the model run folders are also hard-coded in `docker-compose.yml`.
+  evidence: Edge-case and blind reviews; same gap as the `cotes` healthcheck entry.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-predictions-horizon.md`
+  summary: Races starting before `PRONOSTICS_HEURE` (7 h container time) get no ML prediction at all; none were seen in the current programme (first race around 09:40 UTC), but the gap is real.
+  evidence: Edge-case review of `jour_programme`.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-predictions-horizon.md`
+  summary: The `backend/.venv` is Python 3.15, for which catboost 1.2.10 has no wheel, so the model-dependent tests only run in Python 3.12 or in the Docker image; align the dev venv with the image (Python 3.12).
+  evidence: Verification-gap review: `pytest` in `backend/.venv` skips the module.

@@ -2,10 +2,11 @@ import json
 import logging
 import os
 from datetime import date, datetime
-from typing import List, Optional, Set, Tuple
+from typing import Dict, List, Optional, Set, Tuple
 
 from sqlalchemy import create_engine, event, inspect, text
 from sqlalchemy.dialects.sqlite import insert as sqlite_insert
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, selectinload
 
 from app.data.models import (
@@ -128,14 +129,23 @@ class Repository:
             "terrain_modifie": "BOOLEAN",
             "parametres": "TEXT",
             "combinaisons": "TEXT",
+            "horizon": "VARCHAR(8)",
         }
         for nom, type_sql in colonnes_app.items():
             if nom not in run_columns:
                 with self.engine.begin() as conn:
                     conn.execute(text(f"ALTER TABLE prediction_runs ADD COLUMN {nom} {type_sql}"))
 
+        index_runs = {idx["name"] for idx in inspect(self.engine).get_indexes("prediction_runs")}
+        if "uq_prediction_runs_ml_horizon" not in index_runs:
+            with self.engine.begin() as conn:
+                conn.execute(text("""
+                    CREATE UNIQUE INDEX IF NOT EXISTS uq_prediction_runs_ml_horizon
+                    ON prediction_runs (course_id, horizon) WHERE variante = 'ml'
+                """))
+
         cheval_columns = {col["name"] for col in inspect(self.engine).get_columns("prediction_chevaux")}
-        for nom in ("top2", "top3", "top4", "value", "mise"):
+        for nom in ("top2", "top3", "top4", "value", "mise", "probabilite_fondamentale"):
             if nom not in cheval_columns:
                 with self.engine.begin() as conn:
                     conn.execute(text(f"ALTER TABLE prediction_chevaux ADD COLUMN {nom} FLOAT"))
@@ -212,6 +222,67 @@ class Repository:
                 ecrites += session.execute(stmt).rowcount
             session.commit()
             return ecrites, ignores
+
+    def instantanes_course(
+        self, course_id: int,
+    ) -> Dict[int, Dict[int, Tuple[Optional[str], Optional[float], datetime]]]:
+        """Instantanés de cotes d'une course :
+        {cible_minutes: {num_pmu: (statut, cote_direct, pris_le)}}."""
+        with Session(self.engine) as session:
+            resultat: Dict[int, Dict[int, Tuple[Optional[str], Optional[float], datetime]]] = {}
+            for cible, num, statut, cote, pris_le in session.query(
+                CoteInstantanee.cible_minutes, CoteInstantanee.num_pmu, CoteInstantanee.statut,
+                CoteInstantanee.cote_direct, CoteInstantanee.pris_le,
+            ).filter(CoteInstantanee.course_id == course_id, CoteInstantanee.num_pmu.isnot(None)):
+                resultat.setdefault(cible, {})[num] = (statut, cote, pris_le)
+            return resultat
+
+    def horizons_publies(self, course_id: int) -> Set[str]:
+        """Horizons déjà publiés par le service ML (variante "ml") pour cette course."""
+        with Session(self.engine) as session:
+            return {h for (h,) in session.query(PredictionRun.horizon).filter(
+                PredictionRun.course_id == course_id,
+                PredictionRun.variante == "ml",
+                PredictionRun.horizon.isnot(None),
+            )}
+
+    def enregistrer_pronostic_ml(
+        self,
+        course_id: int,
+        horizon: str,
+        cree_le: datetime,
+        chevaux: List[dict],
+        manques: List[str],
+        parametres: dict,
+    ) -> Optional[int]:
+        """Un pronostic ML (variante "ml"), jamais réécrit. `chevaux` : dicts
+        num_pmu, probabilite (publiée), probabilite_fondamentale, cote (cote
+        utilisée, None au matin). None si cet horizon est déjà publié pour la
+        course (index unique partiel)."""
+        with Session(self.engine) as session:
+            run = PredictionRun(
+                course_id=course_id,
+                cree_le=cree_le,
+                variante="ml",
+                horizon=horizon,
+                degradee=bool(manques),
+                manques=json.dumps(manques),
+                parametres=json.dumps(parametres),
+                chevaux=[
+                    PredictionCheval(
+                        num_pmu=c["num_pmu"], probabilite=c["probabilite"],
+                        probabilite_fondamentale=c["probabilite_fondamentale"], cote=c.get("cote"),
+                    )
+                    for c in chevaux
+                ],
+            )
+            session.add(run)
+            try:
+                session.commit()
+            except IntegrityError:
+                session.rollback()
+                return None
+            return run.id
 
     def list_courses_for_date(self, target_date: date) -> List[Course]:
         with Session(self.engine) as session:
