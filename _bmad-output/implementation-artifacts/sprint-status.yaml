@@ -29,7 +29,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 # - Retrospective appends its action items to action_items; the status view surfaces open ones
 generated: 10-18-2026 12:00
-last_updated: 10-18-2026 12:00
+last_updated: 11-16-2026 12:00
 project: prediction-hyppique
 project_key: NOKEY
 tracking_system: file-system
@@ -51,47 +51,179 @@ development_status:
   5-1-règles-du-pari-vérifiées-et-datées: backlog
   5-2-heures-de-départ-fiables-utc: backlog
   5-3-cartes-plus-lisibles-dans-toute-l-app-line-card-3-1-on-gold: backlog
-  5-4-mises-à-jour-du-serveur-sans-perte-de-données-alembic: backlog
   5-5-savoir-si-une-course-est-éligible-au-multi: backlog
-  5-6-catalogue-de-systèmes-vérifié: backlog
-  5-7-moteur-multi-python-couverture-sélection-pour-une-taille-che: backlog
-  5-8-indice-de-confiance-et-explications-python-registre-multi_co: backlog
-  5-9-api-du-pronostic-multi-éligibilité-recommandation-systèmes-v: backlog
-  5-10-moteur-multi-en-dart-à-parité-couverture-sélection-bases-sys: backlog
-  5-11-confiance-et-explications-en-dart-table-de-libellés-fr: backlog
-  5-12-écran-multi-pronostic-accès-depuis-résultats-taille-confianc: backlog
-  5-13-écran-multi-grilles-formules-feuille-des-grilles-copie-vérif: backlog
-  5-14-retoucher-sa-sélection-et-gérer-les-non-partants: backlog
-  5-15-retenir-son-pronostic-même-hors-ligne-sqflite-v2-gel-au-dépa: backlog
-  5-16-le-débrief-du-lendemain-mes-pronostics-multi-arrivée-corrigé: backlog
+  5-6-rafraîchir-les-partants-et-les-cotes-d-une-course-avant-le-d: backlog
+  5-7-rouvrir-une-course-hors-ligne-après-redémarrage-cache-local: backlog
+  5-8-catalogue-de-systèmes-vérifié: backlog
+  5-9-moteur-multi-python-couverture-et-sélection-pour-une-taille: backlog
+  5-10-moteur-multi-python-chevaux-les-plus-probables-systèmes-par: backlog
+  5-11-moteur-multi-python-évaluation-non-partant-et-bilan-d-arrivé: backlog
+  5-12-indice-de-confiance-et-explications-python-registre-multi_co: backlog
+  5-13-api-du-pronostic-multi-contexte-recommandation-systèmes-véri: backlog
+  5-14-moteur-multi-en-dart-à-parité-couverture-sélection-bases-sys: backlog
+  5-15-confiance-et-explications-en-dart-table-de-libellés-fr: backlog
+  5-16-écran-multi-accès-taille-et-confiance: backlog
+  5-17-écran-multi-sélection-chevaux-les-plus-probables-évaluation: backlog
+  5-18-écran-multi-grilles-formules-feuille-des-grilles-copie-vérif: backlog
+  5-19-retoucher-sa-sélection-et-gérer-les-non-partants: backlog
+  5-20-retenir-son-pronostic-même-hors-ligne-sqflite-v3-gel-au-dépa: backlog
+  5-21-le-débrief-du-lendemain-mes-pronostics-multi-arrivée-corrigé: backlog
   epic-5-retrospective: optional
 
   epic-6: backlog
   6-1-données-de-la-dernière-course-pour-la-méthode-1-allocation-r: backlog
   6-2-comparateurs-méthode-1-et-marché-en-python-et-dart-b0-python: backlog
   6-3-section-autres-méthodes-à-l-écran: backlog
-  6-4-backtest-sur-la-machine-de-dev-sans-fuite-constantes-figées: backlog
-  6-5-pilote-et-import-en-production-multi_parametres_pilote-json: backlog
-  6-6-journalisation-quotidienne-avant-le-départ-immuable-échecs-r: backlog
-  6-7-performances-et-statut-du-modèle-affichés-seuils-définitifs: backlog
+  6-4-backtest-harnais-sans-fuite-et-périodes-figées: backlog
+  6-5-backtest-stratégies-métriques-et-export: backlog
+  6-6-pilote-et-import-en-production-multi_parametres_pilote-json: backlog
+  6-7-journalisation-quotidienne-avant-le-départ-immuable-échecs-r: backlog
+  6-8-performances-et-statut-du-modèle-affichés-seuils-définitifs: backlog
   epic-6-retrospective: optional
 
-# Action items from the implementation readiness gate (2026-10-18, verdict CONCERNS)
-# Full report: _bmad-output/planning-artifacts/implementation-readiness.md
+  epic-7: backlog
+  7-1-mises-à-jour-du-serveur-sans-perte-de-données-alembic: backlog
+  7-2-passer-de-sqlite-à-postgresql: backlog
+  7-3-https-et-origines-autorisées: backlog
+  7-4-limitation-du-débit: backlog
+  7-5-aucun-secret-dans-les-binaires: backlog
+  7-6-web-app-compagnon-en-production: backlog
+  7-7-publication-sur-le-play-store: backlog
+  7-8-fermer-l-api-déployée-en-attendant-les-comptes: backlog
+  7-9-exposer-la-version-des-conditions-en-vigueur-cgu_version: backlog
+  7-10-écrivain-du-journal-d-audit: backlog
+  epic-7-retrospective: optional
+
+  epic-8: backlog
+  8-1-créer-son-compte-et-se-connecter-par-son-numéro: backlog
+  8-2-session-sécurisée-et-renouvellement-des-jetons: backlog
+  8-3-code-pin-et-verrouillage: backlog
+  8-4-profil-et-email-de-secours: backlog
+  8-5-récupérer-son-compte-et-changer-de-numéro: backlog
+  8-6-mes-appareils-et-limite-d-appareils: backlog
+  8-7-rattacher-son-ordinateur-par-qr-code: backlog
+  8-8-retrouver-ses-sélections-et-pronostics-sur-tous-ses-appareil: backlog
+  8-9-suivre-une-course: backlog
+  epic-8-retrospective: optional
+
+  epic-9: backlog
+  9-0-vérifier-les-règles-de-paiement-google-play-oq-18: backlog
+  9-1-droits-datés-et-organisations: backlog
+  9-2-le-serveur-filtre-selon-le-palier: backlog
+  9-3-droits-disponibles-hors-ligne: backlog
+  9-4-catalogue-des-offres: backlog
+  9-5-payer-par-mobile-money: backlog
+  9-6-offre-duo: backlog
+  9-7-rapprochement-quotidien: backlog
+  9-8-fonctionnalités-verrouillées-dans-l-app: backlog
+  9-9-quota-d-import-photo-par-palier: backlog
+  9-10-écrans-payants-protégés: backlog
+  9-11-nouvel-appareil-sur-un-compte-payant-alerte-email-et-délai-d: backlog
+  epic-9-retrospective: optional
+
+  epic-10: backlog
+  10-1-accès-séparé-et-double-authentification: backlog
+  10-2-rôles-agent-superviseur-administrateur: backlog
+  10-3-modifications-soumises-à-validation: backlog
+  10-4-journal-d-audit-export-de-la-tête-vérification-et-lecture: backlog
+  10-5-licence-manuelle-à-quatre-yeux: backlog
+  10-6-gérer-les-offres-et-révoquer-un-droit: backlog
+  10-7-le-tableau-de-bord-servi-par-le-back-office: backlog
+  epic-10-retrospective: optional
+
+  epic-11: backlog
+  11-1-pronostics-et-instantanés-publiés-en-ajout-seul: backlog
+  11-2-le-pronostic-publié-servi-avec-la-course-selon-le-palier: backlog
+  11-3-voir-le-pronostic-publié-par-défaut-le-mode-expert-à-part: backlog
+  11-4-un-non-partant-sur-un-pronostic-publié-ajusté: backlog
+  11-5-le-multi-sur-le-jeu-de-probabilités-actif: backlog
+  epic-11-retrospective: optional
+
+  epic-12: backlog
+  epic-12-retrospective: optional
 action_items:
   - epic: 5
-    action: "Story 5.1 est une tâche humaine : vérifier sur pmu.fr les règles actuelles du Multi (et du Mini Multi), dater fixtures/multi_regles.json ; aucune autre story Multi avant."
+    action: "Story 5.1 est une tâche humaine : vérifier sur pmu.fr les règles actuelles
+      du Multi (et du Mini Multi), dater fixtures/multi_regles.json ; aucune autre
+      story Multi avant."
     owner: "Lazyd"
     status: open
   - epic: 5
-    action: "Correction de cap (bmad-correct-course) avant de confier les stories non prêtes (5.4, 5.5, 5.7, 5.8, 5.12, 5.14, 5.15, 5.16, 6.1, 6.5, 6.6, 6.7) : findings élevés F1 à F7 du rapport de préparation."
+    action: "Correction de cap (bmad-correct-course) avant de confier les stories
+      non prêtes (5.4, 5.5, 5.7, 5.8, 5.12, 5.14, 5.15, 5.16, 6.1, 6.5, 6.6, 6.7)
+      : findings élevés F1 à F7 du rapport de préparation."
+    owner: "Lazyd"
+    status: done  # appliquée (proposition 10-18 approuvée le 2026-11-15)
+  - epic: 5
+    action: "F1 : le MULTI est proposé sur ~19 courses/jour (fixture 15/01/2022) et
+      le MINI_MULTI existe (10-13 partants) — décider l'éligibilité et le périmètre
+      Mini Multi."
+    owner: "Lazyd"
+    status: done  # décidé : D quater, Mini Multi hors périmètre
+  - epic: 5
+    action: "F6 : remplacer la règle provisoire des seuils de confiance (2x/3x le
+      hasard), qui classe presque tout pronostic à 4 chevaux en « confiance élevée
+      »."
+    owner: "Lazyd"
+    status: done  # règle « hasard + plancher » provisoire ; seuils définitifs en story 6.8
+  # Correction de cap du 2026-11-15 (service payant) — sprint-change-proposal-2026-11-15.md
+  - epic: 5
+    action: "Décider la proposition de changement du 2026-10-18 (Multi) avant d'appliquer
+      au PRD, au spine et aux epics celle du 2026-11-15 (renumérotation de l'Epic
+      5)."
+    owner: "Lazyd"
+    status: done  # approuvée le 2026-11-15
+  - epic: 9
+    action: "Lancer la consultation juridique au Cameroun (PRD §9.2 : champ de la
+      loi n°2015/012 et PMUC, données personnelles, revente d'un service fondé sur
+      des données PMU non autorisées) — prérequis de mise en vente."
     owner: "Lazyd"
     status: open
-  - epic: 5
-    action: "F1 : le MULTI est proposé sur ~19 courses/jour (fixture 15/01/2022) et le MINI_MULTI existe (10-13 partants) — décider l'éligibilité et le périmètre Mini Multi."
+  - epic: 9
+    action: "Choisir l'agrégateur Mobile Money et le fournisseur de codes SMS/WhatsApp
+      (OQ 15, 17)."
     owner: "Lazyd"
     status: open
-  - epic: 5
-    action: "F6 : remplacer la règle provisoire des seuils de confiance (2x/3x le hasard), qui classe presque tout pronostic à 4 chevaux en « confiance élevée »."
+  - epic: 9
+    action: "Fixer prix des offres, places du Duo, limites d'appareils, délai de verrouillage,
+      délai de changement de numéro et quotas photo (OQ 13, 14)."
+    owner: "Lazyd"
+    status: open
+  - epic: 9
+    action: "D-1 : lancer la version payante malgré le jalon §10 « source de données
+      légitime » non atteint — conditionné à un avis juridique favorable."
+    owner: "Lazyd"
+    status: open
+  # Contrôle de préparation du 2026-11-16 (CONCERNS, constats N1–N4 corrigés)
+  - epic: 7
+    action: "Story 7.1, première tâche : vérifier PostgreSQL, son pilote, Traefik v3 et age sur le VPS (SSE2) — bloque 7.2 et 7.3."
+    owner: "Lazyd"
+    status: open
+  - epic: 7
+    action: "Story 7.8 : fournir la liste des adresses IP autorisées et générer ACCES_RESTREINT_SECRET."
+    owner: "Lazyd"
+    status: open
+  - epic: 7
+    action: "OQ 20 : acheter le nom de domaine, créer les DNS api./app./admin. — bloque la mise en production de 7.3, 7.6, 8.2 et 10.1."
+    owner: "Lazyd"
+    status: open
+  - epic: 7
+    action: "Choisir la destination hors hôte des sauvegardes chiffrées (age) et garder la clé privée hors ligne (story 7.2)."
+    owner: "Lazyd"
+    status: open
+  - epic: 8
+    action: "OQ 19 : choisir le fournisseur d'email (délivrabilité au Cameroun, SPF/DKIM/DMARC) — bloque l'envoi réel de 8.4, 8.5, 9.7, 9.11, 10.4."
+    owner: "Lazyd"
+    status: open
+  - epic: 9
+    action: "Story 9.0 / OQ 18 : vérifier les règles de paiement Google Play avant la story 9.5."
+    owner: "Lazyd"
+    status: open
+  - epic: 9
+    action: "M10 : confirmer en un lot la matrice FR-39 (acces_paliers.json), FR-43, FR-46 et les [ASSUMPTION] des stories 7.6, 8.2, 9.11, 11.2, 11.5 — avant 9.2 et 11.2."
+    owner: "Lazyd"
+    status: open
+  - epic: 11
+    action: "AD-14 : choisir le référentiel de la gate B (cotes H-30 ou de clôture) ; tant qu'il n'est pas atteint, en_evaluation reste vrai et l'argument commercial dit « bat le marché à H-30 »."
     owner: "Lazyd"
     status: open

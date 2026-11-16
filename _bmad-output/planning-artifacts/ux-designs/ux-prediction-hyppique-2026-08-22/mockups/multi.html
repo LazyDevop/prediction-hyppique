@@ -96,6 +96,8 @@ h1 { font-size:15px; text-transform:uppercase; letter-spacing:.6px; color:#E8B33
 .chip.on { border-color:#E8B33C; }
 .chip .state { font-size:11px; color:#8B93A7; margin-top:1px; }
 .chip.on .state { color:#E7E4DA; }
+/* Tickets économisés pour la formule affichée : ligne muted, jamais un coût ni un montant */
+.chip .saved { font-size:11px; color:#8B93A7; margin-top:1px; }
 .sw { width:36px; height:20px; border-radius:6px; background:#0B1120; border:1px solid rgba(255,255,255,.36); position:relative; flex-shrink:0; }
 .sw i { position:absolute; top:2px; left:2px; width:14px; height:14px; border-radius:4px; background:#8B93A7; }
 .chip.on .sw { border-color:#E8B33C; } .chip.on .sw i { left:18px; background:#E8B33C; }
@@ -203,9 +205,9 @@ h1 { font-size:15px; text-transform:uppercase; letter-spacing:.6px; color:#E8B33
 
       <!-- 5. Chevaux les plus probables -->
       <div class="section-label">Chevaux les plus probables <span class="aside">· selon le modèle</span></div>
-      <div class="chip on"><span class="dossard">11</span><div class="mid"><div class="mname">Top 4 estimé 58 % · en base −4 pts</div><div class="state">Base imposée dans tous les tickets</div></div><span class="sw"><i></i></span></div>
-      <div class="chip"><span class="dossard">4</span><div class="mid"><div class="mname">Top 4 estimé 49 % · en base −6 pts</div><div class="state">Interdite comme base</div></div><span class="sw"><i></i></span></div>
-      <div class="chip"><span class="dossard">2</span><div class="mid"><div class="mname">Top 4 estimé 41 % · en base −8 pts</div><div class="state">Interdite comme base</div></div><span class="sw"><i></i></span></div>
+      <div class="chip on"><span class="dossard">11</span><div class="mid"><div class="mname">Top 4 estimé 58 % · en base −4 pts</div><div class="state">Base imposée dans tous les tickets</div><div class="saved">16 tickets en moins en Multi en 7</div></div><span class="sw"><i></i></span></div>
+      <div class="chip"><span class="dossard">4</span><div class="mid"><div class="mname">Top 4 estimé 49 % · en base −6 pts</div><div class="state">Interdite comme base</div><div class="saved">En 2e base : 10 tickets en moins en Multi en 7</div></div><span class="sw"><i></i></span></div>
+      <div class="chip"><span class="dossard">2</span><div class="mid"><div class="mname">Top 4 estimé 41 % · en base −8 pts</div><div class="state">Interdite comme base</div><div class="saved">En 2e base : 10 tickets en moins en Multi en 7</div></div><span class="sw"><i></i></span></div>
 
       <!-- 6. Systèmes -->
       <div class="section-label">Systèmes <span class="aside">· 13 chevaux dont 1 base</span></div>

@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Maquette — Offres et paiement</title>
+<style>
+/*
+  Gouverné par :
+  - DESIGN.md : Colors (or = CTA principal, dossard, n° 1, titres ; vert/rouge réservés à la
+    value : jamais pour « paiement confirmé » ou « échoué »), Typography, Shapes, Elevation &
+    Depth (une sélection ne reçoit jamais de bordure or : texte « Sélectionnée » + bordure
+    border-strong), Components (results-card, dossard-badge, probability-gauge, status-banner
+    et sa variante border-strong, cta-primary, cta-ghost, settings-row)
+  - sprint-change-proposal-2026-11-15 §4.3 : U-2 (locked-feature, teaser-banner), U-3 (ton :
+    aucune promesse de gain, aucun compte à rebours ; rappel de jeu responsable sur Offres et
+    Paiement), U-5 (paiement en attente, confirmé, échoué)
+  - PRD UJ-5, FR-39 (matrice des paliers), FR-40 (aperçu : nombre de chevaux, instantané,
+    palier — aucun nom, dossard ni probabilité), FR-41 (chaque offre dit ce qu'elle débloque),
+    FR-42 (Mobile Money, en attente / confirmé / échec), FR-43 (Duo), §10
+  Prix : ouverts (données de configuration) — affichés « … FCFA », aucun chiffre inventé.
+  Colonne 1 : Résultats en palier Gratuit (pronostic du matin, teaser-banner H-30, locked-feature).
+  Colonne 2 : Offres (Turfiste / Expert, pass journée, pass semaine, mensuel, Duo).
+  Colonne 3 : Paiement — choix MTN MoMo / Orange Money, numéro, en attente de confirmation.
+  Colonne 4 : issue du paiement — confirmé (haut) et échoué (bas).
+*/
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  background:#05070d; font-family:'Segoe UI',Roboto,system-ui,-apple-system,sans-serif;
+  padding:40px 20px; display:flex; gap:40px; flex-wrap:wrap; justify-content:center;
+  font-variant-numeric:tabular-nums;
+}
+.page-caption { width:100%; color:#8B93A7; font-size:12px; text-align:center; letter-spacing:.5px; text-transform:uppercase; }
+.caption { color:#8B93A7; font-size:12px; text-align:center; margin-bottom:10px; letter-spacing:.5px; text-transform:uppercase; max-width:390px; }
+.frame { width:390px; height:792px; background:#0B1120; border-radius:28px; border:6px solid #1a1f2e; overflow:hidden; box-shadow:0 0 0 1px rgba(255,255,255,.04); display:flex; flex-direction:column; }
+.frame.half { height:386px; }
+.frame + .caption { margin-top:20px; }
+.screen { flex:1; min-height:0; overflow-y:auto; padding:14px 14px 18px; color:#E7E4DA; }
+.screen::-webkit-scrollbar{ width:0; }
+
+.top { display:flex; align-items:center; gap:10px; min-height:48px; }
+.back { color:#8B93A7; font-size:18px; min-width:48px; min-height:48px; display:flex; align-items:center; }
+h1 { font-size:15px; text-transform:uppercase; letter-spacing:.6px; color:#E8B33C; flex:1; }
+.tier { font-size:11px; text-transform:uppercase; letter-spacing:.6px; color:#E7E4DA; border:1px solid rgba(255,255,255,.36); border-radius:6px; padding:3px 7px; }
+.race { font-size:12px; } .race b { font-weight:700; }
+.meta { font-size:11px; color:#8B93A7; margin-top:2px; line-height:1.4; }
+.label { font-size:11px; text-transform:uppercase; letter-spacing:.7px; color:#8B93A7; }
+.section-label { color:#E8B33C; font-size:11px; text-transform:uppercase; letter-spacing:.7px; margin:18px 0 8px; }
+.section-label .aside { color:#8B93A7; }
+.tagm { font-size:11px; text-transform:uppercase; letter-spacing:.6px; color:#8B93A7; border:1px solid rgba(255,255,255,.36); border-radius:6px; padding:2px 6px; display:inline-block; margin-top:6px; }
+
+/* Bandeau des instantanés : l'état verrouillé est écrit, pas seulement grisé */
+.snaps { display:grid; grid-template-columns:repeat(5, 1fr); gap:5px; margin-top:12px; }
+.snap { background:#131C2E; border:1px solid rgba(255,255,255,.36); border-radius:8px; min-height:48px; padding:5px 2px; text-align:center; font-size:12px; font-weight:700; }
+.snap small { display:block; font-size:10px; font-weight:400; color:#8B93A7; margin-top:1px; }
+.snap.cur { border:2px solid #E7E4DA; }
+.snap.lock { color:#8B93A7; font-weight:600; }
+
+/* teaser-banner (U-2) : status-banner neutre, jamais or ni couleur seule */
+.teaser { background:#131C2E; border:2px solid #E7E4DA; border-radius:8px; padding:10px 12px; margin-top:12px; font-size:12.5px; line-height:1.45; }
+.teaser b { font-weight:700; }
+.teaser .row { display:flex; justify-content:space-between; align-items:center; gap:10px; margin-top:8px; }
+.teaser .ghost { padding:0 14px; display:flex; align-items:center; }
+
+.results-card { background:#0F1728; border:1px solid rgba(255,255,255,.36); border-radius:12px; padding:11px 14px; margin-bottom:8px; }
+.results-card.top1 { border-color:#E8B33C; background:linear-gradient(rgba(232,179,60,.12),rgba(232,179,60,.12)),#0F1728; }
+.rc-head { display:flex; align-items:center; gap:10px; }
+.rank { font-size:11px; color:#8B93A7; min-width:22px; }
+.results-card.top1 .rank { color:#E7E4DA; }
+.dossard { background:#E8B33C; color:#14100A; font-weight:800; border-radius:6px; min-width:26px; text-align:center; padding:4px 6px; font-size:13px; flex-shrink:0; }
+.rc-name { font-weight:700; font-size:14px; flex:1; }
+.rc-p { font-size:14px; font-weight:700; }
+.rc-p small { display:block; font-size:10px; color:#8B93A7; font-weight:400; text-align:right; }
+.results-card.top1 .rc-p small { color:#E7E4DA; }
+.gauge .bar { height:7px; border-radius:4px; background:#131C2E; border:1px solid rgba(255,255,255,.36); position:relative; overflow:hidden; margin:7px 0 0; }
+.gauge .bar i { position:absolute; left:0; top:0; bottom:0; border-radius:3px; background:#E8B33C; }
+
+/* locked-feature (U-2) : remplace le contenu sur place — rien n'est flouté, rien n'a été reçu */
+.locked { background:#0F1728; border:1px dashed rgba(255,255,255,.36); border-radius:12px; padding:12px 14px; margin-top:10px; }
+.locked .t { font-size:13px; font-weight:700; }
+.locked .d { font-size:11.5px; color:#8B93A7; margin-top:3px; line-height:1.4; }
+.locked .ghost { margin-top:10px; }
+
+.card { background:#0F1728; border:1px solid rgba(255,255,255,.36); border-radius:12px; padding:12px 14px; }
+.banner { background:#131C2E; border:1px solid rgba(255,255,255,.36); border-radius:8px; padding:9px 11px; font-size:12px; line-height:1.45; margin-top:10px; }
+.banner.strong { border:2px solid #E7E4DA; }
+.banner b { font-weight:700; }
+
+/* Offres : une ligne par offre, la sélection est écrite (« Sélectionnée ») */
+.offer { background:#0F1728; border:1px solid rgba(255,255,255,.36); border-radius:12px; padding:11px 12px; margin-bottom:8px; display:flex; gap:10px; min-height:48px; }
+.offer.sel { border:2px solid #E7E4DA; }
+.radio { width:20px; height:20px; border-radius:6px; border:1px solid rgba(255,255,255,.36); background:#131C2E; flex-shrink:0; margin-top:1px; display:flex; align-items:center; justify-content:center; }
+.offer.sel .radio i, .pay.sel .radio i { width:10px; height:10px; border-radius:3px; background:#E7E4DA; }
+.offer .body { flex:1; min-width:0; }
+.offer .head { display:flex; justify-content:space-between; gap:8px; align-items:baseline; flex-wrap:wrap; }
+.offer .name { font-size:13.5px; font-weight:700; }
+.offer .price { font-size:13px; font-weight:700; white-space:nowrap; }
+.offer .unl { font-size:11.5px; color:#8B93A7; margin-top:3px; line-height:1.4; }
+.offer .unl b { color:#E7E4DA; font-weight:600; }
+.selflag { font-size:11px; text-transform:uppercase; letter-spacing:.6px; color:#E7E4DA; font-weight:700; margin-top:4px; }
+
+/* Paiement */
+.pay { background:#0F1728; border:1px solid rgba(255,255,255,.36); border-radius:12px; padding:0 12px; min-height:56px; display:flex; align-items:center; gap:10px; margin-bottom:8px; font-size:13.5px; font-weight:600; }
+.pay.sel { border:2px solid #E7E4DA; }
+.pay .flag { margin-left:auto; font-size:11px; text-transform:uppercase; letter-spacing:.6px; font-weight:700; }
+.pay.dim { color:#8B93A7; }
+.field { background:#131C2E; border:1px solid rgba(255,255,255,.36); border-radius:8px; min-height:52px; display:flex; align-items:center; padding:0 12px; font-size:16px; margin-top:6px; }
+.field.dim { color:#8B93A7; }
+.kv { display:flex; justify-content:space-between; flex-wrap:wrap; gap:2px 10px; font-size:12.5px; padding:5px 0; border-bottom:1px solid rgba(255,255,255,.08); }
+.kv span:first-child { color:#8B93A7; }
+.kv:last-child { border-bottom:none; }
+.big { font-size:18px; font-weight:700; line-height:1.3; margin:6px 0 4px; }
+
+.cta { background:#E8B33C; color:#14100A; border-radius:10px; text-align:center; font-weight:800; font-size:14px; letter-spacing:.6px; padding:13px; text-transform:uppercase; min-height:48px; }
+.cta.off { background:#131C2E; color:#8B93A7; border:1px solid rgba(255,255,255,.36); }
+.ghost { background:#131C2E; border:1px solid rgba(255,255,255,.36); border-radius:10px; color:#E7E4DA; font-size:13px; padding:12px 14px; text-align:center; font-weight:600; min-height:48px; }
+.ghost.small { margin-top:8px; }
+.bar { flex-shrink:0; background:#0B1120; border-top:1px solid rgba(255,255,255,.36); padding:12px 14px 14px; display:flex; flex-direction:column; gap:8px; }
+.disclaimer { margin-top:16px; font-size:11px; color:#8B93A7; text-align:center; font-style:italic; padding:10px; border-top:1px solid rgba(255,255,255,.14); line-height:1.4; }
+.spin { display:inline-block; }
+</style>
+</head>
+<body>
+
+<div class="page-caption">Offres et paiement — états : Résultats Gratuit (aperçu + verrou) · Offres · Paiement en attente · confirmé / échoué</div>
+
+<!-- 1. Résultats, palier Gratuit -->
+<div>
+  <div class="caption">Résultats — palier Gratuit, teaser-banner H-30 et locked-feature (UJ-5, FR-40)</div>
+  <div class="frame">
+    <div class="screen">
+      <div class="top"><span class="back">←</span><h1>Résultats</h1><span class="tier">Gratuit</span></div>
+      <div class="race"><b>R1C4 · Vincennes</b> · Prix de Bretagne · départ 15 h 00</div>
+      <div class="meta">16 partants · Pronostic du matin, données de 8 h 00</div>
+      <span class="tagm">modèle en cours d'évaluation</span>
+
+      <div class="snaps">
+        <div class="snap cur">Matin<small>8 h 00 · affiché</small></div>
+        <div class="snap lock">H-60<small>🔒 Turfiste</small></div>
+        <div class="snap lock">H-30<small>🔒 Turfiste</small></div>
+        <div class="snap lock">H-15<small>🔒 Turfiste</small></div>
+        <div class="snap lock">H-10<small>🔒 Expert</small></div>
+      </div>
+
+      <div class="teaser">
+        <b>Le classement a changé à H-30 pour 3 chevaux — palier Turfiste</b>
+        <div class="meta">Instantané de 14 h 30. Le palier Gratuit affiche le pronostic du matin.</div>
+        <div class="row"><span class="meta" style="margin:0">Débloque H-60, H-30 et H-15</span><span class="ghost">Voir les offres</span></div>
+      </div>
+
+      <div class="section-label">Pronostic du matin <span class="aside">· probabilité de victoire</span></div>
+      <div class="results-card top1">
+        <div class="rc-head"><span class="rank">1er</span><span class="dossard">6</span><span class="rc-name">Galion du Rib</span><span class="rc-p">27,4 %<small>victoire</small></span></div>
+        <div class="gauge"><div class="bar"><i style="width:68%"></i></div></div>
+      </div>
+      <div class="results-card">
+        <div class="rc-head"><span class="rank">2e</span><span class="dossard">11</span><span class="rc-name">Brise de Mars</span><span class="rc-p">18,9 %<small>victoire</small></span></div>
+        <div class="gauge"><div class="bar"><i style="width:47%"></i></div></div>
+      </div>
+      <div class="results-card">
+        <div class="rc-head"><span class="rank">3e</span><span class="dossard">2</span><span class="rc-name">Hêtre Pourpre</span><span class="rc-p">12,1 %<small>victoire</small></span></div>
+        <div class="gauge"><div class="bar"><i style="width:30%"></i></div></div>
+      </div>
+      <div class="results-card">
+        <div class="rc-head"><span class="rank">4e</span><span class="dossard">15</span><span class="rc-name">Jade de Vire</span><span class="rc-p">9,6 %<small>victoire</small></span></div>
+        <div class="gauge"><div class="bar"><i style="width:24%"></i></div></div>
+      </div>
+
+      <div class="locked">
+        <div class="t">🔒 Value, mise suggérée et cote du marché</div>
+        <div class="d">Palier Turfiste. Disponibles sur cette course avec les instantanés H-60, H-30 et H-15.</div>
+        <div class="ghost">Voir les offres</div>
+      </div>
+      <div class="locked">
+        <div class="t">🔒 Paris combinés et Multi</div>
+        <div class="d">Palier Expert, avec l'instantané H-10.</div>
+        <div class="ghost">Voir les offres</div>
+      </div>
+
+      <div class="disclaimer">Outil d'aide à la décision — aucun modèle ne garantit un gain. Jouez uniquement ce que vous pouvez vous permettre de perdre.</div>
+    </div>
+  </div>
+</div>
+
+<!-- 2. Offres -->
+<div>
+  <div class="caption">Offres — depuis l'aperçu H-30 de R1C4 (FR-41, FR-43)</div>
+  <div class="frame">
+    <div class="screen">
+      <div class="top"><span class="back">←</span><h1>Offres</h1><span class="tier">Gratuit</span></div>
+      <div class="meta">Depuis : R1C4 · Vincennes · départ 15 h 00</div>
+      <div class="meta">Paiement par MTN MoMo ou Orange Money.</div>
+
+      <div class="section-label">Turfiste <span class="aside">· instantanés H-60, H-30, H-15</span></div>
+      <div class="offer sel">
+        <span class="radio"><i></i></span>
+        <div class="body">
+          <div class="head"><span class="name">Pass semaine Turfiste</span><span class="price">… FCFA</span></div>
+          <div class="unl">7 jours. <b>Débloque l'instantané H-30 de cette course</b>, ainsi que H-60 et H-15, la value, la mise suggérée et l'historique complet des chevaux.</div>
+          <div class="selflag">Sélectionnée</div>
+        </div>
+      </div>
+      <div class="offer">
+        <span class="radio"><i></i></span>
+        <div class="body">
+          <div class="head"><span class="name">Mensuel Turfiste</span><span class="price">… FCFA</span></div>
+          <div class="unl">30 jours. Le même contenu que le pass semaine Turfiste.</div>
+        </div>
+      </div>
+
+      <div class="section-label">Expert <span class="aside">· + instantané H-10</span></div>
+      <div class="offer">
+        <span class="radio"><i></i></span>
+        <div class="body">
+          <div class="head"><span class="name">Pass journée Expert</span><span class="price">… FCFA</span></div>
+          <div class="unl">24 h. Tout le palier Turfiste, plus <b>l'instantané H-10</b>, les paris combinés, le moteur expert réglable et le Multi.</div>
+        </div>
+      </div>
+      <div class="offer">
+        <span class="radio"><i></i></span>
+        <div class="body">
+          <div class="head"><span class="name">Pass semaine Expert</span><span class="price">… FCFA</span></div>
+          <div class="unl">7 jours. Le même contenu que le pass journée Expert.</div>
+        </div>
+      </div>
+      <div class="offer">
+        <span class="radio"><i></i></span>
+        <div class="body">
+          <div class="head"><span class="name">Mensuel Expert</span><span class="price">… FCFA</span></div>
+          <div class="unl">30 jours. Le même contenu que le pass journée Expert.</div>
+        </div>
+      </div>
+
+      <div class="section-label">Duo <span class="aside">· chaque palier, chaque durée</span></div>
+      <div class="offer">
+        <span class="radio"><i></i></span>
+        <div class="body">
+          <div class="head"><span class="name">Offre Duo</span><span class="price">… FCFA</span></div>
+          <div class="unl">Partagez votre palier avec un ou des proches. Chacun garde son compte et ses appareils ; tous ont les mêmes dates de fin que vous.</div>
+        </div>
+      </div>
+
+      <div class="banner">ℹ️ Les prix et les durées sont indiqués avant tout paiement.</div>
+      <div class="disclaimer">Jeu responsable — un pronostic reste une estimation : aucun palier ne garantit un gain. Jouez uniquement ce que vous pouvez vous permettre de perdre.</div>
+    </div>
+    <div class="bar"><div class="cta">Continuer vers le paiement</div></div>
+  </div>
+</div>
+
+<!-- 3. Paiement — en attente -->
+<div>
+  <div class="caption">Paiement — Mobile Money, en attente de confirmation (FR-42)</div>
+  <div class="frame">
+    <div class="screen">
+      <div class="top"><span class="back">←</span><h1>Paiement</h1></div>
+      <div class="card">
+        <div class="kv"><span>Offre</span><span>Pass semaine Turfiste</span></div>
+        <div class="kv"><span>Durée</span><span>7 jours</span></div>
+        <div class="kv"><span>Prix</span><span>… FCFA</span></div>
+      </div>
+
+      <div class="section-label">Moyen de paiement</div>
+      <div class="pay sel"><span class="radio"><i></i></span>MTN MoMo<span class="flag">Sélectionné</span></div>
+      <div class="pay dim"><span class="radio"></span>Orange Money</div>
+
+      <div class="label" style="margin-top:14px">Numéro Mobile Money</div>
+      <div class="field dim">+237 6 77 12 34 56</div>
+      <div class="meta">Le numéro de votre compte est proposé ; vous pouvez en saisir un autre.</div>
+
+      <div class="banner strong">
+        <b><span class="spin">⏳</span> Paiement en attente de confirmation — validez sur votre téléphone</b>
+        <div style="margin-top:5px">Une demande MTN MoMo vient d'arriver sur le +237 6 77 12 34 56. Saisissez votre code Mobile Money pour la valider.</div>
+        <div class="meta" style="margin-top:6px">Le pass s'active dès que MTN MoMo confirme, même si vous quittez cet écran.</div>
+      </div>
+
+      <div class="disclaimer">Jeu responsable — aucun palier ne garantit un gain. Jouez uniquement ce que vous pouvez vous permettre de perdre.</div>
+    </div>
+    <div class="bar">
+      <div class="cta off">Paiement en cours…</div>
+      <div class="ghost">Revenir à la course</div>
+    </div>
+  </div>
+</div>
+
+<!-- 4. Issue : confirmé / échoué -->
+<div>
+  <div class="caption">Paiement — confirmé (UJ-5, climax)</div>
+  <div class="frame half">
+    <div class="screen">
+      <div class="top"><h1>Paiement</h1><span class="tier">Turfiste</span></div>
+      <div class="banner strong">
+        <div class="label">Paiement confirmé</div>
+        <div class="big">✓ Pass semaine actif jusqu'au 22/11</div>
+        <div>Les instantanés H-60, H-30 et H-15 sont débloqués sur R1C4, sans redémarrer l'app.</div>
+      </div>
+      <div class="meta" style="margin-top:8px">Fin du pass : dimanche 22/11 à 14 h 41. Ensuite, retour au palier Gratuit ; vos courses et réglages sont conservés.</div>
+      <div class="cta" style="margin-top:12px">Voir R1C4 à H-30</div>
+    </div>
+  </div>
+
+  <div class="caption">Paiement — échoué ou non confirmé (UJ-5, edge case)</div>
+  <div class="frame half">
+    <div class="screen">
+      <div class="top"><span class="back">←</span><h1>Paiement</h1><span class="tier">Gratuit</span></div>
+      <div class="banner strong">
+        <div class="label">Paiement non abouti</div>
+        <div class="big">Aucun pass n'a été activé</div>
+        <div>MTN MoMo n'a pas confirmé le paiement. Si un montant a été débité, le pass s'activera dès la confirmation, sans action de votre part.</div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <div class="cta" style="flex:1">Réessayer</div>
+        <div class="ghost" style="flex:1">Changer de moyen</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

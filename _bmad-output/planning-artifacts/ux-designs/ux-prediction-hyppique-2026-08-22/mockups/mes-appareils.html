@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Maquette — Profil et appareils</title>
+<style>
+/*
+  Gouverné par :
+  - DESIGN.md : Colors (or = titre, en-têtes de section, CTA principal ; aucun vert/rouge pour
+    « vérifié » / « non vérifié » : l'état est écrit), Typography, Shapes, Elevation & Depth,
+    Components (settings-row, status-banner et border-strong, cta-primary, cta-ghost)
+  - sprint-change-proposal-2026-11-15 §4.3 : U-1 (Profil, Mes appareils, Appairage, Appareil
+    bloqué), U-5 (appareil bloqué)
+  - PRD UJ-6, FR-34 (rappel non bloquant si email non vérifié sur un compte payant), FR-36
+    (liste, retrait à distance, mention du nouvel appareil, blocage sans déconnecter personne),
+    FR-37 (QR 2 min, usage unique, approbation explicite nommant le navigateur), FR-43 (Duo)
+  Limite de 2 appareils : valeur de la consigne de maquette (Open Question 14 encore ouverte).
+  Colonne 1 : Profil (numéro, email de secours non vérifié, palier et date de fin, Duo).
+  Colonne 2 : Mes appareils (device-row : type, dernière activité, « Retirer »).
+  Colonne 3 : téléphone — approbation d'un appairage par QR (« Autoriser Chrome sur Windows ? »).
+  Colonne 4 : nouvel appareil bloqué (« Limite de 2 appareils atteinte »).
+*/
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  background:#05070d; font-family:'Segoe UI',Roboto,system-ui,-apple-system,sans-serif;
+  padding:40px 20px; display:flex; gap:40px; flex-wrap:wrap; justify-content:center;
+  font-variant-numeric:tabular-nums;
+}
+.page-caption { width:100%; color:#8B93A7; font-size:12px; text-align:center; letter-spacing:.5px; text-transform:uppercase; }
+.caption { color:#8B93A7; font-size:12px; text-align:center; margin-bottom:10px; letter-spacing:.5px; text-transform:uppercase; max-width:390px; }
+.frame { width:390px; height:792px; background:#0B1120; border-radius:28px; border:6px solid #1a1f2e; overflow:hidden; box-shadow:0 0 0 1px rgba(255,255,255,.04); display:flex; flex-direction:column; }
+.screen { flex:1; min-height:0; overflow-y:auto; padding:14px 14px 18px; color:#E7E4DA; }
+.screen::-webkit-scrollbar{ width:0; }
+
+.top { display:flex; align-items:center; gap:10px; min-height:48px; }
+.back { color:#8B93A7; font-size:18px; min-width:48px; min-height:48px; display:flex; align-items:center; }
+h1 { font-size:15px; text-transform:uppercase; letter-spacing:.6px; color:#E8B33C; flex:1; }
+.tier { font-size:11px; text-transform:uppercase; letter-spacing:.6px; color:#E7E4DA; border:1px solid rgba(255,255,255,.36); border-radius:6px; padding:3px 7px; }
+.meta { font-size:11px; color:#8B93A7; margin-top:2px; line-height:1.4; }
+.label { font-size:11px; text-transform:uppercase; letter-spacing:.7px; color:#8B93A7; }
+.section-label { color:#E8B33C; font-size:11px; text-transform:uppercase; letter-spacing:.7px; margin:18px 0 4px; }
+.section-label .aside { color:#8B93A7; }
+.lead { font-size:20px; font-weight:700; margin:14px 0 6px; line-height:1.3; }
+.sub { font-size:13px; color:#8B93A7; line-height:1.45; }
+
+/* settings-row : libellé muted à gauche, valeur text à droite, séparateur line */
+.srow { display:flex; justify-content:space-between; align-items:center; gap:10px; min-height:52px; padding:8px 0; border-bottom:1px solid rgba(255,255,255,.08); font-size:13px; }
+.srow .k { color:#8B93A7; font-size:12.5px; }
+.srow .v { text-align:right; }
+.srow .v small { display:block; font-size:11px; color:#8B93A7; margin-top:1px; }
+.srow .act { font-size:12.5px; font-weight:600; text-decoration:underline; text-underline-offset:3px; min-height:48px; display:flex; align-items:center; }
+.srow.nav .v { color:#E7E4DA; font-weight:600; }
+.chev { color:#8B93A7; margin-left:6px; }
+.state { font-size:11px; text-transform:uppercase; letter-spacing:.6px; font-weight:700; border:1px solid rgba(255,255,255,.36); border-radius:6px; padding:2px 6px; display:inline-block; }
+.state.muted { color:#8B93A7; font-weight:600; }
+
+.banner { background:#131C2E; border:1px solid rgba(255,255,255,.36); border-radius:8px; padding:9px 11px; font-size:12px; line-height:1.45; margin-top:10px; }
+.banner.strong { border:2px solid #E7E4DA; }
+.banner b { font-weight:700; }
+.banner .ghost { margin-top:8px; }
+
+.card { background:#0F1728; border:1px solid rgba(255,255,255,.36); border-radius:12px; padding:12px 14px; margin-top:10px; }
+.kv { display:flex; justify-content:space-between; flex-wrap:wrap; gap:2px 10px; font-size:12.5px; padding:5px 0; border-bottom:1px solid rgba(255,255,255,.08); }
+.kv span:first-child { color:#8B93A7; }
+.kv:last-child { border-bottom:none; }
+
+/* device-row : icône + type, détail, dernière activité, action « Retirer » 48dp */
+.drow { display:flex; align-items:center; gap:12px; min-height:64px; padding:10px 0; border-bottom:1px solid rgba(255,255,255,.08); }
+.dicon { width:40px; height:40px; border-radius:8px; background:#131C2E; border:1px solid rgba(255,255,255,.36); display:flex; align-items:center; justify-content:center; font-size:19px; flex-shrink:0; }
+.dmid { flex:1; min-width:0; }
+.dname { font-size:13.5px; font-weight:700; }
+.dname .cur { font-size:11px; text-transform:uppercase; letter-spacing:.6px; color:#E7E4DA; margin-left:6px; font-weight:700; }
+.dname .new { font-size:11px; text-transform:uppercase; letter-spacing:.6px; color:#8B93A7; margin-left:6px; font-weight:600; }
+.dsub { font-size:11.5px; color:#8B93A7; margin-top:2px; line-height:1.4; }
+.ghost { background:#131C2E; border:1px solid rgba(255,255,255,.36); border-radius:10px; color:#E7E4DA; font-size:13px; padding:12px 14px; text-align:center; font-weight:600; min-height:48px; }
+.ghost.inline { padding:0 14px; display:flex; align-items:center; flex-shrink:0; }
+.ghost.small { margin-top:8px; }
+.cta { background:#E8B33C; color:#14100A; border-radius:10px; text-align:center; font-weight:800; font-size:14px; letter-spacing:.6px; padding:13px; text-transform:uppercase; min-height:48px; }
+.bar { flex-shrink:0; background:#0B1120; border-top:1px solid rgba(255,255,255,.36); padding:12px 14px 14px; display:flex; flex-direction:column; gap:8px; }
+.count { display:flex; justify-content:space-between; align-items:baseline; margin-top:10px; font-size:13px; }
+.count b { font-size:18px; }
+
+/* Approbation QR : le navigateur est nommé en grand */
+.who { display:flex; gap:12px; align-items:center; margin-top:16px; }
+.who .dicon { width:56px; height:56px; font-size:26px; }
+.who .dname { font-size:16px; }
+.disclaimer { margin-top:16px; font-size:11px; color:#8B93A7; text-align:center; padding:10px; border-top:1px solid rgba(255,255,255,.14); line-height:1.4; }
+</style>
+</head>
+<body>
+
+<div class="page-caption">Profil et appareils — états : Profil · Mes appareils · approbation d'un appairage QR · appareil bloqué</div>
+
+<!-- 1. Profil -->
+<div>
+  <div class="caption">Profil — compte Expert, email de secours non vérifié (FR-34)</div>
+  <div class="frame"><div class="screen">
+    <div class="top"><span class="back">←</span><h1>Profil</h1><span class="tier">Expert</span></div>
+
+    <div class="banner strong"><b>Ajoutez un email de secours vérifié.</b> Il permet de récupérer votre compte si vous perdez votre numéro.
+      <div class="ghost">Renvoyer le lien de vérification</div>
+    </div>
+
+    <div class="section-label">Compte</div>
+    <div class="srow"><span class="k">Numéro</span><span class="v">+237 6 77 12 34 56</span></div>
+    <div class="srow"><span class="k">Email de secours</span><span class="v">marc@exemple.cm<small><span class="state muted">Non vérifié</span></small></span></div>
+    <div class="srow"><span class="k">Changer de numéro</span><span class="act">Démarrer</span></div>
+
+    <div class="section-label">Palier</div>
+    <div class="srow"><span class="k">Palier actif</span><span class="v">Expert<small>Mensuel Expert</small></span></div>
+    <div class="srow"><span class="k">Fin du droit</span><span class="v">12/12 à 21 h 15<small>Ensuite : palier Gratuit, données conservées</small></span></div>
+    <div class="srow nav"><span class="k">Offres</span><span class="v">Voir les offres<span class="chev">▸</span></span></div>
+
+    <div class="section-label">Duo <span class="aside">· vous êtes titulaire</span></div>
+    <div class="srow"><span class="k">Membre</span><span class="v">+237 6 99 •• •• 21<small>Expert jusqu'au 12/12, comme vous</small></span></div>
+    <div class="srow"><span class="k">Gérer le Duo</span><span class="act">Inviter · Retirer</span></div>
+
+    <div class="section-label">Sécurité</div>
+    <div class="srow nav"><span class="k">Mes appareils</span><span class="v">2 sur 2<span class="chev">▸</span></span></div>
+    <div class="srow nav"><span class="k">Scanner un QR code</span><span class="v">Web app<span class="chev">▸</span></span></div>
+    <div class="srow nav"><span class="k">Code PIN et verrouillage</span><span class="v">Modifier<span class="chev">▸</span></span></div>
+    <div class="ghost small">Se déconnecter de ce téléphone</div>
+  </div></div>
+</div>
+
+<!-- 2. Mes appareils -->
+<div>
+  <div class="caption">Mes appareils — liste, retrait à distance (FR-36)</div>
+  <div class="frame"><div class="screen">
+    <div class="top"><span class="back">←</span><h1>Mes appareils</h1></div>
+    <div class="count"><span class="label">Appareils rattachés</span><span><b>2</b> sur 2 · limite du palier Expert</span></div>
+
+    <div class="banner">ℹ️ Nouvel appareil rattaché : <b>Chrome sur Windows</b>, samedi 14/11 à 21 h 41. Ce n'est pas vous ? Retirez-le.</div>
+
+    <div class="drow">
+      <span class="dicon">📱</span>
+      <div class="dmid"><div class="dname">Samsung Galaxy A14<span class="cur">Ce téléphone</span></div><div class="dsub">Application Android · actif maintenant</div></div>
+    </div>
+    <div class="drow">
+      <span class="dicon">💻</span>
+      <div class="dmid"><div class="dname">Chrome sur Windows<span class="new">Nouveau</span></div><div class="dsub">Navigateur · web app · dernière activité hier à 23 h 12</div></div>
+      <span class="ghost inline">Retirer</span>
+    </div>
+
+    <div class="meta" style="margin-top:12px">Chaque navigateur connecté compte comme un appareil. Retirer un appareil le déconnecte tout de suite ; il devra se reconnecter par code SMS ou QR code.</div>
+
+    <div class="ghost" style="margin-top:16px">Scanner le QR code d'une web app</div>
+    <div class="ghost small">Découvrir l'offre Duo</div>
+  </div></div>
+</div>
+
+<!-- 3. Approbation QR (téléphone) -->
+<div>
+  <div class="caption">Téléphone — approbation d'un appairage par QR code (UJ-6, FR-37)</div>
+  <div class="frame">
+    <div class="screen">
+      <div class="top"><span class="back">←</span><h1>Appairage</h1></div>
+      <div class="lead">Autoriser Chrome sur Windows ?</div>
+      <div class="sub">Cet ordinateur demande à rejoindre votre compte.</div>
+
+      <div class="who">
+        <span class="dicon">💻</span>
+        <div><div class="dname">Chrome sur Windows</div><div class="dsub">Web app · demande reçue à 21 h 40</div></div>
+      </div>
+
+      <div class="card">
+        <div class="kv"><span>Ce qu'il verra</span><span>vos courses suivies, réglages et pronostics retenus</span></div>
+        <div class="kv"><span>Appareils après accord</span><span>2 sur 2</span></div>
+        <div class="kv"><span>QR code</span><span>valable encore 1 min 32 · usage unique</span></div>
+      </div>
+
+      <div class="banner strong"><b>N'autorisez que si vous êtes devant cet ordinateur</b> et venez de scanner son QR code. Personne de notre équipe ne vous demandera de le faire.</div>
+      <div class="meta" style="margin-top:8px">Un SMS de confirmation partira au +237 6 •• •• •• 56.</div>
+    </div>
+    <div class="bar">
+      <div class="cta">Autoriser</div>
+      <div class="ghost">Refuser</div>
+    </div>
+  </div>
+</div>
+
+<!-- 4. Appareil bloqué -->
+<div>
+  <div class="caption">Nouvel appareil — bloqué au-delà de la limite (UJ-6 edge case, FR-36)</div>
+  <div class="frame">
+    <div class="screen">
+      <div class="top"><h1>Appareil bloqué</h1></div>
+      <div class="lead">Limite de 2 appareils atteinte</div>
+      <div class="sub">Votre compte est déjà ouvert sur 2 appareils, le maximum du palier Expert. Ce téléphone n'a pas été rattaché ; aucun autre appareil n'a été déconnecté.</div>
+
+      <div class="section-label">Appareils rattachés</div>
+      <div class="drow">
+        <span class="dicon">📱</span>
+        <div class="dmid"><div class="dname">Samsung Galaxy A14</div><div class="dsub">Application Android · actif il y a 5 min</div></div>
+      </div>
+      <div class="drow">
+        <span class="dicon">💻</span>
+        <div class="dmid"><div class="dname">Chrome sur Windows</div><div class="dsub">Navigateur · dernière activité hier à 23 h 12</div></div>
+      </div>
+
+      <div class="banner">ℹ️ Pour utiliser ce téléphone, retirez un appareil. L'offre Duo, elle, donne à un proche son propre compte et ses propres appareils.</div>
+    </div>
+    <div class="bar">
+      <div class="cta">Retirer un appareil</div>
+      <div class="ghost">Découvrir l'offre Duo</div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

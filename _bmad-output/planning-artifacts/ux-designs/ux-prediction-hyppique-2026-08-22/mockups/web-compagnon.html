@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Maquette — Web compagnon</title>
+<style>
+/*
+  Gouverné par :
+  - DESIGN.md : Colors, Typography (chiffres tabulaires), Shapes, Elevation & Depth,
+    Components (results-card, dossard-badge, probability-gauge or/bleu, value-badge,
+    multi-badge, status-banner, cta-primary, cta-ghost, focus-indicator) — les mêmes
+    composants que sur le téléphone, posés sur deux colonnes
+  - sprint-change-proposal-2026-11-15 §4.3 : U-1 (Appairage côté web), U-4 (mise en page
+    large deux colonnes, pas de mode hors ligne et la page le dit, aucune fonction propre au web)
+  - PRD UJ-6, FR-37 (QR 2 min, usage unique, repli par code SMS), FR-38 (synchronisation),
+    FR-51/FR-52 (pronostic du matin, instantanés H-60, H-30, H-15, H-10 avec leur heure ;
+    « modèle en cours d'évaluation »), FR-46 (le web n'a pas de protection de capture : assumé)
+  Largeur de référence : navigateur de bureau, environ 1280 px.
+  État 1 : connecté (Expert) — liste des courses suivies à gauche, détail de la course avec le
+           pronostic publié H-30 à droite.
+  État 2 : non connecté — écran d'appairage par QR code (QR dessiné en CSS, illustration).
+  Chiffres illustratifs.
+*/
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  background:#05070d; font-family:'Segoe UI',Roboto,system-ui,-apple-system,sans-serif;
+  padding:40px 20px; display:flex; flex-direction:column; gap:40px; align-items:center;
+  font-variant-numeric:tabular-nums;
+}
+.page-caption { color:#8B93A7; font-size:12px; text-align:center; letter-spacing:.5px; text-transform:uppercase; }
+.caption { color:#8B93A7; font-size:12px; text-align:center; margin-bottom:10px; letter-spacing:.5px; text-transform:uppercase; }
+
+/* Cadre navigateur */
+.browser { width:1280px; background:#0B1120; border-radius:12px; border:6px solid #1a1f2e; overflow:hidden; box-shadow:0 0 0 1px rgba(255,255,255,.04); }
+.chrome { background:#1a1f2e; display:flex; align-items:center; gap:10px; padding:6px 12px 10px; }
+.chrome .dots { display:flex; gap:6px; } .chrome .dots i { width:11px; height:11px; border-radius:6px; background:#2a3142; }
+.chrome .url { flex:1; background:#0F1728; border-radius:8px; color:#8B93A7; font-size:12px; padding:6px 12px; }
+.chrome .tab { color:#E7E4DA; font-size:12px; padding:0 8px; }
+.viewport { height:800px; display:flex; flex-direction:column; color:#E7E4DA; }
+
+/* En-tête de la web app */
+.appbar { display:flex; align-items:center; gap:16px; padding:0 24px; min-height:60px; border-bottom:1px solid rgba(255,255,255,.36); flex-shrink:0; }
+h1 { font-size:15px; text-transform:uppercase; letter-spacing:.6px; color:#E8B33C; }
+.appbar .nav { display:flex; gap:4px; margin-left:16px; }
+.appbar .nav span { font-size:13px; padding:0 14px; min-height:48px; display:flex; align-items:center; color:#8B93A7; border-radius:10px; }
+.appbar .nav span.cur { color:#E7E4DA; font-weight:700; border:1px solid rgba(255,255,255,.36); background:#131C2E; }
+.appbar .right { margin-left:auto; display:flex; align-items:center; gap:14px; font-size:12.5px; }
+.tier { font-size:11px; text-transform:uppercase; letter-spacing:.6px; color:#E7E4DA; border:1px solid rgba(255,255,255,.36); border-radius:6px; padding:3px 7px; }
+.muted { color:#8B93A7; }
+
+/* status-banner neutre, pleine largeur */
+.banner { background:#131C2E; border:1px solid rgba(255,255,255,.36); border-radius:8px; padding:9px 12px; font-size:12.5px; line-height:1.45; }
+.banner.strong { border:2px solid #E7E4DA; }
+.banner b { font-weight:700; }
+.topbanner { margin:12px 24px 0; display:flex; justify-content:space-between; gap:16px; align-items:center; }
+
+/* Deux colonnes : liste / détail */
+.cols { flex:1; min-height:0; display:grid; grid-template-columns:360px 1fr; gap:0; margin-top:12px; }
+.list { border-right:1px solid rgba(255,255,255,.36); overflow-y:auto; padding:4px 16px 16px 24px; }
+.detail { overflow-y:auto; padding:4px 24px 20px 24px; }
+.list::-webkit-scrollbar, .detail::-webkit-scrollbar { width:0; }
+.label { font-size:11px; text-transform:uppercase; letter-spacing:.7px; color:#8B93A7; }
+.section-label { color:#E8B33C; font-size:11px; text-transform:uppercase; letter-spacing:.7px; margin:14px 0 8px; }
+.section-label .aside { color:#8B93A7; }
+.meta { font-size:11.5px; color:#8B93A7; margin-top:2px; line-height:1.45; }
+
+.race-row { background:#0F1728; border:1px solid rgba(255,255,255,.36); border-radius:12px; padding:10px 12px; margin-bottom:8px; min-height:48px; }
+.race-row.open { border:2px solid #E7E4DA; }
+.race-row .h { display:flex; justify-content:space-between; gap:8px; align-items:baseline; }
+.race-row .n { font-size:13.5px; font-weight:700; }
+.race-row .t { font-size:13px; font-weight:700; }
+.race-row .s { font-size:11.5px; color:#8B93A7; margin-top:3px; }
+.race-row .flags { display:flex; gap:6px; margin-top:6px; flex-wrap:wrap; }
+.race-row .opentag { font-size:11px; text-transform:uppercase; letter-spacing:.6px; font-weight:700; color:#E7E4DA; }
+.mb { font-size:11px; text-transform:uppercase; letter-spacing:.6px; color:#E7E4DA; border:1px solid rgba(255,255,255,.36); border-radius:6px; padding:1px 6px; }
+.race-row.done .n, .race-row.done .t { color:#8B93A7; }
+.ghost { background:#131C2E; border:1px solid rgba(255,255,255,.36); border-radius:10px; color:#E7E4DA; font-size:13px; padding:12px 14px; text-align:center; font-weight:600; min-height:48px; }
+.cta { background:#E8B33C; color:#14100A; border-radius:10px; text-align:center; font-weight:800; font-size:14px; letter-spacing:.6px; padding:13px 18px; text-transform:uppercase; min-height:48px; }
+
+/* Détail */
+.dhead { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; }
+.dtitle { font-size:20px; font-weight:700; }
+.dtitle small { font-size:13px; color:#8B93A7; font-weight:400; margin-left:8px; }
+.actions { display:flex; gap:8px; }
+.actions .ghost { display:flex; align-items:center; padding:0 16px; }
+.snaps { display:grid; grid-template-columns:repeat(5, 1fr); gap:8px; margin-top:14px; }
+.snap { background:#131C2E; border:1px solid rgba(255,255,255,.36); border-radius:8px; min-height:52px; padding:6px 8px; font-size:13px; font-weight:700; }
+.snap small { display:block; font-size:11px; font-weight:400; color:#8B93A7; margin-top:2px; }
+.snap.cur { border:2px solid #E7E4DA; }
+.snap.cur small { color:#E7E4DA; }
+.snap.wait { color:#8B93A7; font-weight:600; }
+.fhead { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-top:16px; }
+.fhead .f { font-size:15px; font-weight:700; }
+.tag { font-size:11px; text-transform:uppercase; letter-spacing:.6px; color:#8B93A7; border:1px solid rgba(255,255,255,.36); border-radius:6px; padding:2px 6px; }
+
+.grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:12px; }
+.results-card { background:#0F1728; border:1px solid rgba(255,255,255,.36); border-radius:12px; padding:11px 14px; }
+.results-card.top1 { border-color:#E8B33C; background:linear-gradient(rgba(232,179,60,.12),rgba(232,179,60,.12)),#0F1728; }
+.rc-head { display:flex; align-items:center; gap:10px; }
+.rank { font-size:11px; color:#8B93A7; min-width:24px; }
+.results-card.top1 .rank { color:#E7E4DA; }
+.dossard { background:#E8B33C; color:#14100A; font-weight:800; border-radius:6px; min-width:26px; text-align:center; padding:4px 6px; font-size:13px; flex-shrink:0; }
+.rc-name { font-weight:700; font-size:14px; flex:1; }
+.mv { font-size:11px; color:#8B93A7; }
+.rc-metrics { display:grid; grid-template-columns:repeat(4, 1fr); gap:8px; margin-top:8px; }
+.metric-label { font-size:11px; color:#8B93A7; text-transform:uppercase; letter-spacing:.5px; }
+.results-card.top1 .metric-label, .results-card.top1 .gauge .lbl { color:#E7E4DA; }
+.metric-value { font-size:14px; font-weight:700; margin-top:1px; }
+.val-pos { color:#3DD68C; } .val-neg { color:#E5533D; }
+.stake { color:#3DD68C; font-weight:700; } .stake-none { color:#8B93A7; }
+.results-card.top1 .val-pos, .results-card.top1 .stake { color:#E7E4DA; } /* pas de vert sur la teinte gold-dim */
+.gauge { margin-top:8px; }
+.gauge .bar { height:7px; border-radius:4px; background:#131C2E; border:1px solid rgba(255,255,255,.36); position:relative; overflow:hidden; margin:3px 0; }
+.gauge .bar i { position:absolute; left:0; top:0; bottom:0; border-radius:3px; }
+.gauge .model i { background:#E8B33C; } .gauge .market i { background:#5B9BD5; }
+.gauge .lbl { display:flex; justify-content:space-between; font-size:11px; color:#8B93A7; margin-top:2px; }
+.disclaimer { margin-top:16px; font-size:11px; color:#8B93A7; text-align:center; font-style:italic; padding:10px; border-top:1px solid rgba(255,255,255,.14); }
+
+/* État 2 — appairage */
+.pair { flex:1; display:flex; align-items:center; justify-content:center; gap:56px; padding:24px; }
+.pair-card { background:#0F1728; border:1px solid rgba(255,255,255,.36); border-radius:12px; padding:28px 32px; display:flex; gap:36px; align-items:center; width:860px; }
+.qr-wrap { flex-shrink:0; text-align:center; }
+.qr { width:232px; height:232px; padding:16px; border-radius:12px; background:#E7E4DA; position:relative; }
+.qr .mods { position:absolute; inset:16px;
+  background:
+    repeating-linear-gradient(90deg, #0B1120 0 8px, transparent 8px 16px, #0B1120 16px 24px, transparent 24px 40px),
+    repeating-linear-gradient(0deg, transparent 0 8px, #E7E4DA 8px 16px, transparent 16px 32px, #E7E4DA 32px 40px);
+  background-blend-mode:normal;
+}
+.qr .mods::after { content:""; position:absolute; inset:0;
+  background:
+    repeating-linear-gradient(45deg, transparent 0 6px, #E7E4DA 6px 11px),
+    repeating-linear-gradient(0deg, #0B1120 0 8px, transparent 8px 24px);
+  opacity:.55; }
+.finder { position:absolute; width:64px; height:64px; background:#E7E4DA; border:10px solid #0B1120; outline:8px solid #E7E4DA; z-index:2; }
+.finder::after { content:""; position:absolute; inset:8px; background:#0B1120; }
+.finder.tl { top:16px; left:16px; } .finder.tr { top:16px; right:16px; } .finder.bl { bottom:16px; left:16px; }
+.qr-note { font-size:11px; color:#8B93A7; margin-top:8px; }
+.pair-text { flex:1; }
+.pair-text .lead { font-size:22px; font-weight:700; line-height:1.3; }
+.pair-text .big { font-size:15px; font-weight:700; margin-top:10px; }
+.steps { margin-top:16px; display:flex; flex-direction:column; gap:10px; font-size:13.5px; line-height:1.45; }
+.steps div { display:flex; gap:10px; }
+.steps b.n { min-width:24px; height:24px; border-radius:6px; border:1px solid rgba(255,255,255,.36); display:flex; align-items:center; justify-content:center; font-size:12px; flex-shrink:0; }
+.link { color:#E7E4DA; font-size:13.5px; font-weight:600; text-decoration:underline; text-underline-offset:3px; min-height:48px; display:inline-flex; align-items:center; margin-top:14px; }
+.pair-actions { display:flex; gap:12px; align-items:center; margin-top:8px; }
+</style>
+</head>
+<body>
+
+<div class="page-caption">Web compagnon — états : connecté, liste des courses suivies et détail (pronostic H-30) · appairage par QR code</div>
+
+<!-- État 1 — connecté, deux colonnes -->
+<div>
+  <div class="caption">Web app connectée — courses suivies à gauche, détail de R1C3 avec le pronostic publié H-30 (UJ-6, U-4)</div>
+  <div class="browser">
+    <div class="chrome"><span class="dots"><i></i><i></i><i></i></span><span class="tab">Analyseur Hippique</span><span class="url">🔒 adresse de la web app</span></div>
+    <div class="viewport">
+      <div class="appbar">
+        <h1>Analyseur Hippique</h1>
+        <div class="nav"><span class="cur">Courses suivies</span><span>Programme du jour</span><span>Réglages</span></div>
+        <div class="right"><span class="muted">Synchronisé avec votre téléphone · 14 h 41</span><span class="tier">Expert · jusqu'au 12/12</span><span class="ghost" style="padding:0 14px;display:flex;align-items:center">Profil</span></div>
+      </div>
+      <div class="banner topbanner"><span>ℹ️ <b>La web app nécessite une connexion</b> — pas de mode hors ligne. Sur l'hippodrome sans réseau, utilisez l'app du téléphone.</span><span class="muted">Les instantanés se mettent à jour quand vous actualisez.</span></div>
+
+      <div class="cols">
+        <!-- Colonne gauche : courses suivies -->
+        <div class="list">
+          <div class="section-label">Courses suivies <span class="aside">· dimanche 15/11</span></div>
+          <div class="race-row done">
+            <div class="h"><span class="n">R1C1 · Vincennes</span><span class="t">13 h 50</span></div>
+            <div class="s">Prix de Lisieux · arrivée connue</div>
+          </div>
+          <div class="race-row open">
+            <div class="h"><span class="n">R1C3 · Vincennes</span><span class="t">15 h 05</span></div>
+            <div class="s">Prix des Ajoncs · 18 partants · H-30 de 14 h 35</div>
+            <div class="flags"><span class="opentag">▸ Ouverte</span><span class="mb">Multi</span><span class="mb">Pronostic retenu</span></div>
+          </div>
+          <div class="race-row">
+            <div class="h"><span class="n">R1C4 · Vincennes</span><span class="t">15 h 40</span></div>
+            <div class="s">Prix de Bretagne · Quinté+ · H-60 de 14 h 40</div>
+            <div class="flags"><span class="mb">Multi</span></div>
+          </div>
+          <div class="race-row">
+            <div class="h"><span class="n">R2C5 · Deauville</span><span class="t">16 h 15</span></div>
+            <div class="s">Prix du Calvados · pronostic du matin de 8 h 00</div>
+          </div>
+          <div class="race-row">
+            <div class="h"><span class="n">R3C2 · Auteuil</span><span class="t">16 h 50</span></div>
+            <div class="s">Prix Hérode · pronostic indisponible</div>
+          </div>
+          <div class="ghost" style="margin-top:6px">+ Suivre une course du programme</div>
+        </div>
+
+        <!-- Colonne droite : détail -->
+        <div class="detail">
+          <div class="dhead" style="margin-top:14px">
+            <div>
+              <div class="dtitle">R1C3 · Vincennes<small>Prix des Ajoncs · départ 15 h 05 · 18 partants · trot attelé 2 700 m</small></div>
+              <div class="meta">Placé = 3 premiers · cotes du marché de 14 h 35</div>
+            </div>
+            <div class="actions"><span class="ghost">Exporter</span><span class="ghost">Ouvrir le Multi</span></div>
+          </div>
+
+          <div class="snaps">
+            <div class="snap">Matin<small>8 h 00</small></div>
+            <div class="snap">H-60<small>14 h 05</small></div>
+            <div class="snap cur">H-30<small>14 h 35 · affiché</small></div>
+            <div class="snap wait">H-15<small>à 14 h 50</small></div>
+            <div class="snap wait">H-10<small>à 14 h 55</small></div>
+          </div>
+
+          <div class="fhead">
+            <span class="f">Pronostic de 14 h 35 · H-30 · modèle en cours d'évaluation</span>
+            <span class="tag">pronostic publié</span>
+            <span class="meta" style="margin:0">Version du modèle et heure des données dans « Détails ».</span>
+          </div>
+
+          <div class="grid">
+            <div class="results-card top1">
+              <div class="rc-head"><span class="rank">1er</span><span class="dossard">11</span><span class="rc-name">Brise de Mars</span><span class="mv">Cote 3,9</span></div>
+              <div class="gauge"><div class="bar model"><i style="width:84%"></i></div><div class="bar market"><i style="width:66%"></i></div><div class="lbl"><span>Modèle 25,2 %</span><span>Marché 19,8 %</span></div></div>
+              <div class="rc-metrics"><div><div class="metric-label">Value</div><div class="metric-value val-pos">+27 %</div></div><div><div class="metric-label">Mise suggérée</div><div class="metric-value stake">3,8 u</div></div><div><div class="metric-label">Top 3</div><div class="metric-value">54 %</div></div><div><div class="metric-label">Rang matin</div><div class="metric-value">2e</div></div></div>
+            </div>
+            <div class="results-card">
+              <div class="rc-head"><span class="rank">2e</span><span class="dossard">4</span><span class="rc-name">Gaillard du Pré</span><span class="mv">Cote 4,6</span></div>
+              <div class="gauge"><div class="bar model"><i style="width:62%"></i></div><div class="bar market"><i style="width:57%"></i></div><div class="lbl"><span>Modèle 18,6 %</span><span>Marché 17,1 %</span></div></div>
+              <div class="rc-metrics"><div><div class="metric-label">Value</div><div class="metric-value val-pos">+9 %</div></div><div><div class="metric-label">Mise suggérée</div><div class="metric-value stake">1,2 u</div></div><div><div class="metric-label">Top 3</div><div class="metric-value">46 %</div></div><div><div class="metric-label">Rang matin</div><div class="metric-value">1er</div></div></div>
+            </div>
+            <div class="results-card">
+              <div class="rc-head"><span class="rank">3e</span><span class="dossard">2</span><span class="rc-name">Hêtre Pourpre</span><span class="mv">Cote 6,2</span></div>
+              <div class="gauge"><div class="bar model"><i style="width:43%"></i></div><div class="bar market"><i style="width:45%"></i></div><div class="lbl"><span>Modèle 12,9 %</span><span>Marché 13,5 %</span></div></div>
+              <div class="rc-metrics"><div><div class="metric-label">Value</div><div class="metric-value val-neg">−4 %</div></div><div><div class="metric-label">Mise suggérée</div><div class="metric-value stake-none">—</div></div><div><div class="metric-label">Top 3</div><div class="metric-value">37 %</div></div><div><div class="metric-label">Rang matin</div><div class="metric-value">3e</div></div></div>
+            </div>
+            <div class="results-card">
+              <div class="rc-head"><span class="rank">4e</span><span class="dossard">15</span><span class="rc-name">Jade de Vire</span><span class="mv">Cote 9,5</span></div>
+              <div class="gauge"><div class="bar model"><i style="width:33%"></i></div><div class="bar market"><i style="width:29%"></i></div><div class="lbl"><span>Modèle 9,8 %</span><span>Marché 8,8 %</span></div></div>
+              <div class="rc-metrics"><div><div class="metric-label">Value</div><div class="metric-value val-pos">+11 %</div></div><div><div class="metric-label">Mise suggérée</div><div class="metric-value stake">0,6 u</div></div><div><div class="metric-label">Top 3</div><div class="metric-value">30 %</div></div><div><div class="metric-label">Rang matin</div><div class="metric-value">5e</div></div></div>
+            </div>
+            <div class="results-card">
+              <div class="rc-head"><span class="rank">5e</span><span class="dossard">9</span><span class="rc-name">Ivoire Sauvage</span><span class="mv">Cote manquante</span></div>
+              <div class="gauge"><div class="bar model"><i style="width:27%"></i></div><div class="lbl"><span>Modèle 8,1 %</span><span>Marché —</span></div></div>
+              <div class="rc-metrics"><div><div class="metric-label">Value</div><div class="metric-value stake-none">—</div></div><div><div class="metric-label">Mise suggérée</div><div class="metric-value stake-none">Cote absente</div></div><div><div class="metric-label">Top 3</div><div class="metric-value">26 %</div></div><div><div class="metric-label">Rang matin</div><div class="metric-value">4e</div></div></div>
+            </div>
+            <div class="results-card">
+              <div class="rc-head"><span class="rank">6e</span><span class="dossard">13</span><span class="rc-name">Comète d'Ourville</span><span class="mv">Cote 14,0</span></div>
+              <div class="gauge"><div class="bar model"><i style="width:21%"></i></div><div class="bar market"><i style="width:20%"></i></div><div class="lbl"><span>Modèle 6,2 %</span><span>Marché 6,0 %</span></div></div>
+              <div class="rc-metrics"><div><div class="metric-label">Value</div><div class="metric-value val-pos">+3 %</div></div><div><div class="metric-label">Mise suggérée</div><div class="metric-value stake-none">—</div></div><div><div class="metric-label">Top 3</div><div class="metric-value">21 %</div></div><div><div class="metric-label">Rang matin</div><div class="metric-value">6e</div></div></div>
+            </div>
+          </div>
+          <div class="ghost" style="margin-top:10px">Voir les 12 autres partants</div>
+
+          <div class="disclaimer">Outil d'aide à la décision — aucun modèle ne garantit un gain. Jouez uniquement ce que vous pouvez vous permettre de perdre.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- État 2 — appairage QR -->
+<div>
+  <div class="caption">Web app non connectée — appairage par QR code, repli par code SMS (UJ-6, FR-37)</div>
+  <div class="browser">
+    <div class="chrome"><span class="dots"><i></i><i></i><i></i></span><span class="tab">Analyseur Hippique</span><span class="url">🔒 adresse de la web app</span></div>
+    <div class="viewport" style="height:640px">
+      <div class="appbar"><h1>Analyseur Hippique</h1></div>
+      <div class="banner topbanner"><span>ℹ️ <b>La web app nécessite une connexion</b> — pas de mode hors ligne. Elle propose les mêmes fonctions que l'app du téléphone, aucune de plus.</span></div>
+
+      <div class="pair">
+        <div class="pair-card">
+          <div class="qr-wrap">
+            <div class="qr" role="img" aria-label="QR code de connexion, valable 2 minutes">
+              <div class="mods"></div>
+              <span class="finder tl"></span><span class="finder tr"></span><span class="finder bl"></span>
+            </div>
+            <div class="qr-note">QR code · illustration</div>
+          </div>
+          <div class="pair-text">
+            <div class="label">Connecter cet ordinateur</div>
+            <div class="lead" style="margin-top:6px">Scannez avec l'app sur votre téléphone · expire dans 2 min</div>
+            <div class="steps">
+              <div><b class="n">1</b><span>Ouvrez l'app sur votre téléphone, déjà connectée, puis <b>Profil → Scanner un QR code</b>.</span></div>
+              <div><b class="n">2</b><span>Visez ce QR code.</span></div>
+              <div><b class="n">3</b><span>Sur le téléphone, vérifiez le nom « Chrome sur Windows », puis appuyez sur <b>Autoriser</b>.</span></div>
+            </div>
+            <div class="meta" style="margin-top:12px">Le QR code ne sert qu'une fois. Cet ordinateur comptera parmi vos appareils.</div>
+            <div class="pair-actions">
+              <span class="ghost" style="padding:0 16px;display:flex;align-items:center">Afficher un nouveau QR code</span>
+              <span class="link" style="margin-top:0">Se connecter avec un code SMS</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

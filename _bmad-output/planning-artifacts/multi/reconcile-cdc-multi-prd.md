@@ -193,3 +193,13 @@ antérieur (PRD §4.11, cahier Multi v2, spine AD-6 à AD-11, contrat UX).
 - **Aucune base n'est active au premier affichage** ; l'utilisateur les active.
 - **Pas de badge de value dans le Multi** : il ne parle que de la probabilité d'être dans les 4 premiers ; la value reste sur l'écran Résultats.
 - Défauts validés : **taille 10** (sinon la dernière utilisée) ; indice de confiance **« élevée / moyenne / faible »** avec des **seuils qui dépendent de la taille**, provisoires jusqu'au pilote ; formule affichée par défaut **Multi en 7**.
+
+## D quater. Décisions de la correction de cap (2026-10-18)
+
+Prises après le rapport de préparation (`implementation-readiness.md`, constat F1 vérifié sur la fixture PMU du 15/01/2022 : le MULTI est proposé sur 19 des 48 courses de la journée, le MINI_MULTI sur des courses de 10 à 13 partants).
+
+| Sujet | Décision |
+|---|---|
+| Éligibilité | **Toute course dont la liste des paris contient le MULTI** est éligible. La notion de « course support unique par jour » est abandonnée, ainsi que le mode « exploration ». Le seuil de partants éventuel vient des règles vérifiées en story 5.1. |
+| Mini Multi | **Hors périmètre** pour l'instant ; à réétudier après la vérification de ses règles (5.1). |
+| Seuils provisoires de l'indice de confiance | Avec `p_hasard(v) = C(v,4) / C(n,4)` (n = partants du champ) : « moyenne » si probabilité de couverture ≥ min(max(2 × p_hasard ; 0,15) ; 0,90) ; « élevée » si ≥ min(max(3 × p_hasard ; 0,35) ; 0,95) ; un cran de moins si course très ouverte ou données fragiles. Provisoire jusqu'au pilote (6.5), qui la remplace. Remplace la règle « 2× / 3× le hasard » de la story 5.8. |

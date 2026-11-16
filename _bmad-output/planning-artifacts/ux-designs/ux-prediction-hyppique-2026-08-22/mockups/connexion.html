@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Maquette — Connexion</title>
+<style>
+/*
+  Gouverné par :
+  - DESIGN.md : Colors (or = action principale et focus seulement ; aucun vert/rouge pour un
+    état système), Typography (chiffres tabulaires, label ≥ 11sp), Shapes (champs rounded.sm,
+    boutons rounded.md), Elevation & Depth (bordure line-card, aucune ombre), Components
+    (cta-primary, cta-ghost, status-banner)
+  - sprint-change-proposal-2026-11-15 §4.3 : U-1 (Connexion, Déverrouillage : portes placées
+    avant la pile), U-2 (otp-field, pin-pad : cibles ≥ 48dp, chiffres annoncés par TalkBack,
+    remplissage automatique du code SMS)
+  - PRD UJ-5, FR-31 (code 5 min, 5 essais, même message que le numéro ait un compte ou non),
+    FR-32 (PIN 4 à 6 chiffres, jamais transmis, 5 essais puis reconnexion par code)
+  Colonne 1 : numéro + acceptation CGU / politique de confidentialité.
+  Colonne 2 : code reçu (otp-field 6 chiffres, remplissage auto, « Renvoyer le code »).
+  Colonne 3 : choix du code PIN (pin-pad).
+  Colonne 4 : déverrouillage (pin-pad, essai manqué, « Code oublié ? »).
+  Numéro et chiffres illustratifs.
+*/
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  background:#05070d; font-family:'Segoe UI',Roboto,system-ui,-apple-system,sans-serif;
+  padding:40px 20px; display:flex; gap:40px; flex-wrap:wrap; justify-content:center;
+  font-variant-numeric:tabular-nums;
+}
+.page-caption { width:100%; color:#8B93A7; font-size:12px; text-align:center; letter-spacing:.5px; text-transform:uppercase; }
+.caption { color:#8B93A7; font-size:12px; text-align:center; margin-bottom:10px; letter-spacing:.5px; text-transform:uppercase; max-width:390px; }
+.frame { width:390px; height:792px; background:#0B1120; border-radius:28px; border:6px solid #1a1f2e; overflow:hidden; box-shadow:0 0 0 1px rgba(255,255,255,.04); display:flex; flex-direction:column; }
+.screen { flex:1; min-height:0; overflow-y:auto; padding:14px 16px 18px; color:#E7E4DA; display:flex; flex-direction:column; }
+.screen::-webkit-scrollbar{ width:0; }
+
+.top { display:flex; align-items:center; gap:10px; min-height:48px; }
+.back { color:#8B93A7; font-size:18px; min-width:48px; min-height:48px; display:flex; align-items:center; }
+h1 { font-size:15px; text-transform:uppercase; letter-spacing:.6px; color:#E8B33C; flex:1; }
+.brand { font-size:15px; text-transform:uppercase; letter-spacing:.6px; color:#E8B33C; margin:24px 0 4px; }
+.lead { font-size:20px; font-weight:700; margin:18px 0 6px; line-height:1.3; }
+.sub { font-size:13px; color:#8B93A7; line-height:1.45; }
+.label { font-size:11px; text-transform:uppercase; letter-spacing:.7px; color:#8B93A7; margin:20px 0 6px; }
+.meta { font-size:11px; color:#8B93A7; margin-top:6px; line-height:1.4; }
+
+/* Champ téléphone : rounded.sm, bordure line-card */
+.phone { display:flex; gap:8px; }
+.field { background:#131C2E; border:1px solid rgba(255,255,255,.36); border-radius:8px; min-height:52px; display:flex; align-items:center; padding:0 12px; font-size:17px; }
+.field.cc { flex-shrink:0; gap:6px; color:#E7E4DA; }
+.field.cc small { color:#8B93A7; font-size:12px; }
+.field.num { flex:1; letter-spacing:.5px; }
+.field.focus { outline:2px solid #E8B33C; outline-offset:2px; }
+
+/* Case d'acceptation : toute la ligne est la cible (≥ 48dp) */
+.check { display:flex; gap:12px; align-items:flex-start; min-height:48px; padding:10px 0; font-size:12.5px; line-height:1.45; margin-top:12px; border-top:1px solid rgba(255,255,255,.08); border-bottom:1px solid rgba(255,255,255,.08); }
+.box { width:24px; height:24px; border-radius:6px; border:1px solid rgba(255,255,255,.36); background:#131C2E; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:15px; font-weight:800; color:#E7E4DA; }
+.check u { color:#E7E4DA; text-underline-offset:2px; }
+
+/* otp-field : 6 cases, chaque chiffre annoncé (« chiffre 3 sur 6 : 4 ») */
+.otp { display:grid; grid-template-columns:repeat(6, 1fr); gap:8px; margin-top:6px; }
+.otp span { background:#131C2E; border:1px solid rgba(255,255,255,.36); border-radius:8px; height:56px; display:flex; align-items:center; justify-content:center; font-size:24px; font-weight:700; }
+.otp span.cur { outline:2px solid #E8B33C; outline-offset:2px; }
+.hint { font-size:11.5px; color:#8B93A7; margin-top:8px; line-height:1.4; }
+
+/* status-banner neutre */
+.banner { background:#131C2E; border:1px solid rgba(255,255,255,.36); border-radius:8px; padding:9px 11px; font-size:12px; line-height:1.45; margin-top:12px; }
+.banner.strong { border:2px solid #E7E4DA; }
+.banner b { font-weight:700; }
+
+.cta { background:#E8B33C; color:#14100A; border-radius:10px; text-align:center; font-weight:800; font-size:14px; letter-spacing:.6px; padding:14px; text-transform:uppercase; min-height:48px; }
+.cta.off { background:#131C2E; color:#8B93A7; border:1px solid rgba(255,255,255,.36); }
+.ghost { background:#131C2E; border:1px solid rgba(255,255,255,.36); border-radius:10px; color:#E7E4DA; font-size:13px; padding:13px 14px; text-align:center; font-weight:600; min-height:48px; }
+.ghost.off { color:#8B93A7; }
+.link { color:#E7E4DA; font-size:13px; font-weight:600; text-decoration:underline; text-underline-offset:3px; min-height:48px; display:flex; align-items:center; justify-content:center; }
+.spacer { flex:1; }
+.stack { display:flex; flex-direction:column; gap:8px; margin-top:16px; }
+
+/* pin-pad : touches ≥ 48dp (ici 64), indicateur de progression doublé d'un texte */
+.dots { display:flex; justify-content:center; gap:14px; margin:22px 0 6px; }
+.dots i { width:16px; height:16px; border-radius:4px; border:1px solid rgba(255,255,255,.36); background:#131C2E; }
+.dots i.on { background:#E7E4DA; border-color:#E7E4DA; }
+.dots i.opt { border-style:dashed; }
+.dots-text { text-align:center; font-size:11.5px; color:#8B93A7; }
+.pad { display:grid; grid-template-columns:repeat(3, 1fr); gap:10px; margin-top:18px; }
+.key { background:#131C2E; border:1px solid rgba(255,255,255,.36); border-radius:10px; min-height:64px; display:flex; flex-direction:column; align-items:center; justify-content:center; font-size:24px; font-weight:600; }
+.key small { font-size:9.5px; color:#8B93A7; letter-spacing:1px; margin-top:1px; }
+.key.fn { font-size:13px; font-weight:600; background:transparent; }
+.key.blank { border:none; background:transparent; }
+.disclaimer { margin-top:14px; font-size:11px; color:#8B93A7; text-align:center; padding-top:10px; border-top:1px solid rgba(255,255,255,.14); line-height:1.4; }
+</style>
+</head>
+<body>
+
+<div class="page-caption">Connexion — états : numéro + CGU · code reçu · choix du code PIN · déverrouillage</div>
+
+<!-- 1. Numéro -->
+<div>
+  <div class="caption">Connexion — numéro de téléphone et acceptation (UJ-5, FR-31)</div>
+  <div class="frame"><div class="screen">
+    <div class="brand">Analyseur Hippique</div>
+    <div class="lead">Votre numéro de téléphone</div>
+    <div class="sub">Il sert à créer votre compte ou à vous reconnecter. Pas de mot de passe : vous recevrez un code par SMS.</div>
+
+    <div class="label">Numéro de téléphone</div>
+    <div class="phone">
+      <div class="field cc">🇨🇲 +237 <small>▾</small></div>
+      <div class="field num focus">6 77 12 34 56</div>
+    </div>
+    <div class="meta">9 chiffres, sans le 0 initial.</div>
+
+    <div class="check">
+      <span class="box" aria-checked="true">✓</span>
+      <span>J'accepte les <u>conditions générales d'utilisation</u> et la <u>politique de confidentialité</u>.</span>
+    </div>
+    <div class="meta">Case cochée · obligatoire pour recevoir le code.</div>
+
+    <div class="spacer"></div>
+    <div class="stack">
+      <div class="cta">Recevoir le code par SMS</div>
+      <div class="ghost">Recevoir le code par WhatsApp</div>
+    </div>
+    <div class="disclaimer">Outil d'aide à la décision — l'outil ne place aucun pari et aucun modèle ne garantit un gain.</div>
+  </div></div>
+</div>
+
+<!-- 2. Code reçu -->
+<div>
+  <div class="caption">Connexion — code reçu (otp-field, remplissage auto, renvoi)</div>
+  <div class="frame"><div class="screen">
+    <div class="top"><span class="back">←</span><h1>Code reçu</h1></div>
+    <div class="lead">Saisissez le code à 6 chiffres</div>
+    <div class="sub">Si ce numéro peut recevoir un code, il vient d'être envoyé au <b style="color:#E7E4DA">+237 6 77 12 34 56</b>. <u style="color:#E7E4DA">Modifier le numéro</u></div>
+
+    <div class="label">Code</div>
+    <div class="otp" aria-label="Code à 6 chiffres, 4 saisis">
+      <span>4</span><span>8</span><span>2</span><span>0</span><span class="cur"></span><span></span>
+    </div>
+    <div class="hint">📩 Le code se remplit tout seul à la réception du SMS, si votre téléphone le permet. Sinon, tapez-le.</div>
+    <div class="meta">Code valable 5 minutes · 5 essais au maximum.</div>
+
+    <div class="banner">ℹ️ Pas reçu ? Vérifiez le numéro et votre réseau. Le renvoi est possible dans quelques secondes.</div>
+
+    <div class="spacer"></div>
+    <div class="stack">
+      <div class="cta off">Valider · 4 chiffres sur 6</div>
+      <div class="ghost off">Renvoyer le code · dans 42 s</div>
+      <div class="link">Recevoir le code par WhatsApp</div>
+    </div>
+  </div></div>
+</div>
+
+<!-- 3. Choix du PIN -->
+<div>
+  <div class="caption">Connexion — choix du code PIN (pin-pad, FR-32)</div>
+  <div class="frame"><div class="screen">
+    <div class="top"><h1>Code PIN</h1></div>
+    <div class="lead">Choisissez un code PIN</div>
+    <div class="sub">4 à 6 chiffres. Il déverrouille l'app sur ce téléphone. Il reste sur ce téléphone et n'est jamais envoyé.</div>
+
+    <div class="dots" aria-hidden="true"><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i class="opt"></i><i class="opt"></i></div>
+    <div class="dots-text">3 chiffres saisis · encore 1 au minimum</div>
+
+    <div class="pad">
+      <div class="key">1<small>&nbsp;</small></div><div class="key">2<small>ABC</small></div><div class="key">3<small>DEF</small></div>
+      <div class="key">4<small>GHI</small></div><div class="key">5<small>JKL</small></div><div class="key">6<small>MNO</small></div>
+      <div class="key">7<small>PQRS</small></div><div class="key">8<small>TUV</small></div><div class="key">9<small>WXYZ</small></div>
+      <div class="key blank"></div><div class="key">0<small>&nbsp;</small></div><div class="key fn">⌫ Effacer</div>
+    </div>
+    <div class="spacer"></div>
+    <div class="stack">
+      <div class="cta off">Continuer</div>
+    </div>
+    <div class="meta" style="text-align:center">Vous le confirmerez à l'étape suivante.</div>
+  </div></div>
+</div>
+
+<!-- 4. Déverrouillage -->
+<div>
+  <div class="caption">Déverrouillage — retour au premier plan, essai manqué (FR-32)</div>
+  <div class="frame"><div class="screen">
+    <div class="brand" style="text-align:center">Analyseur Hippique</div>
+    <div class="lead" style="text-align:center;margin-top:8px">Saisissez votre code PIN</div>
+    <div class="sub" style="text-align:center">Compte +237 6 •• •• •• 56</div>
+
+    <div class="banner strong"><b>Code PIN incorrect.</b> 3 essais restants. Après 5 essais, il faudra vous reconnecter par code SMS.</div>
+
+    <div class="dots" aria-hidden="true"><i class="on"></i><i class="on"></i><i></i><i></i></div>
+    <div class="dots-text">2 chiffres saisis sur 4</div>
+
+    <div class="pad">
+      <div class="key">1<small>&nbsp;</small></div><div class="key">2<small>ABC</small></div><div class="key">3<small>DEF</small></div>
+      <div class="key">4<small>GHI</small></div><div class="key">5<small>JKL</small></div><div class="key">6<small>MNO</small></div>
+      <div class="key">7<small>PQRS</small></div><div class="key">8<small>TUV</small></div><div class="key">9<small>WXYZ</small></div>
+      <div class="key blank"></div><div class="key">0<small>&nbsp;</small></div><div class="key fn">⌫ Effacer</div>
+    </div>
+    <div class="spacer"></div>
+    <div class="link">Code oublié ? Se reconnecter par code SMS</div>
+  </div></div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,663 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Paddock to Paywall</title>
+<style>
+:root{
+  --bg:#f3efe2;
+  --paper:#fbf8ef;
+  --ink:#1d2a22;
+  --ink-soft:#4d5a50;
+  --rule:#d6cdb4;
+  --turf:#2f6b3a;
+  --turf-deep:#1f4a28;
+  --turf-light:#dfeadb;
+  --rail:#ffffff;
+  --user:#b9781a;
+  --user-bg:#f6e6c6;
+  --coach:#1f6f86;
+  --coach-bg:#d6ebf0;
+  --red:#b3322b;
+  --red-bg:#f5dcd8;
+  --gold:#c99a1e;
+  --must:#2f6b3a;
+  --should:#1f6f86;
+  --could:#7a5aa6;
+  --wont:#8a8a80;
+  --shadow:0 1px 0 rgba(0,0,0,.05),0 6px 18px -10px rgba(30,40,30,.35);
+  --finish-bg:#141a16;
+  --finish-ink:#f3efe2;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --serif:Georgia,"Times New Roman",serif;
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#111612;
+    --paper:#1a211c;
+    --ink:#ebe6d6;
+    --ink-soft:#a9b0a5;
+    --rule:#33402f;
+    --turf:#5fa56b;
+    --turf-deep:#0e2a15;
+    --turf-light:#1d3322;
+    --rail:#d9d4c3;
+    --user:#e9a947;
+    --user-bg:#3a2c12;
+    --coach:#5cbcd6;
+    --coach-bg:#13313a;
+    --red:#ea6a60;
+    --red-bg:#3c1d1a;
+    --gold:#e4bb46;
+    --must:#5fa56b;
+    --should:#5cbcd6;
+    --could:#ad8fdc;
+    --wont:#8d8d84;
+    --shadow:0 1px 0 rgba(0,0,0,.3),0 8px 22px -12px rgba(0,0,0,.8);
+    --finish-bg:#060807;
+    --finish-ink:#ebe6d6;
+  }
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 var(--sans);overflow-x:hidden}
+img,svg{max-width:100%;height:auto;display:block}
+p,li{overflow-wrap:anywhere}
+.wrap{max-width:1040px;margin:0 auto;padding:0 16px}
+h1,h2,h3{font-family:var(--serif);line-height:1.15;margin:0}
+small,.meta{font-size:.82rem;color:var(--ink-soft)}
+.mono{font-family:var(--mono)}
+
+/* ---------- masthead: the race card cover ---------- */
+.cover{background:var(--turf-deep);color:#f3efe2;position:relative;overflow:hidden;padding:28px 0 0}
+.cover::after{content:"";position:absolute;left:0;right:0;bottom:0;height:14px;
+  background:repeating-linear-gradient(90deg,#fff 0 18px,transparent 18px 36px);opacity:.85}
+.cover .eyebrow{font:600 .75rem/1 var(--mono);letter-spacing:.18em;text-transform:uppercase;opacity:.8}
+.cover h1{font-size:clamp(2.2rem,8vw,4.4rem);margin:10px 0 6px;letter-spacing:-.01em}
+.cover h1 em{font-style:italic;color:var(--gold)}
+.cover .lede{max-width:640px;opacity:.92;margin:0 0 18px}
+.flag{display:flex;height:6px;width:120px;margin:14px 0 0}
+.flag i{flex:1}.flag i:nth-child(1){background:#2f8a3e}.flag i:nth-child(2){background:#c6352b}.flag i:nth-child(3){background:#f2c230}
+.cardline{display:flex;flex-wrap:wrap;gap:8px 18px;font:500 .8rem/1.3 var(--mono);opacity:.85;padding:0 0 36px}
+.cardline span::before{content:"◆ ";color:var(--gold)}
+
+/* ---------- silks legend / filter ---------- */
+.legend{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--paper) 92%,transparent);
+  backdrop-filter:blur(6px);border-bottom:1px solid var(--rule)}
+.legend .wrap{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;padding-top:10px;padding-bottom:10px}
+.legend .lbl{font:600 .72rem/1 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--ink-soft)}
+.legend button{font:600 .85rem/1 var(--sans);border:1.5px solid var(--rule);background:var(--paper);color:var(--ink);
+  border-radius:999px;padding:7px 12px;cursor:pointer;display:inline-flex;align-items:center;gap:7px}
+.legend button[aria-pressed="true"]{border-color:var(--ink);background:var(--ink);color:var(--paper)}
+.silk{width:14px;height:14px;border-radius:3px;display:inline-block;flex:none}
+.silk.u{background:repeating-linear-gradient(45deg,var(--user) 0 4px,#fff3 4px 7px),var(--user)}
+.silk.c{background:linear-gradient(90deg,var(--coach) 50%,transparent 50%),repeating-linear-gradient(0deg,var(--coach) 0 3px,#fff4 3px 6px)}
+.tally{margin-left:auto;font:500 .78rem/1.2 var(--mono);color:var(--ink-soft)}
+
+/* idea chips */
+.idea{position:relative;padding:10px 12px 10px 14px;border-radius:8px;background:var(--paper);border:1px solid var(--rule);
+  border-left:5px solid var(--rule);transition:opacity .25s,filter .25s}
+.idea.u{border-left-color:var(--user)}
+.idea.c{border-left-color:var(--coach)}
+.idea .by{font:700 .66rem/1 var(--mono);letter-spacing:.12em;text-transform:uppercase;display:inline-block;margin-bottom:4px}
+.idea.u .by{color:var(--user)} .idea.c .by{color:var(--coach)}
+.idea.dec{box-shadow:inset 0 0 0 1.5px var(--user)}
+.idea.dec .by::after{content:" · decision";}
+body.only-u .idea.c, body.only-c .idea.u{opacity:.18;filter:grayscale(1)}
+q, .quote{font-family:var(--serif);font-style:italic}
+
+/* ---------- race sections ---------- */
+section.race{padding:44px 0 8px}
+.racehead{display:grid;grid-template-columns:auto 1fr;gap:4px 16px;align-items:end;border-bottom:3px double var(--rule);padding-bottom:12px;margin-bottom:22px}
+.saddle{grid-row:span 2;width:62px;height:62px;border-radius:8px;display:grid;place-items:center;
+  font:800 1.9rem/1 var(--serif);color:#fff;background:var(--turf);box-shadow:var(--shadow);position:relative}
+.saddle::after{content:"";position:absolute;inset:5px;border:1.5px dashed #ffffff70;border-radius:5px}
+.racehead .kicker{font:600 .72rem/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--ink-soft)}
+.racehead h2{font-size:clamp(1.5rem,4.5vw,2.2rem)}
+.conditions{grid-column:1/-1;font-size:.92rem;color:var(--ink-soft);margin-top:6px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+.stack{display:grid;gap:10px}
+.panel{background:var(--paper);border:1px solid var(--rule);border-radius:12px;padding:16px;box-shadow:var(--shadow)}
+.panel h3{font-size:1.15rem;margin-bottom:10px}
+
+/* runners (personas) */
+.runners{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-bottom:22px}
+.runner{display:flex;gap:10px;align-items:center;background:var(--paper);border:1px solid var(--rule);border-radius:10px;padding:10px}
+.runner .no{width:34px;height:34px;flex:none;border-radius:50%;display:grid;place-items:center;font:800 1rem/1 var(--serif);color:#fff}
+.runner b{display:block;font-family:var(--serif)}
+.runner span{font-size:.82rem;color:var(--ink-soft)}
+
+/* track */
+.track{background:var(--turf-light);border-radius:16px;padding:10px;border:1px solid var(--rule)}
+.track svg text{font-family:var(--mono)}
+.posts{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-top:12px}
+.post{background:var(--paper);border-radius:8px;padding:8px 10px;border-top:4px solid var(--turf);font-size:.88rem}
+.post b{font-family:var(--mono);font-size:.8rem;color:var(--turf)}
+.post.locked{border-top-color:var(--gold)}
+.scratched{position:relative;opacity:.78}
+.scratched p{text-decoration:line-through;text-decoration-color:var(--red);text-decoration-thickness:2px}
+.stamp{display:inline-block;font:800 .7rem/1 var(--mono);letter-spacing:.14em;color:var(--red);border:2px solid var(--red);
+  padding:4px 6px;border-radius:4px;transform:rotate(-4deg);margin-top:6px;background:var(--red-bg)}
+
+/* flip card */
+.flipzone{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:18px;align-items:center}
+.flip{perspective:1100px;cursor:pointer;min-height:230px;border:0;background:none;padding:0;text-align:left;color:inherit;font:inherit;width:100%}
+.flip .inner{position:relative;width:100%;min-height:230px;transition:transform .8s cubic-bezier(.2,.7,.2,1);transform-style:preserve-3d}
+.flip.on .inner{transform:rotateY(180deg)}
+.face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;border-radius:14px;padding:20px;display:flex;flex-direction:column;justify-content:center;box-shadow:var(--shadow)}
+.face.front{background:var(--paper);border:2px dashed var(--ink-soft)}
+.face.back{background:var(--user);color:#1b1408;transform:rotateY(180deg)}
+.face .small{font:600 .72rem/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;opacity:.75}
+.face .big{font:italic 700 clamp(1.5rem,5vw,2.1rem)/1.15 var(--serif);margin:10px 0}
+.hint{font-size:.78rem;opacity:.7}
+.cascade{list-style:none;padding:0;margin:0;display:grid;gap:8px;counter-reset:c}
+.cascade li{counter-increment:c;display:grid;grid-template-columns:30px 1fr;gap:10px;align-items:start}
+.cascade li::before{content:counter(c);width:26px;height:26px;border-radius:50%;background:var(--ink);color:var(--paper);display:grid;place-items:center;font:700 .8rem/1 var(--mono);margin-top:9px}
+
+/* weights table (tiers) */
+.weights{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.tier{border-radius:12px;padding:14px;background:var(--paper);border:1px solid var(--rule);position:relative;overflow:hidden}
+.tier::before{content:"";position:absolute;left:0;top:0;right:0;height:6px;background:var(--c,var(--ink-soft))}
+.tier h4{margin:4px 0 2px;font:700 1.15rem/1.2 var(--serif)}
+.tier .wt{font:600 .74rem/1 var(--mono);color:var(--ink-soft);letter-spacing:.08em}
+.tier ul{margin:10px 0 0;padding-left:18px;font-size:.88rem}
+.tier .later{font:700 .66rem/1 var(--mono);color:var(--could);border:1.5px solid var(--could);border-radius:4px;padding:3px 5px;position:absolute;top:14px;right:12px}
+.teaser{margin-top:10px;font-size:.82rem;border-radius:8px;padding:8px;background:var(--bg);position:relative}
+.teaser .blur{filter:blur(3.5px);user-select:none}
+.passes{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.ticket{font:700 .82rem/1 var(--mono);padding:10px 14px;border:2px dashed var(--ink);border-radius:6px;background:var(--paper);position:relative}
+.ticket small{display:block;font-weight:500;margin-top:4px}
+
+/* going board (platform) */
+.going{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
+.going div{background:var(--ink);color:var(--paper);border-radius:8px;padding:10px 12px}
+.going div b{display:block;font:700 .66rem/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;opacity:.7;margin-bottom:6px}
+.going div.off{background:var(--bg);color:var(--ink-soft);border:1.5px dashed var(--ink-soft)}
+
+/* weighing room: PIN */
+.lockrow{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.pinpad{display:flex;gap:8px;margin:8px 0 6px}
+.pinpad i{width:16px;height:16px;border-radius:50%;border:2px solid var(--ink)}
+.pinpad i.f{background:var(--ink)}
+.pinpad i.x{border-color:var(--red);background:var(--red)}
+.chain{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font:600 .78rem/1 var(--mono);margin-top:8px}
+.chain span{padding:6px 8px;border-radius:5px;background:var(--turf-light);border:1px solid var(--rule)}
+.chain span.bad{background:var(--red-bg);color:var(--red);border-color:var(--red)}
+
+/* duel board */
+.duel-intro{display:flex;flex-wrap:wrap;gap:14px;align-items:center;margin-bottom:16px}
+.score{display:flex;gap:4px;align-items:flex-end;height:64px}
+.score i{width:14px;border-radius:3px 3px 0 0}
+.duel{display:grid;gap:10px}
+.bout{display:grid;grid-template-columns:1fr 46px 1fr;gap:0;align-items:stretch;border-radius:12px;overflow:hidden;border:1px solid var(--rule);background:var(--paper)}
+.bout .atk{padding:12px 14px;background:var(--red-bg)}
+.bout .atk .tag{color:var(--red)}
+.bout .vs{display:grid;place-items:center;background:var(--ink);color:var(--paper);font:800 .8rem/1 var(--mono);writing-mode:vertical-rl;letter-spacing:.2em;cursor:pointer;border:0;padding:0}
+.bout .par{padding:12px 14px;background:var(--turf-light);transition:clip-path .55s ease}
+.bout .par .tag{color:var(--turf)}
+.bout:not(.open) .par{clip-path:inset(0 0 0 100%)}
+.bout:not(.open) .vs::after{content:" ▸ parry"}
+.tag{font:700 .66rem/1 var(--mono);letter-spacing:.12em;text-transform:uppercase;display:flex;gap:6px;align-items:center;margin-bottom:5px}
+.bout p{margin:0;font-size:.92rem}
+.bout ul{margin:4px 0 0;padding-left:18px;font-size:.88rem}
+.who{font:700 .62rem/1 var(--mono);padding:3px 5px;border-radius:3px;color:#fff}
+.who.u{background:var(--user)} .who.c{background:var(--coach)}
+body.only-u .bout[data-a="c"], body.only-c .bout[data-a="u"]{opacity:.25;filter:grayscale(1)}
+.openall{font:600 .85rem/1 var(--sans);padding:9px 14px;border-radius:8px;border:1.5px solid var(--ink);background:var(--paper);color:var(--ink);cursor:pointer}
+.motto{font:italic 600 clamp(1.15rem,3.6vw,1.5rem)/1.3 var(--serif);border-left:5px solid var(--gold);padding:6px 0 6px 14px;margin:22px 0}
+.inside{margin-top:26px;border:2px solid var(--ink);border-radius:14px;padding:16px;background:repeating-linear-gradient(135deg,transparent 0 14px,color-mix(in srgb,var(--ink) 4%,transparent) 14px 28px),var(--paper)}
+.inside h3{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.roles{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
+.role{flex:1 1 150px;border-radius:10px;padding:10px;background:var(--bg);border:1px solid var(--rule);font-size:.86rem}
+.role b{font-family:var(--serif);font-size:1rem;display:block}
+
+/* starting gate (MoSCoW) */
+.gatebar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:14px}
+.replay{font:700 .9rem/1 var(--sans);padding:11px 16px;border-radius:999px;border:0;background:var(--user);color:#1b1408;cursor:pointer;box-shadow:var(--shadow)}
+.gate{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px}
+.stall{border-radius:12px 12px 4px 4px;border:2px solid var(--k);background:var(--paper);display:flex;flex-direction:column;overflow:hidden}
+.stall header{background:var(--k);color:#fff;padding:10px 12px;display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.stall header b{font:800 1.25rem/1 var(--serif);letter-spacing:.04em}
+.stall header span{font:600 .72rem/1.2 var(--mono);opacity:.9;text-align:right}
+.stall ul{list-style:none;margin:0;padding:10px;display:grid;gap:6px;font-size:.86rem}
+.stall li{padding:6px 8px;border-radius:6px;background:var(--bg);border:1px solid var(--rule)}
+.stall li.grp{background:none;border:0;padding:6px 2px 0;font:700 .68rem/1 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--ink-soft)}
+.stall li.pre{background:var(--user-bg);border-color:var(--user);font-weight:600}
+.stall li.promo{background:var(--user);color:#1b1408;font-weight:700;border-color:var(--user);animation:none}
+.stall li.promo::after{content:" ↑ moved up by the user";font:600 .68rem/1 var(--mono);display:block;margin-top:3px;opacity:.85}
+.stall li.arrive{animation:gallop .9s cubic-bezier(.2,.8,.2,1)}
+@keyframes gallop{0%{transform:translateY(40px) scale(.9);opacity:0}60%{transform:translateY(-6px) scale(1.04);opacity:1}100%{transform:none}}
+.s-must{--k:var(--must)} .s-should{--k:var(--should)} .s-could{--k:var(--could)} .s-wont{--k:var(--wont)}
+.s-wont li{text-decoration:line-through;text-decoration-color:var(--wont)}
+
+/* photo finish */
+.finish{background:var(--finish-bg);color:var(--finish-ink);margin-top:56px;padding:48px 0 56px;position:relative;overflow:hidden}
+.finish::before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(90deg,rgba(255,255,255,.035) 0 1px,transparent 1px 6px);pointer-events:none}
+.finish .post-line{position:absolute;top:0;bottom:0;right:22%;width:4px;background:var(--red);box-shadow:0 0 0 3px rgba(255,255,255,.08)}
+.finish h2{font-size:clamp(1.8rem,6vw,3rem);position:relative}
+.finish .sub{opacity:.75;font:500 .82rem/1.3 var(--mono);letter-spacing:.1em;text-transform:uppercase;position:relative}
+.placings{list-style:none;padding:0;margin:26px 0 0;display:grid;gap:14px;position:relative}
+.placings li{display:grid;grid-template-columns:56px 1fr;gap:14px;align-items:start;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:14px;
+  transform:translateX(-30px);opacity:0;transition:transform .9s cubic-bezier(.2,.8,.2,1),opacity .9s}
+.placings li.in{transform:none;opacity:1}
+.placings .pl{font:800 2.2rem/1 var(--serif);color:var(--gold);text-align:center}
+.placings .pl small{display:block;font:600 .6rem/1 var(--mono);color:var(--finish-ink);opacity:.6;letter-spacing:.12em;margin-top:4px}
+.placings h3{font-size:1.2rem;margin-bottom:4px;color:var(--finish-ink)}
+.placings p{margin:0;opacity:.85;font-size:.95rem}
+.spine{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.spine span{font:600 .72rem/1 var(--mono);padding:5px 7px;border:1px solid var(--gold);color:var(--gold);border-radius:4px}
+footer{padding:22px 0 40px;font-size:.8rem;color:var(--ink-soft)}
+@media (max-width:560px){
+  .bout{grid-template-columns:1fr}
+  .bout .vs{writing-mode:horizontal-tb;padding:8px}
+  .bout:not(.open) .par{clip-path:none;display:none}
+  .tally{margin-left:0;width:100%}
+  .finish .post-line{right:10px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}.placings li{transform:none;opacity:1}}
+</style>
+</head>
+<body>
+
+<header class="cover">
+  <div class="wrap">
+    <div class="eyebrow">Official race card · Brainstorming meeting · 15 November 2026</div>
+    <h1>From the paddock<br>to the <em>paywall</em></h1>
+    <p class="lede">One afternoon, four races. A horse-racing prediction app learns it will go on sale in Cameroon, and has to work out who its riders are, where they ride, how they pay, and who will try to cheat.</p>
+    <div class="cardline">
+      <span>Ground: Flutter, web / Android / iOS / desktop</span>
+      <span>Partner mode</span>
+      <span>98 contributions</span>
+      <span>Result: paid launch scope</span>
+    </div>
+    <div class="flag" aria-hidden="true"><i></i><i></i><i></i></div>
+  </div>
+</header>
+
+<nav class="legend" aria-label="Filter by author">
+  <div class="wrap">
+    <span class="lbl">Silks</span>
+    <button type="button" data-f="all" aria-pressed="true">All</button>
+    <button type="button" data-f="u" aria-pressed="false"><i class="silk u"></i>User (owner)</button>
+    <button type="button" data-f="c" aria-pressed="false"><i class="silk c"></i>Coach</button>
+    <span class="tally">33 user · 65 coach</span>
+  </div>
+</nav>
+
+<main>
+<!-- ================= RACE 1 ================= -->
+<section class="race" id="r1">
+  <div class="wrap">
+    <div class="racehead">
+      <div class="saddle" style="background:var(--turf)">1</div>
+      <div class="kicker">Race 1 · Persona Journey</div>
+      <h2>The Turfiste's Day Stakes</h2>
+      <p class="conditions">Starting point: the PRD said V1 is single-user with no account. The back-office brief already implied data-entry agents with roles. The backend has no auth; only the Anthropic key is protected.</p>
+    </div>
+
+    <div class="runners">
+      <div class="runner"><span class="no" style="background:#b3322b">1</span><div><b>Turfiste at the track</b><span>phone, offline, at the betting window</span></div></div>
+      <div class="runner"><span class="no" style="background:#2f6b3a">2</span><div><b>Turfiste at home</b><span>PC, preparing in advance</span></div></div>
+      <div class="runner"><span class="no" style="background:#1f6f86">3</span><div><b>Data-entry agent</b><span>back-office, enters race data</span></div></div>
+      <div class="runner"><span class="no" style="background:#7a5aa6">4</span><div><b>Admin</b><span>licences, supervision</span></div></div>
+    </div>
+
+    <div class="track">
+      <svg viewBox="0 0 800 230" role="img" aria-label="A race day: programme loaded, morning picks, odds snapshots at H-60, H-30, H-15, H-10, then the betting window">
+        <rect x="20" y="30" width="760" height="170" rx="85" fill="none" stroke="var(--turf)" stroke-width="44"/>
+        <rect x="20" y="30" width="760" height="170" rx="85" fill="none" stroke="var(--rail)" stroke-width="2" stroke-dasharray="2 8" transform="translate(0 0)"/>
+        <rect x="64" y="74" width="672" height="82" rx="41" fill="var(--paper)" stroke="var(--rail)" stroke-width="3"/>
+        <text x="400" y="110" text-anchor="middle" font-size="15" fill="var(--ink)" font-weight="700">PC: prepare  →  QR  →  phone: confirm</text>
+        <text x="400" y="132" text-anchor="middle" font-size="12" fill="var(--ink-soft)">"portable ou ordinateur", whichever is at hand</text>
+        <g font-size="11" font-weight="700" fill="#fff" text-anchor="middle">
+          <circle cx="105" cy="200" r="16" fill="var(--ink)"/><text x="105" y="204">PRG</text>
+          <circle cx="250" cy="200" r="16" fill="var(--ink)"/><text x="250" y="204">AM</text>
+          <circle cx="390" cy="200" r="16" fill="var(--turf-deep)"/><text x="390" y="204">60</text>
+          <circle cx="520" cy="200" r="16" fill="var(--turf-deep)"/><text x="520" y="204">30</text>
+          <circle cx="650" cy="200" r="16" fill="var(--turf-deep)"/><text x="650" y="204">15</text>
+          <circle cx="760" cy="115" r="18" fill="var(--gold)"/><text x="760" y="119" fill="#1b1408">10</text>
+          <rect x="560" y="12" width="96" height="34" rx="6" fill="var(--red)"/><text x="608" y="33">WINDOW</text>
+        </g>
+        <path d="M560 29 L520 29" stroke="var(--red)" stroke-width="3"/>
+      </svg>
+      <div class="posts">
+        <div class="post"><b>PROGRAMME</b><br>Picks races as soon as the card is published</div>
+        <div class="post"><b>MORNING</b><br>The morning prediction: the free tier's whole ration</div>
+        <div class="post"><b>H-60 · H-30 · H-15</b><br>Redoes the picks at every odds snapshot</div>
+        <div class="post locked"><b>H-10</b><br>The late snapshot: Expert only</div>
+        <div class="post"><b>WINDOW</b><br>Places the bet at PMU or another operator</div>
+      </div>
+    </div>
+
+    <div class="grid2" style="margin-top:18px">
+      <div class="stack">
+        <div class="idea u"><span class="by">User</span><p style="margin:0">Picks races when the programme loads, prepares ahead, redoes the prediction at every odds snapshot, then goes to the window. Uses phone or computer interchangeably.</p></div>
+        <div class="idea c"><span class="by">Coach</span><p style="margin:0">Prepare on PC, confirm on phone: that means continuity across devices. It is the strongest argument for an account, and it contradicts the no-account V1.</p></div>
+        <div class="idea c"><span class="by">Coach</span><p style="margin:0">Continuity without an account: the PC shows a QR code or short link that carries the selection to the phone.</p></div>
+        <div class="idea u"><span class="by">User</span><p style="margin:0">Keeps the QR transfer as an asset.</p></div>
+      </div>
+      <div class="stack">
+        <div class="idea c scratched"><span class="by">Coach</span><p style="margin:0">Betting-window ticket: a full-screen "to play" card on the phone to show at the counter.</p><span class="stamp">NON-RUNNER</span></div>
+        <div class="idea u dec"><span class="by">User</span><p style="margin:0">Out of scope. The app helps you decide; the bet is placed at PMU or another operator.</p></div>
+        <div class="idea c"><span class="by">Coach</span><p style="margin:0"><b>QR meets licence:</b> the QR code becomes device pairing, like WhatsApp Web. The licence allows N devices (say 1 PC + 1 phone), which limits account sharing without spying on anyone.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= RACE 2 ================= -->
+<section class="race" id="r2">
+  <div class="wrap">
+    <div class="racehead">
+      <div class="saddle" style="background:var(--user)">2</div>
+      <div class="kicker">Race 2 · Assumption Reversal</div>
+      <h2>The "No Account" Handicap</h2>
+      <p class="conditions">The assumption under test: V1 is free and needs no account (PRD §9.1). The user didn't just reverse it, he threw it out.</p>
+    </div>
+
+    <div class="flipzone">
+      <button class="flip" id="flip" type="button" aria-pressed="false" aria-label="Flip the assumption card">
+        <div class="inner">
+          <div class="face front">
+            <div class="small">PRD §9.1 · the assumption</div>
+            <div class="big">"V1: free, single-user, no account."</div>
+            <div class="hint">Tap to turn the card over</div>
+          </div>
+          <div class="face back">
+            <div class="small">The user · decision</div>
+            <div class="big">« Le service est payant. »</div>
+            <div>No user accounts is not acceptable. A paid service needs a usage licence.</div>
+          </div>
+        </div>
+      </button>
+      <ol class="cascade">
+        <li><div class="idea u dec"><span class="by">User</span> Paid service, so licences are needed.</div></li>
+        <li><div class="idea c"><span class="by">Coach</span> Paid means a local legal consultation first (PRD §9.3/§10), run alongside the accounts work.</div></li>
+        <li><div class="idea u dec"><span class="by">User</span> Kept: monthly subscription, day pass for the big days (Quinté, Arc), feature tiers, resale by third parties (club, PMU bar) as B2B2C.</div></li>
+        <li><div class="idea c"><span class="by">Coach</span> B2B2C means "organisation" accounts with seats and roles (multi-tenant, in the data model from day one). Day passes mean <b>dated entitlements</b>, not an "is_subscriber" boolean.</div></li>
+      </ol>
+    </div>
+
+    <h3 style="margin:30px 0 4px;font-size:1.3rem">The weights carried</h3>
+    <p class="meta" style="margin:0 0 12px"><span class="idea u dec" style="display:inline;padding:2px 8px">User</span> Free means the morning prediction only; everything else goes into tiers, and the coach should propose the split. <span class="idea c" style="display:inline;padding:2px 8px">Coach</span> proposed it. The user then moved H-10 up to Expert.</p>
+    <div class="weights">
+      <div class="tier" style="--c:var(--wont)"><span class="wt">0 FCFA · read only</span><h4>Free</h4>
+        <ul><li>Morning prediction</li></ul>
+        <div class="teaser"><span class="blur">Le classement a changé à H-10 : n°7 passe 1er</span><br><small>the blurred teaser: "odds moved at H-10, the ranking changed"</small></div>
+      </div>
+      <div class="tier" style="--c:var(--turf)"><span class="wt">TURFISTE</span><h4>Turfiste</h4>
+        <ul><li>Snapshots H-60 / H-30 / H-15</li><li>Value, Kelly</li><li>Deep history</li><li>2 devices</li></ul>
+      </div>
+      <div class="tier" style="--c:var(--gold)"><span class="wt">EXPERT · top weight</span><h4>Expert</h4>
+        <ul><li><b>H-10 snapshot</b> (user's call)</li><li>Multi + reduced systems</li><li>Combinations, 10 bet types</li><li>Expert engine with sliders</li><li>Photo import, with a monthly quota (each call costs Anthropic API money)</li></ul>
+      </div>
+      <div class="tier" style="--c:var(--could)"><span class="later">LATER</span><span class="wt">B2B2C</span><h4>Club</h4>
+        <ul><li>Clubs, PMU bars</li><li>Seats + roles (manager / members)</li></ul>
+      </div>
+    </div>
+    <div class="passes">
+      <div class="ticket">DAY PASS<small>Expert for 24 h</small></div>
+      <div class="ticket">WEEK PASS<small>prepaid, top-up culture</small></div>
+      <div class="ticket">MONTHLY<small>subscription</small></div>
+      <div class="ticket" style="border-color:var(--user)">DUO / FAMILY<small>2-3 people, cheaper than two subs</small></div>
+    </div>
+
+    <h3 style="margin:30px 0 10px;font-size:1.3rem">The going: Cameroon</h3>
+    <div class="grid2">
+      <div class="stack">
+        <div class="idea u dec"><span class="by">User</span> Launch in Cameroon, then the rest of Africa, then the world.</div>
+        <div class="idea c"><span class="by">Coach</span> Stores take 15-30% on in-app subscriptions. In Cameroon, Mobile Money (MTN MoMo, Orange Money) through one aggregator, outside the store, beats the hybrid model. Cards and in-app purchases are marginal.</div>
+        <div class="idea c"><span class="by">Coach</span> Log in with a phone number + SMS/WhatsApp OTP, not email/password. It matches Mobile Money.</div>
+        <div class="idea c"><span class="by">Coach</span> Expensive data, entry-level phones: offline mode, light app, compressed payloads.</div>
+      </div>
+      <div class="going">
+        <div><b>Firm</b>Android first</div>
+        <div><b>Good</b>Flutter Web app for the PC</div>
+        <div><b>Soft</b>iOS second</div>
+        <div><b>Track</b>MoMo / Orange Money</div>
+        <div><b>Rail</b>Phone + OTP identity</div>
+        <div class="off"><b>Abandoned</b>Desktop installers</div>
+      </div>
+    </div>
+
+    <h3 style="margin:30px 0 4px;font-size:1.3rem">The weighing room: PIN and sessions</h3>
+    <p class="meta" style="margin:0 0 12px">Triggered by a user decision: the phone may be shared, but the app is not.</p>
+    <div class="lockrow">
+      <div class="panel"><h3>The PIN</h3>
+        <div class="pinpad" aria-hidden="true"><i class="f"></i><i class="f"></i><i class="f"></i><i class="f"></i><i></i><i></i></div>
+        <p class="meta" style="margin:0">4-6 digits, optional biometrics, auto-lock after X minutes idle and on every return from background. It unlocks a token in Keystore / Keychain and <b>never reaches the server</b>.</p>
+        <div class="pinpad" aria-hidden="true" style="margin-top:12px"><i class="x"></i><i class="x"></i><i class="x"></i><i class="x"></i><i class="x"></i></div>
+        <p class="meta" style="margin:0">5 wrong PINs: local session wiped, OTP login required.</p>
+      </div>
+      <div class="panel"><h3>The token chain</h3>
+        <div class="chain"><span>access 15 min</span>→<span>refresh #1</span>→<span>refresh #2</span>→<span class="bad">#1 replayed</span>→<span class="bad">chain revoked</span></div>
+        <p class="meta">Short access token, device-bound refresh token rotated on every use. A reused refresh token means theft: the whole chain is revoked.</p>
+        <p class="meta">"My devices" screen: paired devices listed, remote revoke, counted against the licence limit.</p>
+      </div>
+      <div class="panel"><h3>Losing the number</h3>
+        <div class="idea u"><span class="by">User</span> Profile holds a verified email, for recovery and number changes.</div>
+        <div class="idea c" style="margin-top:8px"><span class="by">Coach</span> Number change via email: 24-48 h delay, alert to the old number and the email, one-click cancel. Extra proof: a past MoMo transaction reference. Single-use backup codes on activation.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= RACE 3 ================= -->
+<section class="race" id="r3">
+  <div class="wrap">
+    <div class="racehead">
+      <div class="saddle" style="background:var(--red)">3</div>
+      <div class="kicker">Race 3 · Reverse Brainstorming</div>
+      <h2>Play the Fraudster</h2>
+      <p class="conditions">How would you steal, cheat or abuse this app? Every attack on the left, its parry on the right. Tap the bar in the middle to block.</p>
+    </div>
+
+    <div class="duel-intro">
+      <div class="score" aria-label="Attacks proposed: 10 by the user, 3 by the coach">
+        <i style="height:100%;background:var(--user)"></i><i style="height:100%;background:var(--user)"></i><i style="height:100%;background:var(--user)"></i><i style="height:100%;background:var(--user)"></i><i style="height:100%;background:var(--user)"></i><i style="height:100%;background:var(--user)"></i><i style="height:100%;background:var(--user)"></i><i style="height:100%;background:var(--user)"></i><i style="height:100%;background:var(--user)"></i><i style="height:100%;background:var(--user)"></i>
+        <i style="height:100%;background:var(--coach);margin-left:8px"></i><i style="height:100%;background:var(--coach)"></i><i style="height:100%;background:var(--coach)"></i>
+      </div>
+      <p style="margin:0;flex:1 1 220px"><b>The owner made the better crook:</b> 10 of the 13 attacks came from the user. The coach supplied most of the parries.</p>
+      <button class="openall" id="openall" type="button">Reveal every parry</button>
+    </div>
+
+    <div class="duel" id="duel">
+      <div class="bout" data-a="c"><div class="atk"><div class="tag">Attack <span class="who c">COACH</span></div><p>One Expert subscription, H-10 screenshots resold in a WhatsApp group.</p></div><button class="vs" type="button">VS</button><div class="par"><div class="tag">Parry</div><p>Invisible per-account watermark: a circulating capture names the leaking account (deterrent, and proof for suspension).</p></div></div>
+
+      <div class="bout" data-a="u"><div class="atk"><div class="tag">Attack <span class="who u">USER</span></div><p>Copy the predictions onto paper and spread them on WhatsApp. "No technical defence possible."</p></div><button class="vs" type="button">VS</button><div class="par"><div class="tag">Parry</div><ul><li><b>Time:</b> the value sits at H-10 to H-2. By the time it's copied, the odds have moved. The app recalculates live; the copy is frozen.</li><li><b>Personalisation:</b> Kelly stake on your bankroll, Multi on your selection, the engine on your settings. A generic copy is worth less.</li></ul></div></div>
+
+      <div class="bout" data-a="u"><div class="atk"><div class="tag">Attack <span class="who u">USER</span></div><p>Film a subscribed friend's phone screen and share the video with a group of punters.</p></div><button class="vs" type="button">VS</button><div class="par"><div class="tag">Parry</div><ul><li>Block native capture/recording (FLAG_SECURE, iOS detection) on paid screens. Useless against a second phone, but it cuts the easiest share.</li><li>Semi-visible watermark (logo + short account ID) survives filming: the leak becomes an advert, and it traces the subscriber.</li><li>Accept a residual leak. The goal isn't zero leaks; it's that the subscription stays handier than a second-hand video.</li></ul></div></div>
+
+      <div class="bout" data-a="c"><div class="atk"><div class="tag">Attack <span class="who c">COACH</span></div><p>Pay a pass by MoMo, then dispute it with the operator and keep the access.</p></div><button class="vs" type="button">VS</button><div class="par"><div class="tag">Parry</div><p>No confirmation ever comes from the app. Only the aggregator's signed webhook (signature checked + status API callback) grants a right. Idempotent per transaction reference. Daily licences-vs-payments reconciliation.</p></div></div>
+
+      <div class="bout" data-a="u"><div class="atk"><div class="tag">Attack <span class="who u">USER</span></div><p>Use other subscribers' accounts and credentials.</p></div><button class="vs" type="button">VS</button><div class="par"><div class="tag">Parry</div><p>New device = OTP to the holder's phone + a notification. Borrowing an account needs the holder's active help every time. Anomaly detection: two distant cities or IPs at once, frequent device rotation, then alert, then block.</p></div></div>
+
+      <div class="bout" data-a="u"><div class="atk"><div class="tag">Attack <span class="who u">USER</span></div><p>Open the web account on several devices and browsers at the same time.</p></div><button class="vs" type="button">VS</button><div class="par"><div class="tag">Parry</div><p>Every browser session counts as a device: "the web is unlimited" is not a loophole. <b>User's call:</b> over the limit, block the new device and offer Duo. Friendly sharing is sold to, not fought.</p></div></div>
+
+      <div class="bout" data-a="u"><div class="atk"><div class="tag">Attack <span class="who u">USER</span></div><p>Hit the API directly and scrape the predictions without paying.</p></div><button class="vs" type="button">VS</button><div class="par"><div class="tag">Parry</div><p>Every paid route checks token + entitlement (tier, dates) on the server. The server returns only what the tier allows; there is no hidden H-10 field on the client. A patched APK unlocks nothing. Rate limiting per account and per IP.</p></div></div>
+
+      <div class="bout" data-a="u"><div class="atk"><div class="tag">Attack <span class="who u">USER</span></div><p>SQL injection.</p></div><button class="vs" type="button">VS</button><div class="par"><div class="tag">Parry: a look at the code</div><p>SQLAlchemy ORM, so low risk. The only f-strings are migration ALTER TABLEs on internal names. But <code>allow_origins=['*']</code> must be restricted, and SQLite (hippique.db) must give way to PostgreSQL.</p></div></div>
+
+      <div class="bout" data-a="u"><div class="atk"><div class="tag">Attack <span class="who u">USER</span></div><p>Intercept the transactions.</p></div><button class="vs" type="button">VS</button><div class="par"><div class="tag">Parry</div><p>HTTPS/TLS everywhere + certificate pinning in the mobile app. Payment trust only via the signed webhook.</p></div></div>
+
+      <div class="bout" data-a="u"><div class="atk"><div class="tag">Attack <span class="who u">USER</span></div><p>Get at user accounts, transactions and predictions.</p></div><button class="vs" type="button">VS</button><div class="par"><div class="tag">Parry</div><p>Separate schema or database for accounts and payments, minimal access, encrypted backups, store only what's needed (no card numbers, PIN never on the server). No keys in the APK (rule AD-3 extended to payment and SMS keys). Cameroon data-protection law added to the legal consultation.</p></div></div>
+    </div>
+
+    <p class="motto">"You can't stop information leaking. You make the copy worth less than the original."</p>
+    <div class="grid2">
+      <div class="idea c"><span class="by">Coach</span> Turn the attack around: an affiliate programme for WhatsApp group admins (referral code, commission). The reseller becomes a distributor.</div>
+      <div class="idea u dec"><span class="by">User</span> Duo / Family offer kept. Over the device limit, block and propose Duo.</div>
+    </div>
+
+    <div class="inside">
+      <h3><span class="stamp" style="margin:0;transform:rotate(-2deg)">STEWARDS' ENQUIRY</span> The enemy inside the stable</h3>
+      <div class="grid2" style="margin-top:12px">
+        <div class="idea u"><span class="by">User</span> A data-entry agent generates predictions to resell them.</div>
+        <div class="idea u"><span class="by">User</span> An agent generates licences and sells them as he pleases.</div>
+        <div class="idea c"><span class="by">Coach</span> The hidden one: an agent falsifies a rank, a weight, the ground, to tilt a horse's prediction and bet against the market. Parry: deviation check vs the PMU source, mandatory validation, per-agent traceability.</div>
+        <div class="idea u dec"><span class="by">User</span> An agent sees only the data he enters. Every change needs approval before it applies.</div>
+      </div>
+      <div class="roles">
+        <div class="role"><b>Agent</b>Data entry only. No access to predictions or licences.</div>
+        <div class="role"><b>Supervisor</b>Approves changes.</div>
+        <div class="role"><b>Admin</b>Licences. Manual grant needs a reason + a second person (four eyes).</div>
+      </div>
+      <p class="meta" style="margin:0">Licences are born only from the payment webhook. Append-only audit log. Daily reconciliation, so any licence without a payment stands out. Back-office on its own domain with mandatory 2FA for staff.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ================= RACE 4 ================= -->
+<section class="race" id="r4">
+  <div class="wrap">
+    <div class="racehead">
+      <div class="saddle" style="background:var(--ink);color:var(--paper)">4</div>
+      <div class="kicker">Race 4 · MoSCoW convergence</div>
+      <h2>The Launch Gate: paid, Cameroon</h2>
+      <p class="conditions">The user approved every idea in the recap, then asked to converge. The coach loaded the stalls. The user moved two runners into Must; the rest stood.</p>
+    </div>
+    <div class="gatebar">
+      <span class="meta">Gold = moved into Must by the user. Starred = prerequisite.</span>
+      <button class="replay" id="replay" type="button">▶ Replay the user's call</button>
+    </div>
+    <div class="gate">
+      <div class="stall s-must"><header><b>MUST</b><span>launch</span></header>
+        <ul id="must">
+          <li class="pre">★ Legal consultation, Cameroon</li>
+          <li class="grp">Platform & identity</li>
+          <li>Android + web app</li>
+          <li>Phone + OTP account</li>
+          <li>PIN + auto-lock</li>
+          <li>Secure tokens</li>
+          <li>Verified email + recovery with delay and alert</li>
+          <li>My devices + block past the limit</li>
+          <li>Server sync of selections across devices</li>
+          <li class="promo" data-promo="qr">QR-code device pairing</li>
+          <li class="grp">Offer & payment</li>
+          <li>Free / Turfiste / Expert + H-10 teaser</li>
+          <li>Day, week, monthly passes</li>
+          <li class="promo" data-promo="duo">Duo offer</li>
+          <li>Dated entitlements · photo quota</li>
+          <li>Mobile Money via 1 aggregator: signed webhook, idempotency, daily reconciliation</li>
+          <li class="grp">Security</li>
+          <li>Server-side access control + tier filtering + rate limiting</li>
+          <li>Restricted CORS · HTTPS · PostgreSQL</li>
+          <li>Secrets out of the APK · encrypted backups</li>
+          <li>Screenshot blocking</li>
+          <li class="grp">Back-office</li>
+          <li>Agent / supervisor / admin roles</li>
+          <li>Agent sees own entries · approval before change</li>
+          <li>Audit log · staff 2FA</li>
+          <li>Manual licence: reason + four eyes</li>
+        </ul>
+      </div>
+      <div class="stall s-should"><header><b>SHOULD</b><span>V1.1</span></header>
+        <ul id="should">
+          <li>iOS</li>
+          <li>Biometrics</li>
+          <li>Visible watermark</li>
+          <li>Anomaly detection</li>
+          <li>MoMo proof + backup codes</li>
+          <li>Certificate pinning</li>
+          <li>Entries vs PMU source comparison</li>
+        </ul>
+      </div>
+      <div class="stall s-could"><header><b>COULD</b><span>later</span></header>
+        <ul>
+          <li>Club tier (B2B2C)</li>
+          <li>WhatsApp admin referral</li>
+          <li>Invisible watermark</li>
+          <li>In-app store payments abroad</li>
+          <li>Expansion across Africa</li>
+        </ul>
+      </div>
+      <div class="stall s-wont"><header><b>WON'T</b><span>not this time</span></header>
+        <ul>
+          <li>Desktop apps (Windows / macOS / Linux)</li>
+          <li>Bet ticket / validation</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+</main>
+
+<!-- ================= PHOTO FINISH ================= -->
+<section class="finish" aria-labelledby="pf">
+  <div class="post-line" aria-hidden="true"></div>
+  <div class="wrap">
+    <div class="sub">Photo finish · the coach's synthesis</div>
+    <h2 id="pf">What crossed the line</h2>
+    <ol class="placings" id="placings">
+      <li><div class="pl">1<small>FIRST</small></div><div><h3>One account, three jobs</h3><p>The account carries the licence, the PC-to-phone continuity and the anti-fraud defence in one go.</p></div></li>
+      <li><div class="pl">2<small>SECOND</small></div><div><h3>The phone number is the spine, and the weak point</h3><p>Identity, Mobile Money, OTP and new-device checks all hang on it. That makes it a single point of failure, so email recovery is critical.</p>
+        <div class="spine"><span>identity</span><span>MoMo</span><span>OTP</span><span>new device</span><span>↳ email recovery</span></div></div></li>
+      <li><div class="pl">3<small>THIRD</small></div><div><h3>The anti-leak strategy is the product strategy</h3><p>Timing (H-10 for Expert) and personalisation are both the paywall and the defence against copying.</p></div></li>
+      <li><div class="pl">4<small>FOURTH</small></div><div><h3>Inside or outside, one parry</h3><p>The server is the only authority: rights born from the webhook, tier filtering, audit. It stops the fraudster and the crooked agent alike.</p></div></li>
+      <li><div class="pl">5<small>FIFTH</small></div><div><h3>The gap with what exists</h3><p>PRD and architecture are single-user with no account; the backend has no auth and runs on SQLite. Next: a correct-course, then PRD and architecture updates.</p></div></li>
+    </ol>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">Keepsake of the brainstorming session "Platform, accounts, authentication and security", 15 November 2026. Techniques: Persona Journey · Assumption Reversal · Reverse Brainstorming · MoSCoW. Status: complete.</div>
+</footer>
+
+<script>
+(function(){
+  // author filter
+  var btns=document.querySelectorAll('.legend button');
+  btns.forEach(function(b){b.addEventListener('click',function(){
+    btns.forEach(function(x){x.setAttribute('aria-pressed',x===b?'true':'false')});
+    document.body.classList.remove('only-u','only-c');
+    if(b.dataset.f!=='all')document.body.classList.add('only-'+b.dataset.f);
+  })});
+
+  // flip card
+  var flip=document.getElementById('flip');
+  flip.addEventListener('click',function(){
+    var on=flip.classList.toggle('on');flip.setAttribute('aria-pressed',on?'true':'false');
+  });
+
+  // duel board
+  document.querySelectorAll('.bout .vs').forEach(function(v){
+    v.addEventListener('click',function(){v.parentNode.classList.toggle('open')});
+  });
+  var openall=document.getElementById('openall'),allOpen=false;
+  openall.addEventListener('click',function(){
+    allOpen=!allOpen;
+    document.querySelectorAll('.bout').forEach(function(b){b.classList.toggle('open',allOpen)});
+    openall.textContent=allOpen?'Hide the parries':'Reveal every parry';
+  });
+
+  // MoSCoW replay: QR + Duo start in Should, then gallop into Must
+  var must=document.getElementById('must'),should=document.getElementById('should');
+  var promos=[].slice.call(must.querySelectorAll('[data-promo]'));
+  var anchors=promos.map(function(p){return p.nextElementSibling});
+  var busy=false;
+  document.getElementById('replay').addEventListener('click',function(){
+    if(busy)return;busy=true;
+    promos.forEach(function(p){p.classList.remove('promo','arrive');should.insertBefore(p,should.children[1]||null)});
+    setTimeout(function(){
+      promos.forEach(function(p,i){
+        must.insertBefore(p,anchors[i]);
+        p.classList.add('promo');void p.offsetWidth;p.classList.add('arrive');
+      });
+      must.scrollIntoView({behavior:'smooth',block:'nearest'});
+      setTimeout(function(){busy=false},900);
+    },1100);
+  });
+
+  // photo finish reveal
+  var items=document.querySelectorAll('#placings li');
+  function reveal(){items.forEach(function(li,i){setTimeout(function(){li.classList.add('in')},i*220)})}
+  if('IntersectionObserver' in window){
+    var io=new IntersectionObserver(function(es){if(es.some(function(e){return e.isIntersecting})){reveal();io.disconnect()}},{threshold:.15});
+    io.observe(document.getElementById('placings'));
+  } else reveal();
+})();
+</script>
+</body>
+</html>
