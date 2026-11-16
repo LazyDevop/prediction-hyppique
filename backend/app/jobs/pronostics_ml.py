@@ -39,6 +39,7 @@ from datetime import date, datetime, timedelta
 from typing import Callable, Dict, List, Optional, Set, Tuple
 
 from app.data.repository import Repository
+from app.jobs import bilan_pronostics
 from app.jobs.build_features import lire_courses_du_jour, lire_jours
 from app.jobs.cotes_instantanees import tolerance
 from app.model.features import ConstructeurFeatures, CourseRecord, PartantRecord
@@ -84,6 +85,7 @@ def _env_heure(nom: str = "PRONOSTICS_HEURE", defaut: int = HEURE_DEFAUT) -> int
 
 POLL_SECONDS = _env_nombre("PRONOSTICS_POLL_SECONDS", POLL_DEFAUT_SECONDS, 1.0, 60.0)
 HEURE = _env_heure()
+BILAN_HEURE = _env_heure("BILAN_HEURE", 10)
 DELAI_REESSAI_ETAT = timedelta(minutes=5)
 
 
@@ -268,11 +270,14 @@ def boucle(
     repository: Repository, modele: ModeleML, passages: Optional[int] = None,
     horloge: Callable[[], datetime] = datetime.now, attendre: Callable[[float], None] = time.sleep,
     heure: int = HEURE, construire: Callable[[Repository, date], Etat] = construire_etat,
+    bilan: Optional[Callable[[Repository, datetime], object]] = None,
 ) -> Optional[Etat]:
     """Passes successives ; `passages` borne la boucle (tests). L'état est
     reconstruit à la première passe où le programme change (à `heure`) ;
     une reconstruction en échec est retentée au plus toutes les
-    DELAI_REESSAI_ETAT. Une erreur n'arrête jamais la boucle."""
+    DELAI_REESSAI_ETAT. `bilan`, s'il est fourni, est appelé après chaque
+    passe (il décide lui-même s'il a quelque chose à écrire). Une erreur
+    n'arrête jamais la boucle."""
     etat: Optional[Etat] = None
     prochain_essai: Optional[datetime] = None
     n = 0
@@ -293,6 +298,11 @@ def boucle(
                 passage(repository, modele, etat, horloge(), horloge=horloge)
         except Exception:
             logger.exception("Echec de la passe des pronostics ML")
+        if bilan is not None:
+            try:
+                bilan(repository, horloge())
+            except Exception:
+                logger.exception("Echec du bilan quotidien des pronostics, retenté à la passe suivante")
         attendre(POLL_SECONDS)
     return etat
 
@@ -368,7 +378,8 @@ def main(argv: Optional[List[str]] = None) -> int:
               and bilan["ecart_max"] < TOLERANCE_VERIFICATION)
         return 0 if ok else 1
     logger.info("Pronostics ML démarrés : matin à partir de %d h, passe toutes les %ss", HEURE, POLL_SECONDS)
-    boucle(repository, modele)
+    logger.info("Bilan quotidien des pronostics à partir de %d h dans %s", BILAN_HEURE, bilan_pronostics.DOSSIER_BILANS)
+    boucle(repository, modele, bilan=lambda repo, maintenant: bilan_pronostics.ecrire_si_du(repo, maintenant, BILAN_HEURE))
     return 0
 
 

@@ -353,6 +353,22 @@ def test_boucle_survit_a_une_erreur(repo):
     assert len(attentes) == 2
 
 
+def test_boucle_appelle_le_bilan_a_chaque_passe_et_survit_a_son_echec(repo, caplog):
+    appels = []
+
+    def bilan(repository, maintenant):
+        appels.append(maintenant)
+        raise RuntimeError("disque plein")
+
+    def construire(repository, jour):
+        raise RuntimeError("base indisponible")
+
+    pronostics_ml.boucle(repo, ModeleFactice(), passages=3, horloge=lambda: MATIN_7H, attendre=lambda _s: None,
+                         construire=construire, bilan=bilan)
+    assert appels == [MATIN_7H] * 3
+    assert sum("Echec du bilan quotidien" in r.getMessage() for r in caplog.records) == 3
+
+
 def test_reconstruction_en_echec_retentee_toutes_les_5_minutes(repo, caplog):
     horloge = Horloge(MATIN_7H)
     essais = []

@@ -51,6 +51,8 @@ services:
       - DATABASE_URL=sqlite:////app/data/hippique.db
       - PRONOSTICS_HEURE=7
       - PRONOSTICS_POLL_SECONDS=30
+      # Bilan de la veille face au marché : /app/data/bilans/bilan_<veille>.md
+      - BILAN_HEURE=10
     env_file:
       - path: .env
         required: false
