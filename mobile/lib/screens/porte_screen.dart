@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../providers/auth_provider.dart';
 import '../widgets/auth_styles.dart';
+import 'appareil_bloque_screen.dart';
 import 'connexion_screen.dart';
 import 'deverrouillage_screen.dart';
 
@@ -82,13 +83,16 @@ class _PorteScreenState extends ConsumerState<PorteScreen> {
     final porte = etat.hasError && !etat.hasValue ? Porte.aucuneSession : etat.value?.porte;
 
     if (porte == Porte.ouverte) _applicationConstruite = true;
-    if (porte == Porte.aucuneSession || porte == Porte.choixPin) _applicationConstruite = false;
+    if (porte == Porte.aucuneSession || porte == Porte.choixPin || porte == Porte.appareilBloque) {
+      _applicationConstruite = false;
+    }
 
     final Widget? ecranPorte = switch (porte) {
       null => const Scaffold(backgroundColor: JetonsAuth.bg),
       Porte.aucuneSession => const ConnexionScreen(),
       Porte.choixPin => const ChoixPinScreen(),
       Porte.verrouillee => const DeverrouillageScreen(),
+      Porte.appareilBloque => const AppareilBloqueScreen(),
       Porte.ouverte => null,
     };
     final masquee = ecranPorte != null;

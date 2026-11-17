@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../auth/pin_hash.dart';
 import '../data/local/session_store.dart';
 import '../data/remote/auth_api.dart';
+import '../data/remote/compte_api.dart';
 
 /// Inactivité (temps passé en arrière-plan) au-delà de laquelle l'app se
 /// verrouille au retour au premier plan. Provisoire (PRD OQ 14).
@@ -18,22 +19,47 @@ const messageSessionEffacee = 'Session effacée — reconnectez-vous par code SM
 /// `--dart-define=AUTH_DEMO=true` autorise le faux serveur dans un build release.
 const _authDemo = bool.fromEnvironment('AUTH_DEMO');
 
-/// FauxAuthApi seulement en debug/profile ou avec `AUTH_DEMO=true` : un
-/// build release sans client réel échoue clairement au lieu d'accepter
-/// le code de démonstration.
+const _demoAutorisee = kDebugMode || kProfileMode || _authDemo;
+
+/// Règle de démonstration : faux serveurs seulement en debug/profile ou
+/// avec `AUTH_DEMO=true`. Les drapeaux de démo et l'icône de compte
+/// lisent ce booléen, jamais l'échec d'un provider.
+final demoAutoriseeProvider = Provider<bool>((ref) => _demoAutorisee);
+
+/// Horloge murale : dates du faux serveur et « dernière activité ».
+final horlogeMuraleProvider = Provider<DateTime Function()>((ref) => DateTime.now);
+
+/// Les deux faux serveurs liés (la limite d'appareils du faux compte
+/// décide du blocage à la connexion), construits UNE fois : `ref.read`
+/// pour ne jamais être reconstruits, ce qui effacerait leur état.
+final _fauxServeursProvider = Provider<(FauxAuthApi, FauxCompteApi)>((ref) {
+  final compte = FauxCompteApi(horloge: ref.read(horlogeMuraleProvider), web: ref.read(estWebProvider));
+  return (FauxAuthApi(rattachement: compte), compte);
+});
+
+/// FauxAuthApi seulement selon [demoAutoriseeProvider] : un build release
+/// sans client réel échoue clairement au lieu d'accepter le code de
+/// démonstration.
 final authApiProvider = Provider<AuthApi>((ref) {
-  if (kDebugMode || kProfileMode || _authDemo) return FauxAuthApi();
+  if (ref.watch(demoAutoriseeProvider)) return ref.watch(_fauxServeursProvider).$1;
   throw StateError('aucune AuthApi réelle — story 8.1 serveur');
 });
 
-/// Vrai seulement quand le faux serveur de démonstration est actif.
-final modeDemoProvider = Provider<bool>((ref) {
-  try {
-    return ref.watch(authApiProvider) is FauxAuthApi;
-  } on StateError {
-    return false;
-  }
+/// Même règle que [authApiProvider].
+final compteApiProvider = Provider<CompteApi>((ref) {
+  if (ref.watch(demoAutoriseeProvider)) return ref.watch(_fauxServeursProvider).$2;
+  throw StateError('aucune CompteApi réelle — stories 8.4 et 8.6 serveur');
 });
+
+/// Vrai quand une CompteApi existe (Profil accessible depuis Accueil).
+/// Seule la démo en fournit une tant que le client réel n'existe pas.
+final compteDisponibleProvider = Provider<bool>((ref) => ref.watch(demoAutoriseeProvider));
+
+/// Vrai quand le faux serveur de démonstration est actif (« Mode démo »).
+final modeDemoProvider = Provider<bool>((ref) => ref.watch(demoAutoriseeProvider));
+
+/// Vrai quand le faux serveur de compte est actif (code email de démo).
+final modeDemoCompteProvider = Provider<bool>((ref) => ref.watch(demoAutoriseeProvider));
 
 /// Web : rien n'est persisté par l'app (le cookie de renouvellement viendra
 /// avec la story 8.2).
@@ -53,7 +79,9 @@ final horlogeMonotoneProvider = Provider<Duration Function()>((ref) {
   return () => chrono.elapsed;
 });
 
-enum Porte { aucuneSession, choixPin, verrouillee, ouverte }
+/// [appareilBloque] : code correct mais limite d'appareils atteinte ; aucune
+/// session n'est ouverte, seul un jeton de gestion des appareils est tenu.
+enum Porte { aucuneSession, choixPin, verrouillee, ouverte, appareilBloque }
 
 class EtatAuth {
   final Porte porte;
@@ -64,12 +92,16 @@ class EtatAuth {
   /// Message à afficher sur Connexion (ex. session effacée).
   final String? message;
 
+  /// Porte [Porte.appareilBloque] : jeton de gestion, limite et palier.
+  final AppareilBloque? blocage;
+
   const EtatAuth(
     this.porte, {
     this.numeroMasque,
     this.pinLongueur,
     this.essaisPinRestants = essaisPinMax,
     this.message,
+    this.blocage,
   });
 }
 
@@ -77,12 +109,21 @@ class AuthNotifier extends AsyncNotifier<EtatAuth> {
   Duration? _arrierePlanDepuis;
 
   SessionStore get _store => ref.read(sessionStoreProvider);
+
+  /// Faux serveur de compte, s'il est actif (crochets de démo).
+  FauxCompteApi? get _fauxCompte {
+    if (!ref.read(demoAutoriseeProvider)) return null;
+    final compte = ref.read(compteApiProvider);
+    return compte is FauxCompteApi ? compte : null;
+  }
+
   bool get _estWeb => ref.read(estWebProvider);
 
   @override
   Future<EtatAuth> build() async {
     final session = await _store.lire();
     if (session == null) return const EtatAuth(Porte.aucuneSession);
+    _fauxCompte?.restaurerSession(session.numeroMasque);
     if (_estWeb) return EtatAuth(Porte.ouverte, numeroMasque: session.numeroMasque);
     // Session sans PIN (app tuée avant le choix, clés PIN absentes) : le
     // choix du PIN n'est proposé qu'après un code reçu dans ce lancement.
@@ -134,6 +175,9 @@ class AuthNotifier extends AsyncNotifier<EtatAuth> {
       );
       final session = await _lireObligatoire();
       state = AsyncData(EtatAuth(_estWeb ? Porte.ouverte : Porte.choixPin, numeroMasque: session.numeroMasque));
+    } else if (resultat is AppareilBloque) {
+      // Rien n'est enregistré : pas de session sur un appareil bloqué.
+      state = AsyncData(EtatAuth(Porte.appareilBloque, blocage: resultat));
     }
     return resultat;
   }
@@ -172,6 +216,21 @@ class AuthNotifier extends AsyncNotifier<EtatAuth> {
 
   /// « Code oublié ? » : efface la session locale et ouvre Connexion.
   Future<void> seReconnecter() async {
+    await _store.effacer();
+    state = const AsyncData(EtatAuth(Porte.aucuneSession));
+  }
+
+  /// Fin de l'accès limité (retrait fait, délai dépassé, autre numéro) :
+  /// retour à Connexion, avec [message] si fourni.
+  void quitterAppareilBloque({String? message}) {
+    state = AsyncData(EtatAuth(Porte.aucuneSession, message: message));
+  }
+
+  /// « Se déconnecter » (Profil) : efface la session locale (jetons,
+  /// empreinte du PIN) et ouvre Connexion. Pas d'appel serveur tant que la
+  /// révocation (story 8.2) n'existe pas.
+  Future<void> seDeconnecter() async {
+    _fauxCompte?.deconnecter();
     await _store.effacer();
     state = const AsyncData(EtatAuth(Porte.aucuneSession));
   }

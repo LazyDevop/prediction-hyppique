@@ -269,3 +269,9 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-8-1-8-3-ecrans-connexion.md`
   summary: Real SMS auto-fill on Android (SMS Retriever or User Consent API) and server retry-after on rate limits.
   evidence: Review of the login screens: AutofillHints.oneTimeCode alone is unreliable; TropDeDemandes carries no wait time (real story 8.1).
+- source_spec: `_bmad-output/implementation-artifacts/spec-8-4-8-6-ecrans-profil-appareils.md`
+  summary: CGU acceptance date comes from the server (fake shows its start time after a cold start); daily quota of device-management tokens (429) enforced server-side.
+  evidence: Review of Profil/Mes appareils: the fake keeps no persistent account state and never returns TropDeTentativesAujourdhui (real stories 8.4, 8.6).
+- source_spec: `_bmad-output/implementation-artifacts/spec-8-4-8-6-ecrans-profil-appareils.md`
+  summary: A restricted removal of a device already gone should reload the list, not report « Délai dépassé ».
+  evidence: Review of Mes appareils restricted mode: FauxCompteApi maps an unknown id to AccesRestreintExpire (needs a distinct server error in 8.6).

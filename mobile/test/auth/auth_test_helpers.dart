@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:prediction_hippique/auth/pin_hash.dart';
 import 'package:prediction_hippique/data/local/session_store.dart';
 import 'package:prediction_hippique/data/remote/auth_api.dart';
+import 'package:prediction_hippique/data/remote/compte_api.dart';
 import 'package:prediction_hippique/providers/auth_provider.dart';
 
 /// Argon2id à paramètres réduits : même code, rapide.
@@ -32,29 +33,41 @@ Future<MemorySessionStore> storeAvecSession({String? pin, int echecs = 0}) async
   return store;
 }
 
+/// Sans [api] ni [compte] : FauxAuthApi et FauxCompteApi partagent l'état
+/// (limite d'appareils du numéro 699999999), comme dans l'app.
 List<Override> overridesAuth({
   required SessionStore store,
   AuthApi? api,
+  CompteApi? compte,
   PinHasher? hasher,
   bool web = false,
   Horloge? horloge,
-}) =>
-    [
-      sessionStoreProvider.overrideWithValue(store),
-      authApiProvider.overrideWithValue(api ?? FauxAuthApi(horloge: horloge?.call)),
-      pinHasherProvider.overrideWithValue(hasher ?? pinHasherRapide()),
-      estWebProvider.overrideWithValue(web),
-      if (horloge != null) horlogeMonotoneProvider.overrideWithValue(horloge.monotone),
-    ];
+}) {
+  final faux = compte ?? FauxCompteApi(horloge: horloge?.call, web: web);
+  return [
+    sessionStoreProvider.overrideWithValue(store),
+    compteApiProvider.overrideWithValue(faux),
+    authApiProvider.overrideWithValue(
+      api ?? FauxAuthApi(horloge: horloge?.call, rattachement: faux is FauxCompteApi ? faux : null),
+    ),
+    pinHasherProvider.overrideWithValue(hasher ?? pinHasherRapide()),
+    estWebProvider.overrideWithValue(web),
+    if (horloge != null) horlogeMonotoneProvider.overrideWithValue(horloge.monotone),
+    if (horloge != null) horlogeMuraleProvider.overrideWithValue(horloge.call),
+  ];
+}
 
 ProviderContainer conteneur({
   required SessionStore store,
   AuthApi? api,
+  CompteApi? compte,
   PinHasher? hasher,
   bool web = false,
   Horloge? horloge,
 }) =>
-    ProviderContainer(overrides: overridesAuth(store: store, api: api, hasher: hasher, web: web, horloge: horloge));
+    ProviderContainer(
+      overrides: overridesAuth(store: store, api: api, compte: compte, hasher: hasher, web: web, horloge: horloge),
+    );
 
 /// Stockage dont la lecture échoue toujours.
 class StoreEnPanne extends MemorySessionStore {

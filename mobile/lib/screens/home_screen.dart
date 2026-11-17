@@ -5,11 +5,13 @@ import '../engine/constants.dart';
 import '../models/course_summary.dart';
 import '../models/race_config.dart';
 import '../providers/api_provider.dart';
+import '../providers/auth_provider.dart';
 import '../providers/horses_provider.dart';
 import '../providers/programme_provider.dart';
 import '../providers/pronostic_provider.dart';
 import '../providers/race_provider.dart';
 import 'import_photo_screen.dart';
+import 'profil_screen.dart';
 import 'race_config_screen.dart';
 
 /// Programme du jour (section 7.1 du document mobile). Sélectionner une
@@ -114,6 +116,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ImportPhotoScreen())),
           ),
           IconButton(icon: const Icon(Icons.calendar_today), onPressed: _pickDate),
+          // Icône de compte → Profil (story 8.4), seul ajout de cette story ;
+          // absente tant qu'aucune CompteApi n'existe (release sans démo).
+          if (ref.watch(compteDisponibleProvider))
+            IconButton(
+              icon: const Icon(Icons.account_circle_outlined),
+              tooltip: 'Profil',
+              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfilScreen())),
+            ),
         ],
       ),
       body: Column(

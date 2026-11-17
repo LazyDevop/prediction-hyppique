@@ -189,6 +189,9 @@ class _ConnexionScreenState extends ConsumerState<ConnexionScreen> with RetourPo
         case SessionOuverte():
           // La porte affiche la suite (choix du PIN, ou Accueil sur le web).
           break;
+        case AppareilBloque():
+          // La porte affiche Appareil bloqué.
+          break;
         case CodeIncorrect(essaisRestants: final n):
           _erreurCode = 'Code incorrect — ${essaisRestants(n)}';
           _codeCtrl.clear();

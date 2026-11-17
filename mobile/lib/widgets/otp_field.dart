@@ -16,7 +16,17 @@ class OtpField extends StatefulWidget {
   final ValueChanged<String>? onChanged;
   final bool actif;
 
-  const OtpField({super.key, required this.controller, this.focusNode, this.onChanged, this.actif = true});
+  /// Nœud TalkBack unique du champ.
+  final String semanticsLabel;
+
+  const OtpField({
+    super.key,
+    required this.controller,
+    this.focusNode,
+    this.onChanged,
+    this.actif = true,
+    this.semanticsLabel = 'Code reçu par SMS, 6 chiffres',
+  });
 
   @override
   State<OtpField> createState() => _OtpFieldState();
@@ -116,7 +126,7 @@ class _OtpFieldState extends State<OtpField> {
       // Champ réel, invisible, posé sur les cases : un seul nœud TalkBack.
       Positioned.fill(
         child: Semantics(
-          label: 'Code reçu par SMS, 6 chiffres',
+          label: widget.semanticsLabel,
           child: TextField(
             controller: widget.controller,
             focusNode: _focus,

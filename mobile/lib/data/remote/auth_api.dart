@@ -58,6 +58,37 @@ class TropDEssais extends VerificationResultat {
   const TropDEssais();
 }
 
+/// Jeton de gestion des appareils remis à un appareil bloqué (story 8.6) :
+/// portée `appareils:gerer`, [dureeJetonGestion], lié au compte et à
+/// l'appareil refusé. Il n'ouvre que la liste des appareils et UN retrait.
+class JetonGestionAppareils {
+  final String valeur;
+  final DateTime expireLe;
+  const JetonGestionAppareils({required this.valeur, required this.expireLe});
+}
+
+/// Durée de validité du jeton de gestion des appareils.
+const dureeJetonGestion = Duration(minutes: 10);
+
+/// Code correct mais limite d'appareils du palier atteinte : aucune session
+/// n'est ouverte et aucun appareil n'est déconnecté (FR-36).
+class AppareilBloque extends VerificationResultat {
+  final JetonGestionAppareils jeton;
+
+  /// Limite du palier (provisoire : 2, PRD OQ 14).
+  final int limite;
+  final String palier;
+
+  const AppareilBloque({required this.jeton, required this.limite, required this.palier});
+}
+
+/// Rattachement de l'appareil au compte côté faux serveur : renvoie
+/// [AppareilBloque] si la limite est atteinte, sinon rattache et renvoie
+/// null. Implémenté par `FauxCompteApi`.
+abstract interface class RattachementDemo {
+  AppareilBloque? rattacher(String numero, {required String cguVersion});
+}
+
 /// Port d'authentification par numéro + code à usage unique (story 8.1).
 /// Les écrans ne dépendent que de cette interface ; [FauxAuthApi] la
 /// remplace tant que le client HTTP réel n'existe pas.
@@ -97,10 +128,15 @@ class FauxAuthApi implements AuthApi {
   final Map<String, List<DateTime>> _historique = {};
   final Random _aleatoire = Random.secure();
 
+  /// Limite d'appareils (faux `FauxCompteApi`) ; sans lui, jamais de blocage.
+  final RattachementDemo? rattachement;
+
   /// Dernière version des CGU reçue (contrôlée par les tests).
   String? derniereCguVersion;
 
-  FauxAuthApi({DateTime Function()? horloge}) : _horloge = horloge ?? DateTime.now;
+  FauxAuthApi({DateTime Function()? horloge, this.rattachement}) : _horloge = horloge ?? DateTime.now;
+
+  final Map<String, String> _cguParNumero = {};
 
   @override
   Future<DemandeCodeResultat> demanderCode(String numero, String cguVersion) async {
@@ -114,6 +150,7 @@ class FauxAuthApi implements AuthApi {
     }
     _historique[numero] = [...recentes, maintenant];
     derniereCguVersion = cguVersion;
+    _cguParNumero[numero] = cguVersion;
     _demandes[numero] = _DemandeEnCours(maintenant.add(dureeCode), essaisMax);
     return const CodeEnvoye();
   }
@@ -127,6 +164,8 @@ class FauxAuthApi implements AuthApi {
     }
     if (code == codeDemo) {
       _demandes.remove(numero);
+      final bloque = rattachement?.rattacher(numero, cguVersion: _cguParNumero[numero] ?? '');
+      if (bloque != null) return bloque;
       return SessionOuverte(
         accessToken: 'demo-acces-${_jeton()}',
         refreshToken: 'demo-renouvellement-${_jeton()}',
