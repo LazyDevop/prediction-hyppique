@@ -275,3 +275,6 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-8-4-8-6-ecrans-profil-appareils.md`
   summary: A restricted removal of a device already gone should reload the list, not report « Délai dépassé ».
   evidence: Review of Mes appareils restricted mode: FauxCompteApi maps an unknown id to AccesRestreintExpire (needs a distinct server error in 8.6).
+- source_spec: `_bmad-output/implementation-artifacts/spec-9-4-9-5-ecrans-offres-paiement.md`
+  summary: Real payment server rules: idempotency key on POST /paiements, polling ceiling/backoff, entitlement stacking (extend same tier, upgrade, refuse lower), Mobile Money number from the account (not only after a fresh login).
+  evidence: Review of Offres/Paiement: these rules live in FauxOffresApi for now (real stories 9.1, 9.5).

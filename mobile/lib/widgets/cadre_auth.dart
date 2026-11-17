@@ -6,27 +6,56 @@ import 'auth_styles.dart';
 /// par un `Spacer`, largeur bornée (web), gouttière 16px.
 class CadreAuth extends StatelessWidget {
   final List<Widget> enfants;
-  const CadreAuth({super.key, required this.enfants});
+
+  /// Barre d'action épinglée sous la zone défilante (fond `bg`, filet haut
+  /// `line-card`), jamais par-dessus le contenu. Absente si nulle ou vide.
+  final List<Widget>? barre;
+  const CadreAuth({super.key, required this.enfants, this.barre});
 
   @override
   Widget build(BuildContext context) {
+    final defilant = CustomScrollView(
+      slivers: [
+        SliverPadding(
+          padding: const EdgeInsets.fromLTRB(16, 14, 16, 18),
+          sliver: SliverFillRemaining(
+            hasScrollBody: false,
+            child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: enfants),
+          ),
+        ),
+      ],
+    );
+    final actions = barre;
     return Scaffold(
       backgroundColor: JetonsAuth.bg,
       body: SafeArea(
         child: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 480),
-            child: CustomScrollView(
-              slivers: [
-                SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(16, 14, 16, 18),
-                  sliver: SliverFillRemaining(
-                    hasScrollBody: false,
-                    child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: enfants),
+            child: actions == null || actions.isEmpty
+                ? defilant
+                : Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Expanded(child: defilant),
+                      Container(
+                        decoration: const BoxDecoration(
+                          color: JetonsAuth.bg,
+                          border: Border(top: BorderSide(color: JetonsAuth.lineCard)),
+                        ),
+                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            for (var i = 0; i < actions.length; i++) ...[
+                              if (i > 0) const SizedBox(height: 8),
+                              actions[i],
+                            ],
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-              ],
-            ),
           ),
         ),
       ),

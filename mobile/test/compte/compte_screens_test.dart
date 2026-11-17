@@ -26,8 +26,10 @@ void main() {
       expect(find.text('Mes appareils'), findsOneWidget);
       expect(find.text('2 sur 2'), findsOneWidget);
       expect(find.text('Se déconnecter'), findsOneWidget);
+      // Offres (story 9.4) : ligne de la section Palier.
+      expect(find.text('Offres'), findsOneWidget);
+      expect(find.text('Voir les offres'), findsOneWidget);
       // Stories non livrées : absentes, jamais désactivées.
-      expect(find.textContaining('Offre'), findsNothing);
       expect(find.textContaining('Duo'), findsNothing);
       expect(find.textContaining('QR'), findsNothing);
       expect(find.textContaining('Changer de numéro'), findsNothing);

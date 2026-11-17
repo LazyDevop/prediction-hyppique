@@ -5,6 +5,7 @@ import '../auth/pin_hash.dart';
 import '../data/local/session_store.dart';
 import '../data/remote/auth_api.dart';
 import '../data/remote/compte_api.dart';
+import '../data/remote/offres_api.dart';
 
 /// Inactivité (temps passé en arrière-plan) au-delà de laquelle l'app se
 /// verrouille au retour au premier plan. Provisoire (PRD OQ 14).
@@ -29,12 +30,14 @@ final demoAutoriseeProvider = Provider<bool>((ref) => _demoAutorisee);
 /// Horloge murale : dates du faux serveur et « dernière activité ».
 final horlogeMuraleProvider = Provider<DateTime Function()>((ref) => DateTime.now);
 
-/// Les deux faux serveurs liés (la limite d'appareils du faux compte
-/// décide du blocage à la connexion), construits UNE fois : `ref.read`
-/// pour ne jamais être reconstruits, ce qui effacerait leur état.
-final _fauxServeursProvider = Provider<(FauxAuthApi, FauxCompteApi)>((ref) {
-  final compte = FauxCompteApi(horloge: ref.read(horlogeMuraleProvider), web: ref.read(estWebProvider));
-  return (FauxAuthApi(rattachement: compte), compte);
+/// Les trois faux serveurs liés (la limite d'appareils du faux compte
+/// décide du blocage à la connexion ; un paiement confirmé change son
+/// palier), construits UNE fois : `ref.read` pour ne jamais être
+/// reconstruits, ce qui effacerait leur état.
+final _fauxServeursProvider = Provider<(FauxAuthApi, FauxCompteApi, FauxOffresApi)>((ref) {
+  final horloge = ref.read(horlogeMuraleProvider);
+  final compte = FauxCompteApi(horloge: horloge, web: ref.read(estWebProvider));
+  return (FauxAuthApi(rattachement: compte), compte, FauxOffresApi(compte: compte, horloge: horloge));
 });
 
 /// FauxAuthApi seulement selon [demoAutoriseeProvider] : un build release
@@ -50,6 +53,23 @@ final compteApiProvider = Provider<CompteApi>((ref) {
   if (ref.watch(demoAutoriseeProvider)) return ref.watch(_fauxServeursProvider).$2;
   throw StateError('aucune CompteApi réelle — stories 8.4 et 8.6 serveur');
 });
+
+/// Même règle que [authApiProvider]. Aucun paiement réel tant que le
+/// serveur (stories 9.4, 9.5) n'existe pas.
+final offresApiProvider = Provider<OffresApi>((ref) {
+  if (ref.watch(demoAutoriseeProvider)) return ref.watch(_fauxServeursProvider).$3;
+  throw StateError('aucune OffresApi réelle — stories 9.4 et 9.5 serveur');
+});
+
+/// Vrai quand une OffresApi existe (ligne « Offres » de Profil).
+final offresDisponiblesProvider = Provider<bool>((ref) => ref.watch(demoAutoriseeProvider));
+
+/// Vrai quand le faux serveur de paiement est actif (« Mode démo : aucun
+/// paiement réel »). Lit d'abord la règle de démo : jamais l'échec d'un
+/// provider.
+final modeDemoPaiementProvider = Provider<bool>(
+  (ref) => ref.watch(demoAutoriseeProvider) && ref.watch(offresApiProvider) is FauxOffresApi,
+);
 
 /// Vrai quand une CompteApi existe (Profil accessible depuis Accueil).
 /// Seule la démo en fournit une tant que le client réel n'existe pas.

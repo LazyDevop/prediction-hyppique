@@ -58,8 +58,11 @@ class _PorteScreenState extends ConsumerState<PorteScreen> {
   /// La porte est au-dessus du Navigator : le retour système irait dépiler
   /// la pile masquée. On pose un `PopEntry` refusant le retour sur la route
   /// du dessus tant que la porte est affichée.
+  ///
+  /// Revérifié à chaque image : si la route bloquée n'est plus celle du
+  /// dessus (dépilée ou recouverte pendant le verrouillage), le blocage
+  /// passe sur la nouvelle route du dessus.
   void _bloquerRetour() {
-    if (_routeBloquee != null) return;
     final nav = widget.navigatorKey?.currentState;
     if (nav == null) return;
     ModalRoute<Object?>? dessus;
@@ -67,12 +70,16 @@ class _PorteScreenState extends ConsumerState<PorteScreen> {
       if (route is ModalRoute<Object?>) dessus = route;
       return true; // ne dépile rien : lit seulement la route du dessus
     });
+    final bloquee = _routeBloquee;
+    if (bloquee != null && identical(bloquee, dessus) && bloquee.isActive) return;
+    _debloquerRetour();
     dessus?.registerPopEntry(_blocage);
     _routeBloquee = dessus;
   }
 
   void _debloquerRetour() {
-    _routeBloquee?.unregisterPopEntry(_blocage);
+    final bloquee = _routeBloquee;
+    if (bloquee != null && bloquee.isActive) bloquee.unregisterPopEntry(_blocage);
     _routeBloquee = null;
   }
 

@@ -22,7 +22,7 @@ const messageErreur = 'Une erreur est survenue — réessayez';
 const delaiRenvoi = Duration(seconds: 60);
 
 /// `+237` suivi de 9 chiffres commençant par 6 (mobile camerounais).
-final _numeroLocal = RegExp(r'^6\d{8}$');
+final numeroMobileLocal = RegExp(r'^6\d{8}$');
 
 /// « 677123456 » → « 6 77 12 34 56 ».
 String formaterNumeroLocal(String local) {
@@ -47,7 +47,7 @@ String normaliserNumero(String brut) {
   return chiffres.length > 9 ? chiffres.substring(0, 9) : chiffres;
 }
 
-class _FormatNumero extends TextInputFormatter {
+class FormatNumero extends TextInputFormatter {
   @override
   TextEditingValue formatEditUpdate(TextEditingValue ancien, TextEditingValue nouveau) {
     final local = normaliserNumero(nouveau.text);
@@ -127,7 +127,7 @@ class _ConnexionScreenState extends ConsumerState<ConnexionScreen> with RetourPo
   }
 
   Future<void> _demanderCode({bool renvoi = false}) async {
-    if (!renvoi && !_numeroLocal.hasMatch(_local)) {
+    if (!renvoi && !numeroMobileLocal.hasMatch(_local)) {
       setState(() => _erreurNumero = messageNumeroInvalide);
       return;
     }
@@ -274,14 +274,14 @@ class _ConnexionScreenState extends ConsumerState<ConnexionScreen> with RetourPo
                   autofillHints: const [AutofillHints.telephoneNumberNational],
                   // Normalisation AVANT la borne à 9 chiffres (collage
                   // « +237 6 77 12 34 56 », « 0677123456 »…).
-                  inputFormatters: [_FormatNumero()],
+                  inputFormatters: [FormatNumero()],
                   style: const TextStyle(
                     fontSize: 17,
                     letterSpacing: .5,
                     color: JetonsAuth.text,
                     fontFeatures: JetonsAuth.tabulaire,
                   ),
-                  decoration: _decorationChamp(erreur: _erreurNumero),
+                  decoration: decorationChampNumero(erreur: _erreurNumero),
                   onSubmitted: (_) {
                     if (peutDemander) _demanderCode();
                   },
@@ -389,7 +389,7 @@ class _ConnexionScreenState extends ConsumerState<ConnexionScreen> with RetourPo
   }
 }
 
-InputDecoration _decorationChamp({String? erreur}) {
+InputDecoration decorationChampNumero({String? erreur}) {
   OutlineInputBorder bord(Color c, [double l = 1]) =>
       OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: c, width: l));
   return InputDecoration(

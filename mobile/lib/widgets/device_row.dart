@@ -20,7 +20,7 @@ String formaterDate(DateTime d) {
 }
 
 /// « 14/11 », ou « 14/11/2025 » si l'année diffère de celle de [maintenant].
-String _jourMois(DateTime d, DateTime maintenant) {
+String formaterJourMois(DateTime d, DateTime maintenant) {
   final l = d.toLocal();
   final base = '${_deux(l.day)}/${_deux(l.month)}';
   return l.year == maintenant.toLocal().year ? base : '$base/${l.year}';
@@ -29,7 +29,7 @@ String _jourMois(DateTime d, DateTime maintenant) {
 /// « samedi 14/11 à 21 h 41 » (année ajoutée si elle diffère).
 String formaterJourHeure(DateTime d, DateTime maintenant) {
   final l = d.toLocal();
-  return '${_jours[l.weekday - 1]} ${_jourMois(l, maintenant)} à ${formaterHeure(l)}';
+  return '${_jours[l.weekday - 1]} ${formaterJourMois(l, maintenant)} à ${formaterHeure(l)}';
 }
 
 /// « actif maintenant », « actif il y a 5 min », « dernière activité hier
@@ -46,7 +46,7 @@ String formaterActivite(Appareil a, DateTime maintenant) {
   final heure = formaterHeure(activite);
   if (jourActivite == jour) return "dernière activité aujourd'hui à $heure";
   if (jourActivite == DateTime(jour.year, jour.month, jour.day - 1)) return 'dernière activité hier à $heure';
-  return 'dernière activité le ${_jourMois(activite, m)} à $heure';
+  return 'dernière activité le ${formaterJourMois(activite, m)} à $heure';
 }
 
 String libelleType(TypeAppareil t) => switch (t) {

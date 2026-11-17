@@ -142,3 +142,28 @@ class LigneReglage extends StatelessWidget {
     );
   }
 }
+
+/// Pastille du palier dans l'en-tête (cadre `line-card`, capitales).
+class PastillePalier extends StatelessWidget {
+  final String palier;
+  const PastillePalier(this.palier, {super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      label: 'Palier $palier',
+      excludeSemantics: true,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+        decoration: BoxDecoration(
+          border: Border.all(color: JetonsAuth.lineCard),
+          borderRadius: BorderRadius.circular(6),
+        ),
+        child: Text(
+          palier.toUpperCase(),
+          style: const TextStyle(fontSize: 11, letterSpacing: .6, color: JetonsAuth.text),
+        ),
+      ),
+    );
+  }
+}

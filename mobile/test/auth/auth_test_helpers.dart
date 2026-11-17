@@ -4,6 +4,7 @@ import 'package:prediction_hippique/auth/pin_hash.dart';
 import 'package:prediction_hippique/data/local/session_store.dart';
 import 'package:prediction_hippique/data/remote/auth_api.dart';
 import 'package:prediction_hippique/data/remote/compte_api.dart';
+import 'package:prediction_hippique/data/remote/offres_api.dart';
 import 'package:prediction_hippique/providers/auth_provider.dart';
 
 /// Argon2id à paramètres réduits : même code, rapide.
@@ -34,11 +35,13 @@ Future<MemorySessionStore> storeAvecSession({String? pin, int echecs = 0}) async
 }
 
 /// Sans [api] ni [compte] : FauxAuthApi et FauxCompteApi partagent l'état
-/// (limite d'appareils du numéro 699999999), comme dans l'app.
+/// (limite d'appareils du numéro 699999999), comme dans l'app. Sans
+/// [offres] : FauxOffresApi lié au faux compte (palier après paiement).
 List<Override> overridesAuth({
   required SessionStore store,
   AuthApi? api,
   CompteApi? compte,
+  OffresApi? offres,
   PinHasher? hasher,
   bool web = false,
   Horloge? horloge,
@@ -47,6 +50,9 @@ List<Override> overridesAuth({
   return [
     sessionStoreProvider.overrideWithValue(store),
     compteApiProvider.overrideWithValue(faux),
+    offresApiProvider.overrideWithValue(
+      offres ?? FauxOffresApi(compte: faux is FauxCompteApi ? faux : null, horloge: horloge?.call),
+    ),
     authApiProvider.overrideWithValue(
       api ?? FauxAuthApi(horloge: horloge?.call, rattachement: faux is FauxCompteApi ? faux : null),
     ),

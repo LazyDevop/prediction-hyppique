@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:prediction_hippique/data/local/session_store.dart';
 import 'package:prediction_hippique/data/remote/compte_api.dart';
+import 'package:prediction_hippique/data/remote/offres_api.dart';
 import 'package:prediction_hippique/screens/porte_screen.dart';
 import 'package:prediction_hippique/screens/profil_screen.dart';
 
@@ -15,6 +16,7 @@ Future<void> pumpApp(
   WidgetTester tester, {
   required SessionStore store,
   CompteApi? compte,
+  OffresApi? offres,
   Horloge? horloge,
   bool web = true,
 }) async {
@@ -24,7 +26,7 @@ Future<void> pumpApp(
   final cle = GlobalKey<NavigatorState>();
   await tester.pumpWidget(
     ProviderScope(
-      overrides: overridesAuth(store: store, web: web, compte: compte, horloge: horloge ?? Horloge()),
+      overrides: overridesAuth(store: store, web: web, compte: compte, offres: offres, horloge: horloge ?? Horloge()),
       child: MaterialApp(
         navigatorKey: cle,
         builder: (context, nav) => PorteScreen(application: nav!, navigatorKey: cle),

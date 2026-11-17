@@ -172,6 +172,10 @@ class _CompteDemo {
   DateTime cguAccepteeLe;
   final List<Appareil> appareils;
 
+  /// Numéro E.164 complet, connu seulement après une connexion dans ce
+  /// lancement (la session locale ne garde que le masque).
+  String? numero;
+
   _CompteDemo({required this.appareils, required this.cguVersion, required this.cguAccepteeLe})
     : emailVerifie = false,
       palier = palierGratuit;
@@ -218,6 +222,11 @@ class FauxCompteApi implements CompteApi, RattachementDemo {
   final Map<String, _JetonDemo> _jetons = {};
   String? _numeroCourant;
   _CodeEmail? _codeEmail;
+
+  /// Crochet du faux serveur de paiement lié : applique les paiements
+  /// confirmés depuis la dernière lecture (confirmation tardive, écran
+  /// Paiement quitté).
+  void Function()? regularisation;
 
   /// [palier], [email], [emailVerifie] : compte de la session déjà ouverte
   /// au lancement (aucun numéro connu du faux serveur).
@@ -333,13 +342,35 @@ class FauxCompteApi implements CompteApi, RattachementDemo {
       ..add(_appareilCourant(maintenant));
     if (cguVersion.isNotEmpty) compte.cguVersion = cguVersion;
     compte.cguAccepteeLe = maintenant;
+    compte.numero = numero;
     _numeroCourant = cle;
     _codeEmail = null;
     return null;
   }
 
+  /// Clé (numéro masqué) du compte courant ; null sans compte ouvert.
+  String? get cleCompteCourant => _numeroCourant;
+
+  /// Numéro E.164 complet du compte courant, s'il est connu.
+  String? get numeroCourant => _comptes[_numeroCourant]?.numero;
+
+  /// Palier et fin du droit du compte [cle] (Gratuit s'il est inconnu).
+  (String, DateTime?) droitDe(String cle) {
+    final c = _comptes[cle];
+    return c == null ? (palierGratuit, null) : (c.palier, c.finDroit);
+  }
+
+  /// Paiement confirmé (faux serveur de paiement) : nouveau palier et fin
+  /// du droit du compte [cle].
+  void activerPass(String cle, {required String palier, required DateTime finDroit}) {
+    _comptes.putIfAbsent(cle, _compteSession)
+      ..palier = palier
+      ..finDroit = finDroit;
+  }
+
   @override
   Future<ProfilCompte> lireProfil() async {
+    regularisation?.call();
     final c = _compte;
     return ProfilCompte(
       email: c.email,
@@ -393,7 +424,10 @@ class FauxCompteApi implements CompteApi, RattachementDemo {
   }
 
   @override
-  Future<ListeAppareils> listerAppareils() async => _liste(_compte);
+  Future<ListeAppareils> listerAppareils() async {
+    regularisation?.call();
+    return _liste(_compte);
+  }
 
   @override
   Future<void> retirerAppareil(String id) async {

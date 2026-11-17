@@ -3,20 +3,22 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/remote/compte_api.dart';
 import '../providers/auth_provider.dart';
+import '../providers/paiement_provider.dart';
 import '../widgets/auth_styles.dart';
 import '../widgets/cadre_auth.dart';
 import '../widgets/device_row.dart';
 import '../widgets/settings_row.dart';
 import 'email_secours_screen.dart';
 import 'mes_appareils_screen.dart';
+import 'offres_screen.dart';
 
 const messageChargementProfil = 'Impossible de charger votre profil.';
 const messageProfilNonActualise = 'Profil non actualisé — réessayez';
 
 /// Profil (story 8.4), ouvert depuis l'icône de compte d'Accueil : numéro,
 /// email de secours et son état, palier, CGU acceptées, Mes appareils,
-/// « Se déconnecter ». Offres, Duo et QR code sont absents tant que leurs
-/// stories ne sont pas livrées (jamais affichés désactivés).
+/// Offres (story 9.4), « Se déconnecter ». Duo et QR code sont absents tant
+/// que leurs stories ne sont pas livrées (jamais affichés désactivés).
 class ProfilScreen extends ConsumerStatefulWidget {
   const ProfilScreen({super.key});
 
@@ -78,6 +80,8 @@ class _ProfilScreenState extends ConsumerState<ProfilScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Paiement confirmé (même Paiement fermé) : rechargement sans action.
+    ref.listen(signalDroitProvider, (_, _) => _charger());
     final numero = ref.watch(authProvider).value?.numeroMasque ?? '';
     final profil = _profil;
     return CadreAuth(
@@ -87,7 +91,7 @@ class _ProfilScreenState extends ConsumerState<ProfilScreen> {
             Expanded(
               child: EnTeteAuth(titre: 'Profil', onRetour: () => Navigator.of(context).maybePop()),
             ),
-            if (profil != null) _Palier(profil.palier),
+            if (profil != null) PastillePalier(profil.palier),
           ],
         ),
         if (profil == null && _erreur) ...[
@@ -185,6 +189,13 @@ class _ProfilScreenState extends ConsumerState<ProfilScreen> {
             : '${formaterDate(p.finDroit!)} à ${formaterHeure(p.finDroit!)}',
         detail: p.finDroit == null ? null : 'Ensuite : palier Gratuit, données conservées',
       ),
+      if (ref.watch(offresDisponiblesProvider))
+        LigneReglage(
+          libelle: 'Offres',
+          valeur: 'Voir les offres',
+          navigation: true,
+          onTap: () => _ouvrir(OffresScreen(palier: p.palier)),
+        ),
       const TitreSection('Sécurité'),
       LigneReglage(
         libelle: 'Mes appareils',
@@ -195,30 +206,5 @@ class _ProfilScreenState extends ConsumerState<ProfilScreen> {
       const SizedBox(height: 16),
       CtaFantome(texte: 'Se déconnecter', onPressed: _seDeconnecter),
     ];
-  }
-}
-
-/// Pastille du palier dans l'en-tête (cadre `line-card`, capitales).
-class _Palier extends StatelessWidget {
-  final String palier;
-  const _Palier(this.palier);
-
-  @override
-  Widget build(BuildContext context) {
-    return Semantics(
-      label: 'Palier $palier',
-      excludeSemantics: true,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-        decoration: BoxDecoration(
-          border: Border.all(color: JetonsAuth.lineCard),
-          borderRadius: BorderRadius.circular(6),
-        ),
-        child: Text(
-          palier.toUpperCase(),
-          style: const TextStyle(fontSize: 11, letterSpacing: .6, color: JetonsAuth.text),
-        ),
-      ),
-    );
   }
 }
