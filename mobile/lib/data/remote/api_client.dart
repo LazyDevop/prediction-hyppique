@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart' show kReleaseMode, visibleForTesting;
 
 import '../../engine/constants.dart';
 import '../../models/course_summary.dart';
@@ -46,12 +47,33 @@ class ApiClient implements CoursesApi, ExtractionApi, PronosticsApi {
     defaultValue: 'http://102.220.19.200:8000',
   );
 
-  ApiClient({String baseUrl = defaultBaseUrl})
-      : _dio = Dio(BaseOptions(
+  /// Story 7.8 : secret d'accès restreint de l'API déployée, fourni
+  /// UNIQUEMENT au build de dev (`--dart-define=ACCES_RESTREINT_SECRET=...`).
+  /// Jamais dans un build release ni dans le bundle web : vide par défaut,
+  /// et alors aucun en-tête `Authorization` n'est envoyé.
+  static const defaultAccesRestreintSecret = String.fromEnvironment('ACCES_RESTREINT_SECRET');
+
+  /// En release (`kReleaseMode`, défaut de [releaseMode]), le secret est
+  /// toujours ignoré, même s'il a été passé par erreur au build : aucun
+  /// en-tête n'est envoyé et rien n'est journalisé. [releaseMode] n'existe
+  /// que pour que les tests (toujours en debug) couvrent ce cas.
+  ApiClient({
+    String baseUrl = defaultBaseUrl,
+    String accesRestreintSecret = defaultAccesRestreintSecret,
+    bool releaseMode = kReleaseMode,
+  }) : _dio = Dio(BaseOptions(
           baseUrl: baseUrl,
           connectTimeout: const Duration(seconds: 10),
           receiveTimeout: const Duration(seconds: 10),
+          headers: {
+            if (!releaseMode && accesRestreintSecret.isNotEmpty)
+              'Authorization': 'Bearer $accesRestreintSecret',
+          },
         ));
+
+  /// En-têtes de base de Dio, exposés pour les tests uniquement.
+  @visibleForTesting
+  Map<String, dynamic> get enTetesDeBase => _dio.options.headers;
 
   @override
   Future<List<CourseSummary>> getCourses(DateTime date) async {

@@ -29,7 +29,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 # - Retrospective appends its action items to action_items; the status view surfaces open ones
 generated: 10-18-2026 12:00
-last_updated: 11-16-2026 12:00
+last_updated: 11-17-2026 10:00
 project: prediction-hyppique
 project_key: NOKEY
 tracking_system: file-system
@@ -81,7 +81,7 @@ development_status:
   6-8-performances-et-statut-du-modèle-affichés-seuils-définitifs: backlog
   epic-6-retrospective: optional
 
-  epic-7: backlog
+  epic-7: in-progress
   7-1-mises-à-jour-du-serveur-sans-perte-de-données-alembic: backlog
   7-2-passer-de-sqlite-à-postgresql: backlog
   7-3-https-et-origines-autorisées: backlog
@@ -89,7 +89,7 @@ development_status:
   7-5-aucun-secret-dans-les-binaires: backlog
   7-6-web-app-compagnon-en-production: backlog
   7-7-publication-sur-le-play-store: backlog
-  7-8-fermer-l-api-déployée-en-attendant-les-comptes: backlog
+  7-8-fermer-l-api-déployée-en-attendant-les-comptes: review
   7-9-exposer-la-version-des-conditions-en-vigueur-cgu_version: backlog
   7-10-écrivain-du-journal-d-audit: backlog
   epic-7-retrospective: optional

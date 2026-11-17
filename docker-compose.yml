@@ -2,9 +2,15 @@ services:
   api:
     build: ./backend
     ports:
-      - "8000:8000"
+      # Story 7.8 : IPv4 uniquement -- la liste blanche hôte (iptables,
+      # deploy/firewall/) ne filtre pas IPv6 ; publier aussi sur [::] la
+      # contournerait.
+      - "0.0.0.0:8000:8000"
     environment:
       - DATABASE_URL=sqlite:////app/data/hippique.db
+      # Story 7.8 : en production l'API refuse de démarrer sans
+      # ACCES_RESTREINT_SECRET. Le secret vient UNIQUEMENT de .env (jamais ici).
+      - APP_ENV=production
     env_file:
       - path: .env
         required: false

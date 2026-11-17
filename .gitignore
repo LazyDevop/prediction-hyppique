@@ -17,6 +17,8 @@ __pycache__/
 !.env.example
 *.pem
 *.key
+# Story 7.8 : IP réelles du propriétaire (surcharge locale, jamais versionnée)
+deploy/firewall/ips_autorisees.local.conf
 
 # Flutter / Dart
 mobile/.dart_tool/

@@ -4,9 +4,12 @@ existants (courses, chevaux, analyse) sans préfixe de chemin : le
 `postman_collection.json` et le mode de repli vision pointent vers des
 chemins nus (`/courses`, `/analyse`, `/extraction/*`)."""
 
+import os
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.api.acces_restreint import installer as installer_acces_restreint
 from app.api.routes_analyse import router as routes_analyse_router
 from app.api.routes_chevaux import router as routes_chevaux_router
 from app.api.routes_courses import router as routes_courses_router
@@ -14,6 +17,16 @@ from app.api.routes_dashboard import router as routes_dashboard_router
 from app.api.routes_pronostics import router as routes_pronostics_router
 
 app = FastAPI(title="Prediction Hippique")
+
+# Story 7.8 : verrou par secret partagé tant que les comptes n'existent pas.
+# Ajouté AVANT CORS : Starlette rend le dernier middleware ajouté le plus
+# externe, donc CORS répond au pré-vol avant le verrou. Lève RuntimeError
+# si APP_ENV=production sans secret (refus de démarrer).
+installer_acces_restreint(
+    app,
+    os.environ.get("ACCES_RESTREINT_SECRET", ""),
+    os.environ.get("APP_ENV", ""),
+)
 
 # Le client mobile est aussi buildable en web (flutter run -d chrome), où le
 # navigateur applique CORS entre l'origine localhost du dev server et cette
@@ -31,3 +44,9 @@ app.include_router(routes_chevaux_router)
 app.include_router(routes_analyse_router)
 app.include_router(routes_dashboard_router)
 app.include_router(routes_pronostics_router)
+
+
+@app.get("/health", include_in_schema=False)
+def health():
+    # Seule route exemptée du verrou d'accès restreint (sonde de vie).
+    return {"status": "ok"}

@@ -1,0 +1,19 @@
+# Story 7.8 (AD-21, couche 1) : réapplique la liste blanche du port 8000
+# après le boot et après chaque (re)démarrage de Docker ; l'arrêt du service
+# (systemctl disable --now) retire le saut et la chaîne (--retirer).
+# Sans argument, le script lit ips_autorisees.local.conf s'il existe, sinon
+# ips_autorisees.conf. Installation : voir docs/acces-restreint.md.
+[Unit]
+Description=Liste blanche hote du port 8000 (acces restreint, story 7.8)
+Requires=docker.service
+After=docker.service
+PartOf=docker.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/bin/bash /opt/prediction-hyppique/deploy/firewall/acces_restreint.sh
+ExecStop=/bin/bash /opt/prediction-hyppique/deploy/firewall/acces_restreint.sh --retirer
+
+[Install]
+WantedBy=multi-user.target
