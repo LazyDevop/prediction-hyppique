@@ -1,0 +1,142 @@
+import 'package:flutter/foundation.dart' show ValueListenable;
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../providers/auth_provider.dart';
+import '../widgets/auth_styles.dart';
+import 'connexion_screen.dart';
+import 'deverrouillage_screen.dart';
+
+/// Portes Connexion / Déverrouillage, rendues AVANT la pile de navigation
+/// (branchée via `MaterialApp.builder`) : un verrouillage couvre aussi un
+/// écran poussé (résultats, réglages…).
+///
+/// Aucune session → Connexion ; session sans PIN choisi dans ce lancement
+/// → choix du PIN ; session verrouillée → Déverrouillage ; sinon
+/// [application].
+///
+/// La pile (Accueil, appels réseau) n'est construite qu'à la première
+/// ouverture, jamais derrière un Déverrouillage de démarrage à froid ; elle
+/// est ensuite gardée hors écran (ni focus, ni animations) pendant les
+/// re-verrouillages, pour conserver les écrans poussés.
+class PorteScreen extends ConsumerStatefulWidget {
+  final Widget application;
+
+  /// Clé du Navigator de [application] : sert à bloquer le retour système
+  /// vers la pile masquée pendant un re-verrouillage.
+  final GlobalKey<NavigatorState>? navigatorKey;
+
+  const PorteScreen({super.key, required this.application, this.navigatorKey});
+
+  @override
+  ConsumerState<PorteScreen> createState() => _PorteScreenState();
+}
+
+class _PorteScreenState extends ConsumerState<PorteScreen> {
+  late final AppLifecycleListener _cycleDeVie;
+  bool _applicationConstruite = false;
+  final _blocage = _BlocageRetour();
+  ModalRoute<Object?>? _routeBloquee;
+
+  @override
+  void initState() {
+    super.initState();
+    _cycleDeVie = AppLifecycleListener(
+      onHide: () => ref.read(authProvider.notifier).passerEnArrierePlan(),
+      onShow: () => ref.read(authProvider.notifier).revenirAuPremierPlan(),
+    );
+  }
+
+  @override
+  void dispose() {
+    _debloquerRetour();
+    _cycleDeVie.dispose();
+    super.dispose();
+  }
+
+  /// La porte est au-dessus du Navigator : le retour système irait dépiler
+  /// la pile masquée. On pose un `PopEntry` refusant le retour sur la route
+  /// du dessus tant que la porte est affichée.
+  void _bloquerRetour() {
+    if (_routeBloquee != null) return;
+    final nav = widget.navigatorKey?.currentState;
+    if (nav == null) return;
+    ModalRoute<Object?>? dessus;
+    nav.popUntil((route) {
+      if (route is ModalRoute<Object?>) dessus = route;
+      return true; // ne dépile rien : lit seulement la route du dessus
+    });
+    dessus?.registerPopEntry(_blocage);
+    _routeBloquee = dessus;
+  }
+
+  void _debloquerRetour() {
+    _routeBloquee?.unregisterPopEntry(_blocage);
+    _routeBloquee = null;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final etat = ref.watch(authProvider);
+    // Stockage illisible : on repart de Connexion plutôt que de bloquer.
+    final porte = etat.hasError && !etat.hasValue ? Porte.aucuneSession : etat.value?.porte;
+
+    if (porte == Porte.ouverte) _applicationConstruite = true;
+    if (porte == Porte.aucuneSession || porte == Porte.choixPin) _applicationConstruite = false;
+
+    final Widget? ecranPorte = switch (porte) {
+      null => const Scaffold(backgroundColor: JetonsAuth.bg),
+      Porte.aucuneSession => const ConnexionScreen(),
+      Porte.choixPin => const ChoixPinScreen(),
+      Porte.verrouillee => const DeverrouillageScreen(),
+      Porte.ouverte => null,
+    };
+    final masquee = ecranPorte != null;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (!_applicationConstruite) {
+        // Pile détruite (session effacée) : sa route n'existe plus.
+        _routeBloquee = null;
+      } else if (masquee) {
+        _bloquerRetour();
+      } else {
+        _debloquerRetour();
+      }
+    });
+
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        if (_applicationConstruite)
+          KeyedSubtree(
+            key: const ValueKey('application'),
+            child: Offstage(
+              offstage: masquee,
+              child: TickerMode(
+                enabled: !masquee,
+                child: ExcludeFocus(excluding: masquee, child: widget.application),
+              ),
+            ),
+          ),
+        if (ecranPorte != null)
+          KeyedSubtree(
+            key: ValueKey(porte),
+            // Overlay propre : la porte est au-dessus du Navigator, les
+            // champs texte et infobulles en ont besoin.
+            child: Overlay.wrap(child: ecranPorte),
+          ),
+      ],
+    );
+  }
+}
+
+class _BlocageRetour extends PopEntry<Object?> {
+  static final _jamais = ValueNotifier<bool>(false);
+
+  @override
+  ValueListenable<bool> get canPopNotifier => _jamais;
+
+  @override
+  void onPopInvokedWithResult(bool didPop, Object? result) {}
+}

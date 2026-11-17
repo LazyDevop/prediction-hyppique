@@ -6,6 +6,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:prediction_hippique/main.dart';
 import 'package:prediction_hippique/providers/params_provider.dart';
 
+import 'auth/auth_test_helpers.dart';
+
 void main() {
   testWidgets('parcours complet : accueil -> saisie manuelle -> ajout cheval -> résultats', (WidgetTester tester) async {
     // main.dart résout SharedPreferences avant runApp (FR-20, spec-3-7) ;
@@ -13,10 +15,18 @@ void main() {
     // main(), donc le même override doit être fourni ici.
     SharedPreferences.setMockInitialValues({});
     final prefs = await SharedPreferences.getInstance();
+    // Porte de connexion (stories 8.1/8.3) : session déjà ouverte, comme
+    // après une connexion sur le web (pas de PIN).
+    final store = await storeAvecSession();
     await tester.pumpWidget(ProviderScope(
-      overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+      overrides: [
+        sharedPreferencesProvider.overrideWithValue(prefs),
+        ...overridesAuth(store: store, web: true),
+      ],
       child: const PredictionHippiqueApp(),
     ));
+    // Lecture asynchrone de la session par la porte.
+    await tester.pump();
     // Un seul pump (pas pumpAndSettle) : l'accueil déclenche un appel réseau
     // vers le backend, absent dans cet environnement de test. Le bouton
     // "Saisie manuelle" est visible dès la première frame, indépendamment

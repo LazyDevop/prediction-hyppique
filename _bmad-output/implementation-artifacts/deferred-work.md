@@ -260,3 +260,12 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-predictions-horizon.md`
   summary: The `backend/.venv` is Python 3.15, for which catboost 1.2.10 has no wheel, so the model-dependent tests only run in Python 3.12 or in the Docker image; align the dev venv with the image (Python 3.12).
   evidence: Verification-gap review: `pytest` in `backend/.venv` skips the module.
+- source_spec: `_bmad-output/implementation-artifacts/spec-8-1-8-3-ecrans-connexion.md`
+  summary: Hide paid content in the app switcher (FLAG_SECURE / blur overlay) when the app goes to the background.
+  evidence: Review of the login screens: the auto-lock exists but the last screen stays visible in recent apps; belongs to the protected-screen wrapper (AD-15, Epic 9).
+- source_spec: `_bmad-output/implementation-artifacts/spec-8-1-8-3-ecrans-connexion.md`
+  summary: Revoke the refresh token server-side on « Code oublié ? » and after 5 wrong PINs, and wire token refresh into the HTTP client.
+  evidence: Review of the login screens: local wipe only; AuthApi has no revoke/refresh yet (story 8.2).
+- source_spec: `_bmad-output/implementation-artifacts/spec-8-1-8-3-ecrans-connexion.md`
+  summary: Real SMS auto-fill on Android (SMS Retriever or User Consent API) and server retry-after on rate limits.
+  evidence: Review of the login screens: AutofillHints.oneTimeCode alone is unreliable; TropDeDemandes carries no wait time (real story 8.1).

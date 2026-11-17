@@ -43,6 +43,10 @@ dependencies:
   shared_preferences: ^2.5.3
   image_picker: ^1.1.2
   file_picker: ^8.1.7
+  # Version figée exactement (epic 8) : ce paquet garde jetons et empreinte du PIN ;
+  # une montée de version doit être relue (format de stockage, options Keystore).
+  flutter_secure_storage: 10.3.4
+  cryptography: ^2.9.0
 
 dev_dependencies:
   flutter_test:
