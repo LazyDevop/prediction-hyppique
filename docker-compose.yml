@@ -58,8 +58,8 @@ services:
         required: false
     volumes:
       - hippique_data:/app/data
-      - ./ml/runs/2026-11-09:/app/modele/fondamental:ro
-      - ./ml/runs/2026-11-10-combine-r1:/app/modele/combine:ro
+      - ./ml/runs/2026-11-16:/app/modele/fondamental:ro
+      - ./ml/runs/2026-11-16-combine:/app/modele/combine:ro
     restart: unless-stopped
 
   # File de reconstruction de l'historique turfinfo : reprend seule après un
