@@ -30,13 +30,17 @@ class _FakeCoursesApi implements CoursesApi {
   }
 }
 
-CourseSummary _course(int id, {String hippodrome = 'Vincennes'}) => CourseSummary(
+CourseSummary _course(int id, {String hippodrome = 'Vincennes', bool avecCle = true, String source = 'pmu'}) =>
+    CourseSummary(
       id: id,
       date: DateTime(2026, 9, 8),
       hippodrome: hippodrome,
       discipline: 'ATTELE',
       finalisee: false,
-      source: 'pmu',
+      source: source,
+      numeroReunion: avecCle ? 1 : null,
+      numeroCourse: avecCle ? id : null,
+      cleCourse: avecCle ? '20260908-R1-C$id' : null,
     );
 
 void main() {
@@ -58,7 +62,8 @@ void main() {
         id INTEGER PRIMARY KEY, date TEXT NOT NULL, heure_depart TEXT,
         hippodrome TEXT NOT NULL, discipline TEXT NOT NULL, distance REAL,
         allocation REAL, nb_partants INTEGER, corde TEXT, terrain TEXT,
-        niveau_estime TEXT, finalisee INTEGER NOT NULL, source TEXT NOT NULL
+        niveau_estime TEXT, finalisee INTEGER NOT NULL, source TEXT NOT NULL,
+        numero_reunion INTEGER, numero_course INTEGER, cle_course TEXT
       )
     ''');
     await db.delete('programme_courses');
@@ -100,6 +105,50 @@ void main() {
       api.throwOnce = Exception('offline');
 
       expect(() => repo.programmeDuJour(date), throwsException);
+    });
+  });
+
+  group('cache sans cle_course (antérieur à la version 2, story 8.9)', () {
+    test('courses PMU toutes sans clé -> un rechargement, mis en cache', () async {
+      await DatabaseHelper.instance.saveProgramme(date, [_course(1, avecCle: false), _course(2, avecCle: false)]);
+      api.onCall = (d) => [_course(1), _course(2)];
+
+      final result = await repo.programmeDuJour(date);
+
+      expect(api.callCount, 1);
+      expect(result.fromCache, isFalse);
+      expect(result.courses.map((c) => c.cleCourse), ['20260908-R1-C1', '20260908-R1-C2']);
+      final relu = await DatabaseHelper.instance.getProgramme(date);
+      expect(relu.every((c) => c.cleCourse != null), isTrue);
+    });
+
+    test('rechargement en échec (hors ligne) -> ancien cache affiché, sans erreur', () async {
+      await DatabaseHelper.instance.saveProgramme(date, [_course(1, avecCle: false)]);
+      api.throwOnce = Exception('hors ligne');
+
+      final result = await repo.programmeDuJour(date);
+
+      expect(result.fromCache, isTrue);
+      expect(result.courses.single.id, 1);
+    });
+
+    test('backend toujours sans clés -> un seul rechargement par session', () async {
+      await DatabaseHelper.instance.saveProgramme(date, [_course(1, avecCle: false)]);
+      api.onCall = (d) => [_course(1, avecCle: false)];
+
+      await repo.programmeDuJour(date);
+      await repo.programmeDuJour(date);
+
+      expect(api.callCount, 1);
+    });
+
+    test('courses importées (non PMU) sans clé -> cache gardé, aucun appel', () async {
+      await DatabaseHelper.instance.saveProgramme(date, [_course(1, avecCle: false, source: 'photo')]);
+
+      final result = await repo.programmeDuJour(date);
+
+      expect(api.callCount, 0);
+      expect(result.fromCache, isTrue);
     });
   });
 

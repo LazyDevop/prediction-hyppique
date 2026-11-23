@@ -14,6 +14,14 @@ class CourseSummary {
   final bool finalisee;
   final String source;
 
+  /// Référence PMU (AD-12, story 8.9). Nulles pour une course sans numéros
+  /// ou quand le backend est antérieur à ces champs.
+  final int? numeroReunion;
+  final int? numeroCourse;
+
+  /// `AAAAMMJJ-Rn-Cn` : seul nom d'une course entre systèmes (jamais [id]).
+  final String? cleCourse;
+
   const CourseSummary({
     required this.id,
     required this.date,
@@ -28,6 +36,9 @@ class CourseSummary {
     this.niveauEstime,
     required this.finalisee,
     required this.source,
+    this.numeroReunion,
+    this.numeroCourse,
+    this.cleCourse,
   });
 
   factory CourseSummary.fromJson(Map<String, dynamic> json) {
@@ -45,6 +56,9 @@ class CourseSummary {
       niveauEstime: json['niveau_estime'] as String?,
       finalisee: json['finalisee'] as bool,
       source: json['source'] as String,
+      numeroReunion: json['numero_reunion'] as int?,
+      numeroCourse: json['numero_course'] as int?,
+      cleCourse: json['cle_course'] as String?,
     );
   }
 
@@ -65,6 +79,9 @@ class CourseSummary {
         'niveau_estime': niveauEstime,
         'finalisee': finalisee ? 1 : 0,
         'source': source,
+        'numero_reunion': numeroReunion,
+        'numero_course': numeroCourse,
+        'cle_course': cleCourse,
       };
 
   factory CourseSummary.fromCacheMap(Map<String, Object?> map) {
@@ -82,6 +99,9 @@ class CourseSummary {
       niveauEstime: map['niveau_estime'] as String?,
       finalisee: (map['finalisee'] as int) != 0,
       source: map['source'] as String,
+      numeroReunion: map['numero_reunion'] as int?,
+      numeroCourse: map['numero_course'] as int?,
+      cleCourse: map['cle_course'] as String?,
     );
   }
 }

@@ -1,15 +1,21 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../engine/constants.dart';
+import '../models/course_suivie.dart';
 import '../models/course_summary.dart';
 import '../models/race_config.dart';
 import '../providers/api_provider.dart';
 import '../providers/auth_provider.dart';
+import '../providers/courses_suivies_provider.dart';
 import '../providers/horses_provider.dart';
 import '../providers/programme_provider.dart';
 import '../providers/pronostic_provider.dart';
 import '../providers/race_provider.dart';
+import '../repository/course_repository.dart';
+import '../widgets/followed_race.dart';
 import 'import_photo_screen.dart';
 import 'profil_screen.dart';
 import 'race_config_screen.dart';
@@ -27,10 +33,52 @@ class HomeScreen extends ConsumerStatefulWidget {
   ConsumerState<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends ConsumerState<HomeScreen> {
-  DateTime _date = DateTime.now();
+class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObserver {
+  /// Toujours à minuit : c'est la clé de `programmeProvider`, partagée avec
+  /// l'ouverture d'une course suivie.
+  late DateTime _date;
   bool _loadingPartants = false;
   bool _refreshing = false;
+
+  /// Recalcule « Courses suivies » à minuit (une course passée sort le
+  /// lendemain), en plus du retour au premier plan.
+  Timer? _minuit;
+
+  static DateTime _jour(DateTime d) => DateTime(d.year, d.month, d.day);
+
+  @override
+  void initState() {
+    super.initState();
+    _date = _jour(ref.read(horlogeMuraleProvider)());
+    WidgetsBinding.instance.addObserver(this);
+    _programmerMinuit();
+  }
+
+  @override
+  void dispose() {
+    _minuit?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState etat) {
+    if (etat == AppLifecycleState.resumed && mounted) {
+      setState(() {});
+      _programmerMinuit();
+    }
+  }
+
+  void _programmerMinuit() {
+    _minuit?.cancel();
+    final maintenant = ref.read(horlogeMuraleProvider)();
+    final demain = DateTime(maintenant.year, maintenant.month, maintenant.day + 1);
+    _minuit = Timer(demain.difference(maintenant) + const Duration(seconds: 1), () {
+      if (!mounted) return;
+      setState(() {});
+      _programmerMinuit();
+    });
+  }
 
   // Rafraîchissement explicite uniquement (bouton), jamais automatique en
   // arrière-plan (EXPERIENCE.md Interaction Primitives). Le programme est
@@ -62,7 +110,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       firstDate: DateTime(2018),
       lastDate: DateTime(2100),
     );
-    if (picked != null) setState(() => _date = picked);
+    if (picked != null) setState(() => _date = _jour(picked));
   }
 
   Future<void> _selectCourse(CourseSummary course) async {
@@ -72,6 +120,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
       ref.read(horsesProvider.notifier).setAll(horses);
       ref.read(pronosticContextProvider.notifier).courseChargee(course.id);
+      ref.read(courseCouranteProvider.notifier).definir(course);
+      ref.read(coursesSuiviesProvider.notifier).actualiserInstantanes([course]);
       ref.read(raceConfigProvider.notifier).update(RaceConfig(
             hippodrome: course.hippodrome,
             distance: course.distance,
@@ -92,6 +142,95 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     }
   }
 
+  /// Ligne de « Courses suivies » : retrouve la course par sa clé PMU dans
+  /// le programme de sa date (cache-first, comme l'Accueil), puis l'ouvre
+  /// par le même chemin qu'une ligne du programme. Clé absente ou lecture en
+  /// échec : un rafraîchissement de ce jour, puis nouvelle recherche, avant
+  /// le snackbar ; l'entrée du provider est invalidée pour qu'aucun échec
+  /// ne reste en cache.
+  Future<void> _ouvrirCourseSuivie(CourseSuivie suivie) async {
+    if (_loadingPartants) return;
+    final messenger = ScaffoldMessenger.of(context);
+    final repo = ref.read(courseRepositoryProvider);
+    final jour = _jour(suivie.date);
+    setState(() => _loadingPartants = true);
+
+    CourseSummary? trouver(ProgrammeResult r) {
+      for (final c in r.courses) {
+        if (c.cleCourse == suivie.cleCourse) return c;
+      }
+      return null;
+    }
+
+    CourseSummary? course;
+    Object? erreur;
+    try {
+      // Le dépôt directement (même cache-first que programmeProvider) : un
+      // provider en échec réessaie et ferait attendre son `.future`.
+      course = trouver(await repo.programmeDuJour(jour));
+    } catch (e) {
+      erreur = e;
+    }
+    if (!mounted) return;
+    if (course == null) {
+      try {
+        final frais = await repo.rafraichirProgramme(jour);
+        course = trouver(frais);
+        erreur = course == null ? frais.refreshError : null;
+        if (mounted) ref.read(coursesSuiviesProvider.notifier).actualiserInstantanes(frais.courses);
+      } catch (e) {
+        erreur = e;
+      }
+      if (!mounted) return;
+      ref.invalidate(programmeProvider(jour));
+    }
+    setState(() => _loadingPartants = false);
+    if (course != null) {
+      await _selectCourse(course);
+      return;
+    }
+    messenger.showSnackBar(SnackBar(
+      content: Text(erreur == null
+          ? 'Course introuvable dans le programme'
+          : 'Échec du chargement du programme : $erreur'),
+    ));
+  }
+
+  /// Section « Courses suivies » (story 8.9) : masquée si vide et sur le web.
+  Widget _sectionCoursesSuivies() {
+    if (!ref.watch(suiviDisponibleProvider)) return const SizedBox.shrink();
+    final etat = ref.watch(coursesSuiviesProvider);
+    final lignes = coursesSuiviesAVenir(etat.lignes.values, ref.read(horlogeMuraleProvider)());
+    if (lignes.isEmpty) return const SizedBox.shrink();
+    return ConstrainedBox(
+      key: const Key('section-courses-suivies'),
+      constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * 0.4),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+            child: Text('Courses suivies', style: Theme.of(context).textTheme.titleSmall),
+          ),
+          Flexible(
+            child: ListView(
+              shrinkWrap: true,
+              children: [
+                for (final s in lignes)
+                  LigneCourseSuivie(
+                    key: ValueKey('suivie-${s.cleCourse}'),
+                    course: s,
+                    onTap: _loadingPartants ? null : () => _ouvrirCourseSuivie(s),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final dateLabel = '${_date.day.toString().padLeft(2, '0')}/'
@@ -102,6 +241,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     // en cache : affiche le cache immédiatement, pas d'écran de chargement
     // bloquant."
     final programmeAsync = ref.watch(programmeProvider(_date));
+    // Programme (re)chargé : instantanés des courses suivies remis à jour.
+    ref.listen<AsyncValue<ProgrammeResult>>(programmeProvider(_date), (_, suivant) {
+      final resultat = suivant.value;
+      if (resultat != null) ref.read(coursesSuiviesProvider.notifier).actualiserInstantanes(resultat.courses);
+    });
 
     return Scaffold(
       appBar: AppBar(
@@ -128,6 +272,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       ),
       body: Column(
         children: [
+          _sectionCoursesSuivies(),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Row(
@@ -237,7 +382,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RaceConfigScreen())),
+        onPressed: () {
+          // Saisie manuelle : l'étoile de la course précédente ne doit pas
+          // suivre (story 8.9).
+          ref.read(courseCouranteProvider.notifier).effacer();
+          Navigator.push(context, MaterialPageRoute(builder: (_) => const RaceConfigScreen()));
+        },
         icon: const Icon(Icons.edit),
         label: const Text('Saisie manuelle'),
       ),

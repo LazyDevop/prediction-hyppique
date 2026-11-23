@@ -1,7 +1,7 @@
 from datetime import date, datetime, timezone
 from typing import List, Optional
 
-from pydantic import BaseModel, ConfigDict, field_validator
+from pydantic import BaseModel, ConfigDict, computed_field, field_validator
 
 
 class CourseOut(BaseModel):
@@ -20,6 +20,19 @@ class CourseOut(BaseModel):
     niveau_estime: Optional[str]
     finalisee: bool
     source: str
+    # Référence PMU (AD-12) : ajout additif, null pour une course sans
+    # numéros (saisie manuelle, import photo).
+    numero_reunion: Optional[int] = None
+    numero_course: Optional[int] = None
+
+    @computed_field
+    @property
+    def cle_course(self) -> Optional[str]:
+        """Clé PMU `AAAAMMJJ-Rn-Cn` (AD-12), seul nom d'une course entre
+        systèmes ; null si un des deux numéros manque ou est < 1."""
+        if not self.numero_reunion or not self.numero_course or self.numero_reunion < 1 or self.numero_course < 1:
+            return None
+        return f"{self.date:%Y%m%d}-R{self.numero_reunion}-C{self.numero_course}"
 
     @field_validator("heure_depart")
     @classmethod

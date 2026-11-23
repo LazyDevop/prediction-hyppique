@@ -39,12 +39,36 @@ class CourseRepository {
   /// interrogé que si le cache de ce jour est vide (premier chargement).
   Future<ProgrammeResult> programmeDuJour(DateTime date) async {
     final cached = await _db.getProgramme(date);
-    if (cached.isNotEmpty) {
+    if (cached.isNotEmpty && !(_sansClesPmu(cached) && _completesTentees.add(_jour(date)))) {
       return ProgrammeResult(courses: cached, fromCache: true);
+    }
+    if (cached.isNotEmpty) {
+      // Programme mis en cache avant la version 2 (story 8.9) : ses courses
+      // PMU n'ont pas de cle_course. Un seul rechargement le complète ; hors
+      // ligne, l'ancien cache reste affiché.
+      try {
+        final fresh = await _programmeApi.getCourses(date);
+        await _db.saveProgramme(date, fresh);
+        return ProgrammeResult(courses: fresh, fromCache: false);
+      } catch (_) {
+        return ProgrammeResult(courses: cached, fromCache: true);
+      }
     }
     final fresh = await _programmeApi.getCourses(date);
     await _db.saveProgramme(date, fresh);
     return ProgrammeResult(courses: fresh, fromCache: false);
+  }
+
+  /// Jours dont le cache sans clé PMU a déjà été rechargé pendant cette
+  /// session : un backend antérieur aux clés ne provoque qu'un appel.
+  final _completesTentees = <DateTime>{};
+
+  static DateTime _jour(DateTime d) => DateTime(d.year, d.month, d.day);
+
+  /// Vrai quand le jour a des courses PMU et qu'aucune n'a de clé PMU.
+  static bool _sansClesPmu(List<CourseSummary> courses) {
+    final pmu = courses.where((c) => c.source == 'pmu');
+    return pmu.isNotEmpty && pmu.every((c) => c.cleCourse == null);
   }
 
   /// Rafraîchissement explicite (bouton "Rafraîchir" uniquement, jamais

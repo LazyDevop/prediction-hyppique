@@ -6,6 +6,7 @@ import '../providers/horses_provider.dart';
 import '../providers/race_provider.dart';
 import '../providers/results_provider.dart';
 import '../widgets/combo_block.dart';
+import '../widgets/followed_race.dart';
 import '../widgets/option_lists.dart';
 import '../widgets/probability_gauge.dart';
 import '../widgets/transparency_label.dart';
@@ -31,7 +32,7 @@ class ResultsScreen extends ConsumerWidget {
 
     if (result == null) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Résultats')),
+        appBar: AppBar(title: const Text('Résultats'), actions: const [EtoileSuiviCourse()]),
         body: const Center(child: Text('Aucun calcul effectué.')),
       );
     }
@@ -57,7 +58,10 @@ class ResultsScreen extends ConsumerWidget {
         .value;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Classement & recommandations')),
+      appBar: AppBar(
+        title: const Text('Classement & recommandations'),
+        actions: const [EtoileSuiviCourse()],
+      ),
       body: Column(
         children: [
           // Pinné hors de la zone défilante : le rappel de péremption doit

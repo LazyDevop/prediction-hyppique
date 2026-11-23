@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../providers/horses_provider.dart';
 import '../providers/results_provider.dart';
+import '../widgets/followed_race.dart';
 import '../widgets/horse_card.dart';
 import 'horse_edit_screen.dart';
 import 'results_screen.dart';
@@ -15,7 +16,10 @@ class HorseListScreen extends ConsumerWidget {
     final horses = ref.watch(horsesProvider);
 
     return Scaffold(
-      appBar: AppBar(title: Text('Partants (${horses.length})')),
+      appBar: AppBar(
+        title: Text('Partants (${horses.length})'),
+        actions: const [EtoileSuiviCourse()],
+      ),
       body: horses.isEmpty
           ? const Center(child: Text('Aucun cheval saisi — appuyez sur + pour en ajouter un.'))
           : ListView.builder(
