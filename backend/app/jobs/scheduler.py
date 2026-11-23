@@ -2,6 +2,7 @@ import logging
 import os
 import time
 from datetime import date, datetime, timedelta
+from typing import Optional
 
 from app.data.repository import Repository
 from app.jobs.ingest_daily import rafraichir_terrains_du_jour, run
@@ -12,13 +13,30 @@ logger = logging.getLogger(__name__)
 RUN_HOUR = int(os.environ.get("INGEST_HOUR", "6"))
 CHECK_INTERVAL_SECONDS = 60
 TERRAIN_REFRESH_INTERVAL = timedelta(hours=1)
+# Délai entre deux tentatives d'ingestion après un échec (réseau coupé...).
+INGEST_RETRY_INTERVAL = timedelta(minutes=15)
+
+
+def ingestion_due(
+    now: datetime, last_run: Optional[date], last_attempt: Optional[datetime]
+) -> bool:
+    """Ingestion du jour due : dès RUN_HOUR et tant qu'elle n'a pas réussi.
+
+    Un PC en veille pendant toute l'heure RUN_HOUR ne fait plus sauter la
+    journée : l'ingestion part au réveil. Après un échec, nouvel essai au plus
+    tôt INGEST_RETRY_INTERVAL plus tard.
+    """
+    if now.hour < RUN_HOUR or last_run == now.date():
+        return False
+    return last_attempt is None or now - last_attempt >= INGEST_RETRY_INTERVAL
 
 
 def main() -> None:
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
     repository = Repository()
-    last_run: date = None
-    last_terrain_refresh: datetime = None
+    last_run: Optional[date] = None
+    last_attempt: Optional[datetime] = None
+    last_terrain_refresh: Optional[datetime] = None
 
     logger.info("Scheduler démarré, ingestion quotidienne à %dh", RUN_HOUR)
 
@@ -26,7 +44,8 @@ def main() -> None:
     # être manquée si la machine est éteinte/en veille à ce moment précis
     # (cas courant pour un usage personnel) — ne pas en dépendre uniquement.
     try:
-        today = datetime.now().date()
+        last_attempt = datetime.now()
+        today = last_attempt.date()
         run(repository, today)
         last_run = today
     except Exception:
@@ -34,7 +53,8 @@ def main() -> None:
 
     while True:
         now = datetime.now()
-        if now.hour == RUN_HOUR and last_run != now.date():
+        if ingestion_due(now, last_run, last_attempt):
+            last_attempt = now
             try:
                 run(repository, now.date())
                 last_run = now.date()
