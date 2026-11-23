@@ -85,7 +85,7 @@ context:
 ## Notes
 
 - 2026-11-17 (dev, after review patch): `flutter analyze` no issues; `flutter test` 267 passed (224 before the slice). Three review layers; 11 patch groups applied: failed state read-only, pending payment owned by a kept-alive provider that polls after Paiement closes and refreshes Profil/Offres, idempotency key, polling limits and unknown payment, entitlement rule in the fake (extend / upgrade / refuse lower tier, UTC), no-account error, back-while-locked, Duo invitation notice, empty catalogue, single live-region status slot, tests (release flags, error paths, double taps, wider forbidden-word list).
-- Open owner decision: failure wording. EXPERIENCE.md says « Paiement non confirmé — aucun droit activé »; the mockup and this spec say « Paiement non abouti » / « Aucun pass n'a été activé » (kept for now).
+- 2026-11-23 owner decision: failure wording follows EXPERIENCE.md — « Paiement non confirmé » / « Aucun droit activé » (replaces the mockup's « Paiement non abouti » / « Aucun pass n'a été activé »).
 - Demo limitations: Mobile Money number prefilled only after a login in the same launch; Duo duration 30 days is provisional; prices « … FCFA » until OQ 13.
 
 ## Suggested Review Order

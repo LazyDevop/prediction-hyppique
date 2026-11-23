@@ -22,7 +22,7 @@ const messagePaiementEnAttente = 'Un paiement est en attente de confirmation';
 const noteDuo = "L'invitation de vos proches arrivera dans une prochaine version.";
 
 /// Clé de l'emplacement unique du `payment-status` : même position pour
-/// « en attente », « confirmé » et « non abouti », pour que la région live
+/// « en attente », « confirmé » et « non confirmé », pour que la région live
 /// n'annonce que le changement de texte.
 const cleStatutPaiement = ValueKey('statut-paiement');
 
@@ -360,7 +360,7 @@ class _PaiementScreenState extends ConsumerState<PaiementScreen> {
         );
       case EtapePaiement.echoue:
       case EtapePaiement.introuvable:
-        const titre = "Aucun pass n'a été activé";
+        const titre = "Aucun droit activé";
         final cause = p.etape == EtapePaiement.echoue
             ? "$moyen n'a pas confirmé le paiement."
             : 'Le statut de ce paiement est introuvable.';
@@ -369,10 +369,10 @@ class _PaiementScreenState extends ConsumerState<PaiementScreen> {
         return StatutPaiementBloc(
           key: cleStatutPaiement,
           etat: EtatPaiement.echoue,
-          etiquette: 'Paiement non abouti',
+          etiquette: 'Paiement non confirmé',
           titre: titre,
           texte: texte,
-          lu: 'Paiement non abouti. $titre. $texte',
+          lu: 'Paiement non confirmé. $titre. $texte',
         );
     }
   }

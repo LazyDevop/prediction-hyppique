@@ -223,8 +223,8 @@ void main() {
       await payer(tester, numero: FauxOffresApi.numeroEchec);
       await laisserConfirmer(tester, horloge);
 
-      expect(find.text('PAIEMENT NON ABOUTI'), findsOneWidget);
-      expect(find.text("Aucun pass n'a été activé"), findsOneWidget);
+      expect(find.text('PAIEMENT NON CONFIRMÉ'), findsOneWidget);
+      expect(find.text("Aucun droit activé"), findsOneWidget);
       expect(find.textContaining("MTN MoMo n'a pas confirmé le paiement."), findsOneWidget);
       expect(find.text('RÉESSAYER'), findsOneWidget);
       expect(find.text('Changer de moyen'), findsOneWidget);
@@ -247,10 +247,10 @@ void main() {
       expect(find.text(_attente, skipOffstage: false), findsOneWidget);
       expect(find.textContaining("Une demande MTN MoMo vient d'arriver sur le +237 6 90 00 00 00."), findsOneWidget);
       await laisserConfirmer(tester, horloge);
-      expect(find.text('PAIEMENT NON ABOUTI'), findsOneWidget);
+      expect(find.text('PAIEMENT NON CONFIRMÉ'), findsOneWidget);
 
       await toucher(tester, find.text('Changer de moyen'));
-      expect(find.text('PAIEMENT NON ABOUTI'), findsNothing);
+      expect(find.text('PAIEMENT NON CONFIRMÉ'), findsNothing);
       expect(find.byType(TextField), findsOneWidget);
       expect(find.text('SÉLECTIONNÉ'), findsNothing);
       expect(pressionCta(tester, 'PAYER'), isNull);
@@ -326,13 +326,13 @@ void main() {
 
       // Échec pendant que Paiement est fermé.
       await laisserConfirmer(tester, horloge);
-      expect(find.text('Paiement non abouti'), findsOneWidget);
+      expect(find.text('Paiement non confirmé'), findsOneWidget);
       await toucher(tester, find.text('Voir le paiement'));
-      expect(find.text('PAIEMENT NON ABOUTI'), findsOneWidget);
+      expect(find.text('PAIEMENT NON CONFIRMÉ'), findsOneWidget);
       // Issue vue : l'avis disparaît d'Offres.
       await toucher(tester, find.byTooltip('Retour'));
       await attendre(tester);
-      expect(find.text('Paiement non abouti'), findsNothing);
+      expect(find.text('Paiement non confirmé'), findsNothing);
     });
 
     testWidgets('« Revenir au profil » pendant l\'attente : Offres et Paiement se ferment', (tester) async {
@@ -423,7 +423,7 @@ void main() {
       await payer(tester);
       await tester.pump(const Duration(seconds: 2));
       await attendre(tester);
-      expect(find.text('PAIEMENT NON ABOUTI'), findsOneWidget);
+      expect(find.text('PAIEMENT NON CONFIRMÉ'), findsOneWidget);
       expect(find.textContaining('Le statut de ce paiement est introuvable.'), findsOneWidget);
       final lectures = offres.lecturesStatut;
       await tester.pump(const Duration(seconds: 30));

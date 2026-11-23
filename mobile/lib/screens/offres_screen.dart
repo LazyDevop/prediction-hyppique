@@ -130,7 +130,7 @@ class _OffresScreenState extends ConsumerState<OffresScreen> {
             annonce: true,
             child: Row(
               children: [
-                Expanded(child: Text(enAttente ? messagePaiementEnAttente : 'Paiement non abouti')),
+                Expanded(child: Text(enAttente ? messagePaiementEnAttente : 'Paiement non confirmé')),
                 LienAuth(
                   texte: 'Voir le paiement',
                   onPressed: () => _ouvrirPaiement(paiement.offre, suivre: true),

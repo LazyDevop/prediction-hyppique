@@ -8,7 +8,7 @@ enum EtatPaiement { enAttente, confirme, echoue }
 /// rounded.sm, texte `text`) ; l'échec en variante forte (2px `text`).
 /// Jamais de vert ni de rouge : l'état est écrit. Région live polie, lue
 /// en un seul nœud ([lu]) : le passage « en attente » → « actif » ou
-/// « non abouti » est annoncé une fois, sans déplacer le focus.
+/// « non confirmé » est annoncé une fois, sans déplacer le focus.
 class StatutPaiementBloc extends StatelessWidget {
   final EtatPaiement etat;
 
