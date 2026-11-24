@@ -6,6 +6,8 @@ import 'package:prediction_hippique/providers/params_provider.dart';
 import 'package:prediction_hippique/providers/results_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../paliers/paliers_test_helpers.dart';
+
 void main() {
   // calculer() lit engineParamsProvider, qui lit sharedPreferencesProvider
   // (FR-20, spec-3-7) : résolue une seule fois, réutilisée par chaque test.
@@ -15,7 +17,7 @@ void main() {
     prefs = await SharedPreferences.getInstance();
   });
   ProviderContainer newContainer() => ProviderContainer(
-        overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+        overrides: [sharedPreferencesProvider.overrideWithValue(prefs), palierFixe()],
       );
 
   group('HorsesNotifier mutations invalidate resultsProvider (FR-6)', () {

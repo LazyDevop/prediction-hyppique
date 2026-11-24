@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../data/remote/compte_api.dart' show palierGratuit;
 import '../data/remote/offres_api.dart';
 import '../providers/auth_provider.dart';
 import '../providers/paiement_provider.dart';
+import '../providers/palier_provider.dart';
 import '../widgets/auth_styles.dart';
 import '../widgets/cadre_auth.dart';
 import '../widgets/device_row.dart';
@@ -18,18 +20,27 @@ const rappelJeuOffres =
     'Jeu responsable — un pronostic reste une estimation : aucun palier ne garantit un gain. '
     'Jouez uniquement ce que vous pouvez vous permettre de perdre.';
 
+const libelleRetourProfil = 'Revenir au profil';
+const libelleRetourVerrou = "Revenir à l'écran précédent";
+
 /// « Palier Turfiste actif jusqu'au 24/11 à 10 h 00. »
 String libelleDroitActif(DroitActuel d, DateTime maintenant) =>
     "Palier ${d.palier} actif jusqu'au ${formaterJourMois(d.finDroit!, maintenant)} à ${formaterHeure(d.finDroit!)}.";
 
-/// Offres (story 9.4), ouvert depuis Profil : offres groupées par palier
+/// Offres (story 9.4), ouvert depuis Profil ou un `locked-feature` : offres groupées par palier
 /// (`offer-card`), sélection écrite, « Continuer vers le paiement ». Un
 /// paiement en attente bloque tout nouveau paiement et se rouvre d'ici.
 class OffresScreen extends ConsumerStatefulWidget {
   /// Palier actif à l'ouverture (en-tête, avant lecture du droit).
   final String palier;
 
-  const OffresScreen({super.key, required this.palier});
+  /// Palier du verrou touché : les offres qui le débloquent en tête.
+  final String? besoin;
+
+  /// Retour depuis Paiement (écran d'origine : Profil ou un verrou).
+  final String libelleRetour;
+
+  const OffresScreen({super.key, required this.palier, this.besoin, this.libelleRetour = libelleRetourProfil});
 
   @override
   ConsumerState<OffresScreen> createState() => _OffresScreenState();
@@ -81,12 +92,19 @@ class _OffresScreenState extends ConsumerState<OffresScreen> {
     bool? termine;
     try {
       termine = await navigateur.push<bool>(
-        MaterialPageRoute<bool>(builder: (_) => PaiementScreen(offre: offre, palier: palier, suivre: suivre)),
+        MaterialPageRoute<bool>(
+          builder: (_) => PaiementScreen(
+            offre: offre,
+            palier: palier,
+            suivre: suivre,
+            libelleRetour: widget.libelleRetour,
+          ),
+        ),
       );
     } finally {
       _occupe = false;
     }
-    // « Revenir au profil » depuis Paiement : Offres se ferme aussi.
+    // Retour à l'écran d'origine depuis Paiement : Offres se ferme aussi.
     if (termine == true && mounted) navigateur.pop();
   }
 
@@ -98,6 +116,10 @@ class _OffresScreenState extends ConsumerState<OffresScreen> {
   @override
   Widget build(BuildContext context) {
     ref.listen(signalDroitProvider, (_, _) => _chargerDroit());
+    // Fin du droit pendant qu'Offres est ouvert.
+    ref.listen(palierProvider.select((e) => e.palier), (avant, _) {
+      if (avant != null) _chargerDroit();
+    });
     final modeDemo = ref.watch(modeDemoPaiementProvider);
     final paiement = ref.watch(paiementEnCoursProvider);
     final enAttente = paiement != null && paiement.enCours;
@@ -155,9 +177,7 @@ class _OffresScreenState extends ConsumerState<OffresScreen> {
           const SizedBox(height: 10),
           CtaFantome(texte: 'Réessayer', onPressed: _charger),
         ] else ...[
-          ..._groupe(offres, GroupeOffre.turfiste, 'Turfiste', 'instantanés H-60, H-30, H-15'),
-          ..._groupe(offres, GroupeOffre.expert, 'Expert', '+ instantané H-10'),
-          ..._groupe(offres, GroupeOffre.duo, 'Duo', 'chaque palier'),
+          for (final groupe in _ordreGroupes) ..._groupe(offres, groupe),
           const SizedBox(height: 2),
           const BandeauStatut(child: Text('ℹ️ Les prix et les durées sont indiqués avant tout paiement.')),
         ],
@@ -172,8 +192,23 @@ class _OffresScreenState extends ConsumerState<OffresScreen> {
     );
   }
 
-  List<Widget> _groupe(List<Offre> offres, GroupeOffre groupe, String titre, String aparte) {
-    final liste = offres.where((o) => o.groupe == groupe).toList();
+  /// Vrai si [o] débloque le contenu du verrou touché.
+  bool _debloque(Offre o) => rangPalier(o.palier) >= rangPalier(widget.besoin ?? palierGratuit);
+
+  /// Verrou Expert : les offres Expert puis Duo avant les offres Turfiste,
+  /// qui ne le débloquent pas.
+  List<GroupeOffre> get _ordreGroupes => widget.besoin == palierExpert
+      ? const [GroupeOffre.expert, GroupeOffre.duo, GroupeOffre.turfiste]
+      : const [GroupeOffre.turfiste, GroupeOffre.expert, GroupeOffre.duo];
+
+  List<Widget> _groupe(List<Offre> offres, GroupeOffre groupe) {
+    final (titre, aparte) = switch (groupe) {
+      GroupeOffre.turfiste => ('Turfiste', 'instantanés H-60, H-30, H-15'),
+      GroupeOffre.expert => ('Expert', '+ instantané H-10'),
+      GroupeOffre.duo => ('Duo', 'chaque palier'),
+    };
+    final duGroupe = offres.where((o) => o.groupe == groupe);
+    final liste = [...duGroupe.where(_debloque), ...duGroupe.where((o) => !_debloque(o))];
     if (liste.isEmpty) return const [];
     return [
       TitreGroupe(titre, aparte: aparte),

@@ -16,7 +16,7 @@ void main() {
       await ouvrirProfil(tester);
 
       expect(find.text('PROFIL'), findsOneWidget);
-      expect(find.text('+237 6 •• •• •• 56'), findsOneWidget);
+      expect(find.text('+237 6 •• •• •• 00'), findsOneWidget);
       expect(find.text('Non renseigné'), findsOneWidget);
       expect(find.text('Gratuit'), findsOneWidget);
       expect(find.text('GRATUIT'), findsOneWidget);

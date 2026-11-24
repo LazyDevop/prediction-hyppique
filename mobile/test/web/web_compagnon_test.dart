@@ -324,7 +324,7 @@ void main() {
     });
 
     testWidgets('ouvrir une course : à droite, liste visible, « Ouverte » ; retour : vide', (tester) async {
-      final env = await _pump(tester, store: await storeAvecSession());
+      final env = await _pump(tester, store: await storeExpert());
       await tester.tap(find.byKey(const ValueKey('course-9')));
       await tester.pumpAndSettle();
       expect(env.repo.partantsDemandes, [9]);
@@ -354,7 +354,7 @@ void main() {
     });
 
     testWidgets('échec du chargement des partants : snackbar, colonne de droite inchangée', (tester) async {
-      final env = await _pump(tester, store: await storeAvecSession());
+      final env = await _pump(tester, store: await storeExpert());
       env.repo.partantsEnEchec = true;
       await tester.tap(find.byKey(const ValueKey('course-9')));
       await _attendre(tester);
@@ -364,7 +364,7 @@ void main() {
     });
 
     testWidgets('Profil et Réglages s\'ouvrent dans la colonne de droite ; double clic sans doublon', (tester) async {
-      await _pump(tester, store: await storeAvecSession());
+      await _pump(tester, store: await storeExpert());
       await tester.tap(find.text('Profil'));
       await tester.tap(find.text('Profil'));
       await tester.pumpAndSettle();
@@ -381,7 +381,7 @@ void main() {
     });
 
     testWidgets('clavier : colonne de gauche puis de droite, contour de focus visible', (tester) async {
-      await _pump(tester, store: await storeAvecSession());
+      await _pump(tester, store: await storeExpert());
       await tester.tap(find.byKey(const ValueKey('course-9')));
       await tester.pumpAndSettle();
       FocusManager.instance.highlightStrategy = FocusHighlightStrategy.alwaysTraditional;
@@ -419,14 +419,14 @@ void main() {
     });
 
     testWidgets('web étroit, connecté : Accueil du téléphone inchangé', (tester) async {
-      await _pump(tester, taille: _etroit, store: await storeAvecSession());
+      await _pump(tester, taille: _etroit, store: await storeExpert());
       expect(find.byType(HomeScreen), findsOneWidget);
       expect(_shell, findsNothing);
       expect(find.text('Saisie manuelle'), findsOneWidget);
     });
 
     testWidgets('Android large, déverrouillé : Accueil du téléphone, jamais deux colonnes', (tester) async {
-      await _pump(tester, web: false, store: await storeAvecSession(pin: '4821'));
+      await _pump(tester, web: false, store: await storeExpert(pin: '4821'));
       for (final c in '4821'.split('')) {
         await tester.tap(find.text(c));
         await tester.pump();

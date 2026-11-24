@@ -70,7 +70,7 @@ void main() {
       expect((await fake.lireProfil()).cguVersion, CGU_VERSION_PROVISOIRE);
 
       final c = conteneur(
-        store: await storeAvecSession(pin: '4821'),
+        store: await storeExpert(pin: '4821'),
         compte: fake,
       );
       addTearDown(c.dispose);

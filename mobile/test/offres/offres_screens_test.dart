@@ -463,10 +463,10 @@ void main() {
 
     testWidgets('numéro du compte proposé après connexion, modifiable', (tester) async {
       await pumpApp(tester, store: MemorySessionStore());
-      await connexion(tester, '677123456');
+      await connexion(tester, '677000000');
       expect(find.text('ACCUEIL'), findsOneWidget);
       await ouvrirPaiement(tester);
-      expect(tester.widget<TextField>(find.byType(TextField)).controller!.text, '677123456');
+      expect(tester.widget<TextField>(find.byType(TextField)).controller!.text, '677000000');
       expect(find.text('Le numéro de votre compte est proposé ; vous pouvez en saisir un autre.'), findsOneWidget);
       await tester.enterText(find.byType(TextField), '655000011');
       await tester.pump();

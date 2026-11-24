@@ -23,10 +23,17 @@ class Horloge {
   void avancer(Duration d) => maintenant = maintenant.add(d);
 }
 
-/// Session déjà ouverte, PIN défini ([pin]) si fourni.
-Future<MemorySessionStore> storeAvecSession({String? pin, int echecs = 0}) async {
+/// Comptes de démonstration : 677000000 (Gratuit), 677123456 (Expert).
+const masqueGratuit = '+237 6 •• •• •• 00';
+const masqueExpert = '+237 6 •• •• •• 56';
+
+/// Session Expert : aucune fonction verrouillée (calcul, configuration…).
+Future<MemorySessionStore> storeExpert({String? pin}) => storeAvecSession(pin: pin, numeroMasque: masqueExpert);
+
+/// Session déjà ouverte (Gratuit par défaut), PIN défini ([pin]) si fourni.
+Future<MemorySessionStore> storeAvecSession({String? pin, int echecs = 0, String numeroMasque = masqueGratuit}) async {
   final store = MemorySessionStore();
-  await store.enregistrerSession(accessToken: 'a', refreshToken: 'r', numeroMasque: '+237 6 •• •• •• 56');
+  await store.enregistrerSession(accessToken: 'a', refreshToken: 'r', numeroMasque: numeroMasque);
   if (pin != null) {
     await store.enregistrerPin(await pinHasherRapide().hacher(pin), pin.length);
     if (echecs > 0) await store.enregistrerEchecsPin(echecs);

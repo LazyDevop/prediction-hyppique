@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../data/remote/compte_api.dart';
 import '../providers/auth_provider.dart';
 import '../providers/paiement_provider.dart';
+import '../providers/palier_provider.dart';
 import '../widgets/auth_styles.dart';
 import '../widgets/cadre_auth.dart';
 import '../widgets/device_row.dart';
@@ -43,7 +44,11 @@ class _ProfilScreenState extends ConsumerState<ProfilScreen> {
     if (_erreur) setState(() => _erreur = false);
     try {
       final profil = await ref.read(compteApiProvider).lireProfil();
-      if (mounted) setState(() => _profil = profil);
+      if (!mounted) return;
+      setState(() => _profil = profil);
+      // Lecture réussie ici alors que le palier est tombé faute de réponse.
+      final palier = ref.read(palierProvider);
+      if (palier.echuLocalement) ref.read(palierProvider.notifier).actualiser();
     } catch (_) {
       if (mounted) setState(() => _erreur = true);
     }
@@ -82,8 +87,17 @@ class _ProfilScreenState extends ConsumerState<ProfilScreen> {
   Widget build(BuildContext context) {
     // Paiement confirmé (même Paiement fermé) : rechargement sans action.
     ref.listen(signalDroitProvider, (_, _) => _charger());
+    // Fin du droit pendant que Profil est ouvert (affichée tout de suite,
+    // puis relue).
+    ref.listen(palierProvider.select((e) => e.palier), (avant, apres) {
+      if (avant != null && apres != null) _charger();
+    });
+    final echu = ref.watch(palierProvider.select((e) => e.echuLocalement));
+    final maintenant = ref.watch(horlogeMuraleProvider)();
     final numero = ref.watch(authProvider).value?.numeroMasque ?? '';
-    final profil = _profil;
+    // La réponse du serveur fait foi, sauf échéance passée sans réponse.
+    final fin = _profil?.finDroit;
+    final profil = echu && fin != null ? _profil?.effectif(fin) : _profil;
     return CadreAuth(
       enfants: [
         Row(
@@ -118,14 +132,15 @@ class _ProfilScreenState extends ConsumerState<ProfilScreen> {
               ),
             ),
           ],
-          ..._contenu(profil, numero),
+          ..._contenu(profil, numero, maintenant),
         ],
       ],
     );
   }
 
-  List<Widget> _contenu(ProfilCompte p, String numero) {
+  List<Widget> _contenu(ProfilCompte p, String numero, DateTime maintenant) {
     final email = p.email;
+    final offres = ref.watch(offresDisponiblesProvider);
     return [
       // FR-34 : rappel non bloquant, seulement sur un palier payant.
       if (p.palierPayant && !(email != null && p.emailVerifie)) ...[
@@ -182,14 +197,21 @@ class _ProfilScreenState extends ConsumerState<ProfilScreen> {
       ),
       const TitreSection('Palier'),
       LigneReglage(libelle: 'Palier actif', valeur: p.palier),
-      LigneReglage(
-        libelle: 'Fin du droit',
-        valeur: p.finDroit == null
-            ? 'Sans date de fin'
-            : '${formaterDate(p.finDroit!)} à ${formaterHeure(p.finDroit!)}',
-        detail: p.finDroit == null ? null : 'Ensuite : palier Gratuit, données conservées',
-      ),
-      if (ref.watch(offresDisponiblesProvider))
+      if (p.droitTermine case final termine?)
+        LigneReglage(
+          libelle: 'Droit ${termine.palier} terminé le ${formaterJourMois(termine.fin, maintenant)}',
+          action: offres ? 'Voir les offres' : null,
+          onTap: offres ? () => _ouvrir(OffresScreen(palier: p.palier, besoin: termine.palier)) : null,
+        )
+      else
+        LigneReglage(
+          libelle: 'Fin du droit',
+          valeur: p.finDroit == null
+              ? 'Sans date de fin'
+              : '${formaterDate(p.finDroit!)} à ${formaterHeure(p.finDroit!)}',
+          detail: p.finDroit == null ? null : 'Ensuite : palier Gratuit, données conservées',
+        ),
+      if (offres)
         LigneReglage(
           libelle: 'Offres',
           valeur: 'Voir les offres',

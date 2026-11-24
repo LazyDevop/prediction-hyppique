@@ -1,18 +1,63 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../data/acces_paliers.dart';
 import '../models/horse.dart';
 import '../providers/horses_provider.dart';
+import '../providers/palier_provider.dart';
 import '../providers/race_provider.dart';
 import '../providers/results_provider.dart';
 import '../widgets/combo_block.dart';
 import '../widgets/followed_race.dart';
+import '../widgets/locked_feature.dart';
 import '../widgets/option_lists.dart';
 import '../widgets/probability_gauge.dart';
 import '../widgets/transparency_label.dart';
 
-class ResultsScreen extends ConsumerWidget {
+const messagePronosticIndisponible = 'Pronostic du matin indisponible';
+
+class ResultsScreen extends ConsumerStatefulWidget {
   const ResultsScreen({super.key});
+
+  @override
+  ConsumerState<ResultsScreen> createState() => _ResultsScreenState();
+}
+
+class _ResultsScreenState extends ConsumerState<ResultsScreen> {
+  // Lu une fois : le palier peut monter écran ouvert, le résultat est alors
+  // calculé sans action (verrou remplacé en place).
+  late final ResultsNotifier _resultats;
+
+  @override
+  void initState() {
+    super.initState();
+    _resultats = ref.read(resultsProvider.notifier)..ecranOuvert();
+  }
+
+  @override
+  void dispose() {
+    _resultats.ecranFerme();
+    super.dispose();
+  }
+
+  /// Consultation (palier Gratuit) : le pronostic publié n'existe pas encore
+  /// dans l'app (Epic 11) ; aucun chiffre inventé.
+  Widget _consultation() => Scaffold(
+    appBar: AppBar(title: const Text('Résultats'), actions: const [EtoileSuiviCourse()]),
+    body: ListView(
+      padding: const EdgeInsets.all(16),
+      children: const [
+        AvisPalier(),
+        Padding(
+          padding: EdgeInsets.symmetric(vertical: 16),
+          child: Text(messagePronosticIndisponible, textAlign: TextAlign.center),
+        ),
+        LockedFeature(Fonction.valueEtMise),
+        SizedBox(height: 12),
+        LockedFeature(Fonction.combinaisons),
+      ],
+    ),
+  );
 
   String _reco(Horse h, int index) {
     if (h.nbPerfs == 0 && !h.inedit) return 'Données non saisies';
@@ -25,10 +70,19 @@ class ResultsScreen extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
+    final palier = ref.watch(palierProvider);
     final result = ref.watch(resultsProvider);
     final race = ref.watch(raceConfigProvider);
     final horses = ref.watch(horsesProvider);
+
+    if (palier.enChargement) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Résultats'), actions: const [EtoileSuiviCourse()]),
+        body: const ChargementPalier(),
+      );
+    }
+    if (!palier.autorise(Fonction.calculLocal)) return _consultation();
 
     if (result == null) {
       return Scaffold(
@@ -36,6 +90,9 @@ class ResultsScreen extends ConsumerWidget {
         body: const Center(child: Text('Aucun calcul effectué.')),
       );
     }
+
+    final combinaisonsPermises = palier.autorise(Fonction.combinaisons);
+    final combinaisons = combinaisonsPermises ? result.combinaisons : null;
 
     final reels = result.resultats.take(result.nbReels).toList()
       ..sort((a, b) => b.score.compareTo(a.score));
@@ -148,6 +205,7 @@ class ResultsScreen extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(height: 16),
+                const AvisPalier(),
                 Text(
                   'PARIS COMBINÉS',
                   style: TextStyle(
@@ -157,7 +215,11 @@ class ResultsScreen extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(height: 8),
-                GridView.count(
+                if (!combinaisonsPermises)
+                  const LockedFeature(Fonction.combinaisons)
+                else if (combinaisons == null)
+                  const Text('Recalculez pour afficher les combinaisons.')
+                else GridView.count(
                   crossAxisCount: 2,
                   childAspectRatio: 1.3,
                   shrinkWrap: true,
@@ -167,43 +229,43 @@ class ResultsScreen extends ConsumerWidget {
                   children: [
                     ComboBlock(
                       title: 'Couplé gagnant',
-                      combos: result.combinaisons.couple.desordre,
+                      combos: combinaisons.couple.desordre,
                     ),
                     ComboBlock(
                       title: 'Couplé ordre',
-                      combos: result.combinaisons.couple.ordre,
+                      combos: combinaisons.couple.ordre,
                     ),
                     ComboBlock(
                       title: 'Couplé placé',
-                      combos: result.combinaisons.couplePlace,
+                      combos: combinaisons.couplePlace,
                     ),
                     ComboBlock(
                       title: '2 sur 4',
-                      combos: result.combinaisons.deuxSurQuatre,
+                      combos: combinaisons.deuxSurQuatre,
                     ),
                     ComboBlock(
                       title: 'Trio désordre',
-                      combos: result.combinaisons.trio.desordre,
+                      combos: combinaisons.trio.desordre,
                     ),
                     ComboBlock(
                       title: 'Tiercé ordre',
-                      combos: result.combinaisons.trio.ordre,
+                      combos: combinaisons.trio.ordre,
                     ),
                     ComboBlock(
                       title: 'Quarté désordre',
-                      combos: result.combinaisons.quarte.desordre,
+                      combos: combinaisons.quarte.desordre,
                     ),
                     ComboBlock(
                       title: 'Quarté ordre',
-                      combos: result.combinaisons.quarte.ordre,
+                      combos: combinaisons.quarte.ordre,
                     ),
                     ComboBlock(
                       title: 'Quinté désordre',
-                      combos: result.combinaisons.quinte.desordre,
+                      combos: combinaisons.quinte.desordre,
                     ),
                     ComboBlock(
                       title: 'Quinté ordre',
-                      combos: result.combinaisons.quinte.ordre,
+                      combos: combinaisons.quinte.ordre,
                     ),
                   ],
                 ),

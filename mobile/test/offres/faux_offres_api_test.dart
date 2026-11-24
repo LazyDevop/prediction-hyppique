@@ -18,7 +18,7 @@ void main() {
     horloge = Horloge();
     compte = FauxCompteApi(horloge: horloge.call, web: true);
     offres = FauxOffresApi(compte: compte, horloge: horloge.call);
-    compte.rattacher('+237677123456', cguVersion: CGU_VERSION_PROVISOIRE);
+    compte.rattacher('+237677000000', cguVersion: CGU_VERSION_PROVISOIRE);
   });
 
   Future<InitiationPaiementResultat> initier(String offreId, {String numero = '677123456', String? cle}) =>
@@ -113,12 +113,12 @@ void main() {
     compte.rattacher('+237655000011', cguVersion: CGU_VERSION_PROVISOIRE);
     horloge.avancer(const Duration(seconds: 5));
     expect((await compte.lireProfil()).palier, palierGratuit);
-    compte.restaurerSession(masquerNumero('+237677123456'));
+    compte.restaurerSession(masquerNumero('+237677000000'));
     expect((await compte.lireProfil()).palier, palierTurfiste);
   });
 
   test('numéro proposé : celui du compte connecté dans ce lancement, sinon rien', () async {
-    expect(await offres.numeroPropose(), '677123456');
+    expect(await offres.numeroPropose(), '677000000');
     compte.deconnecter();
     expect(await offres.numeroPropose(), isNull);
   });

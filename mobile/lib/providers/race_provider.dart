@@ -7,6 +7,9 @@ class RaceConfigNotifier extends Notifier<RaceConfig> {
   @override
   RaceConfig build() => const RaceConfig(hippodrome: 'Vincennes', distance: 2000, terrain: 1.0, niveau: 3.0);
 
+  /// Autre compte : plus aucune course configurée du précédent.
+  void reinitialiser() => state = build();
+
   // Périme un résultat déjà calculé (FR-13/FR-6 — voir spec-3-6) : un résultat
   // affiché doit toujours refléter la config qui l'a produit. No-op si aucun
   // résultat n'existe (ex. chargement d'une toute nouvelle course, où

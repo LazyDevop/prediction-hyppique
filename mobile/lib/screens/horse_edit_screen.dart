@@ -2,11 +2,14 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../data/acces_paliers.dart';
 import '../models/historique_performance.dart';
 import '../models/horse.dart';
 import '../models/performance.dart';
 import '../providers/api_provider.dart';
 import '../providers/horses_provider.dart';
+import '../providers/palier_provider.dart';
+import '../widgets/locked_feature.dart';
 import '../widgets/performance_row.dart';
 
 /// Fiche cheval éditable. index == null → nouveau cheval, sinon édition d'un
@@ -110,6 +113,7 @@ class _HorseEditScreenState extends ConsumerState<HorseEditScreen> {
   }
 
   void _save() {
+    if (!ref.read(palierProvider).autorise(Fonction.ficheCheval)) return;
     // Une ligne de perf "vide" (ni rang ni incident) est ignorée par le
     // moteur — pas besoin de la filtrer ici, computeForme s'en charge déjà.
     final performances = _perfs.where((p) => p.rang != null || p.partants > 0 || p.incident != null).toList();
@@ -135,7 +139,13 @@ class _HorseEditScreenState extends ConsumerState<HorseEditScreen> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => PageSelonPalier(
+    fonction: Fonction.ficheCheval,
+    titre: 'Fiche cheval',
+    contenu: _contenu,
+  );
+
+  Widget _contenu(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.index != null ? 'Modifier le cheval' : 'Nouveau cheval'),

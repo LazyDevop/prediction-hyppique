@@ -17,7 +17,7 @@ void main() {
     final prefs = await SharedPreferences.getInstance();
     // Porte de connexion (stories 8.1/8.3) : session déjà ouverte, comme
     // après une connexion sur le web (pas de PIN).
-    final store = await storeAvecSession();
+    final store = await storeExpert();
     await tester.pumpWidget(ProviderScope(
       overrides: [
         sharedPreferencesProvider.overrideWithValue(prefs),

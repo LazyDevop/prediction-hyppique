@@ -12,6 +12,8 @@ import 'package:prediction_hippique/providers/results_provider.dart';
 import 'package:prediction_hippique/models/race_config.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../paliers/paliers_test_helpers.dart';
+
 class FakePronosticsApi implements PronosticsApi {
   final List<Map<String, Object?>> envoyes = [];
 
@@ -41,6 +43,7 @@ void main() {
     final container = ProviderContainer(overrides: [
       sharedPreferencesProvider.overrideWithValue(prefs),
       pronosticsApiProvider.overrideWithValue(api),
+      palierFixe(),
     ]);
     addTearDown(container.dispose);
     return container;

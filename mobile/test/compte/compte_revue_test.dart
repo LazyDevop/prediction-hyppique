@@ -47,14 +47,14 @@ class _ListePuisPanne extends FauxCompteApi {
   }
 }
 
-/// Le profil se lit une fois, puis échoue.
+/// Le profil se lit deux fois (palier, puis Profil), puis échoue.
 class _ProfilPuisPanne extends FauxCompteApi {
   int lectures = 0;
   _ProfilPuisPanne() : super(web: true);
 
   @override
   Future<ProfilCompte> lireProfil() async {
-    if (lectures++ > 0) throw Exception('réseau');
+    if (lectures++ > 1) throw Exception('réseau');
     return super.lireProfil();
   }
 }
@@ -188,7 +188,7 @@ void main() {
       expect(store.session, isNull);
       expect(find.byType(ProfilScreen, skipOffstage: false), findsNothing);
 
-      await connexion(tester, '677123456');
+      await connexion(tester, '677000000');
       expect(find.text('Choisissez un code PIN'), findsOneWidget);
       await taperPin(tester, '4821');
       await tester.tap(find.text('CONTINUER'));

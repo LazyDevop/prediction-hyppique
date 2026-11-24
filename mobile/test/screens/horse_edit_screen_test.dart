@@ -6,6 +6,8 @@ import 'package:prediction_hippique/models/performance.dart';
 import 'package:prediction_hippique/providers/horses_provider.dart';
 import 'package:prediction_hippique/screens/horse_edit_screen.dart';
 
+import '../paliers/paliers_test_helpers.dart';
+
 const _counterFinder = 'performances avec terrain inconnu';
 
 // Le compteur est sous les 6 lignes de performance dans la ListView : hors
@@ -23,8 +25,9 @@ void main() {
   group('HorseEditScreen terrain-inconnu counter (FR-5)', () {
     testWidgets('new horse, nothing entered -> 0/6', (tester) async {
       await tester.pumpWidget(
-        const ProviderScope(
-          child: MaterialApp(home: HorseEditScreen(index: null)),
+        ProviderScope(
+          overrides: [palierFixe()],
+          child: const MaterialApp(home: HorseEditScreen(index: null)),
         ),
       );
       await tester.pump();
@@ -35,8 +38,9 @@ void main() {
 
     testWidgets('entering a rang without setting terrain -> counter increments', (tester) async {
       await tester.pumpWidget(
-        const ProviderScope(
-          child: MaterialApp(home: HorseEditScreen(index: null)),
+        ProviderScope(
+          overrides: [palierFixe()],
+          child: const MaterialApp(home: HorseEditScreen(index: null)),
         ),
       );
       await tester.pump();
@@ -60,7 +64,7 @@ void main() {
     });
 
     testWidgets('existing horse with mixed terrain-known/unknown performances -> counts only the unknown ones', (tester) async {
-      final container = ProviderContainer();
+      final container = ProviderContainer(overrides: [palierFixe()]);
       addTearDown(container.dispose);
 
       container.read(horsesProvider.notifier).add(Horse(
@@ -85,7 +89,7 @@ void main() {
     });
 
     testWidgets('a blank row (never touched) never counts as terrain inconnu', (tester) async {
-      final container = ProviderContainer();
+      final container = ProviderContainer(overrides: [palierFixe()]);
       addTearDown(container.dispose);
 
       container.read(horsesProvider.notifier).add(Horse(

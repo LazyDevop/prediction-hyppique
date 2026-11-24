@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../data/acces_paliers.dart';
 import '../engine/constants.dart';
 import '../models/race_config.dart';
+import '../providers/courses_suivies_provider.dart';
+import '../providers/palier_provider.dart';
 import '../providers/race_provider.dart';
+import '../widgets/auth_styles.dart';
+import '../widgets/locked_feature.dart';
 import 'horse_list_screen.dart';
 
 /// Configuration de la course cible (cahier des charges mobile §7.2 ;
@@ -19,7 +24,14 @@ import 'horse_list_screen.dart';
 /// seul le coefficient résolu est porté par RaceConfig, comme pour
 /// HorseAnalysis côté moteur.
 class RaceConfigScreen extends ConsumerStatefulWidget {
-  const RaceConfigScreen({super.key});
+  /// Ouvert depuis la Liste des partants : « Voir les partants » y revient.
+  final bool depuisPartants;
+
+  /// Ouvert par « Saisie manuelle » : remplace la course courante à la
+  /// confirmation (elle reste en place tant que l'écran est verrouillé).
+  final bool saisieManuelle;
+
+  const RaceConfigScreen({super.key, this.depuisPartants = false, this.saisieManuelle = false});
 
   @override
   ConsumerState<RaceConfigScreen> createState() => _RaceConfigScreenState();
@@ -118,7 +130,7 @@ class _RaceConfigScreenState extends ConsumerState<RaceConfigScreen> {
         );
       },
     );
-    if (selected != null) {
+    if (selected != null && mounted) {
       setState(() => _terrainLabel = selected);
     }
   }
@@ -150,12 +162,13 @@ class _RaceConfigScreenState extends ConsumerState<RaceConfigScreen> {
         );
       },
     );
-    if (selected != null) {
+    if (selected != null && mounted) {
       setState(() => _niveauLabel = selected);
     }
   }
 
   void _confirm() {
+    if (!ref.read(palierProvider).autorise(Fonction.configuration)) return;
     final config = RaceConfig(
       hippodrome: _hippodromeCtrl.text.trim(),
       distance: double.tryParse(_distanceCtrl.text),
@@ -163,12 +176,35 @@ class _RaceConfigScreenState extends ConsumerState<RaceConfigScreen> {
       niveau: niveauCoefficient(_niveauLabel),
       nbPartantsCourse: int.tryParse(_partantsCtrl.text),
     );
+    if (widget.saisieManuelle) ref.read(courseCouranteProvider.notifier).effacer();
     ref.read(raceConfigProvider.notifier).update(config);
+    if (widget.depuisPartants) {
+      if (ModalRoute.of(context)?.isCurrent ?? false) Navigator.pop(context);
+      return;
+    }
     Navigator.push(context, MaterialPageRoute(builder: (_) => const HorseListScreen()));
   }
 
   @override
   Widget build(BuildContext context) {
+    final duProgramme = !widget.saisieManuelle && ref.watch(courseCouranteProvider) != null;
+    return PageSelonPalier(
+      fonction: duProgramme ? Fonction.configuration : Fonction.saisieManuelle,
+      titre: duProgramme ? 'Configuration course' : 'Saisie manuelle',
+      contenu: _contenu,
+      // Les partants restent consultables sans la configuration.
+      sousVerrou: duProgramme && !widget.depuisPartants
+          ? CtaFantome(texte: 'Voir les partants', onPressed: _voirPartants)
+          : null,
+    );
+  }
+
+  void _voirPartants() {
+    if (!(ModalRoute.of(context)?.isCurrent ?? false)) return;
+    Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const HorseListScreen()));
+  }
+
+  Widget _contenu(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Configuration course')),
       body: ListView(

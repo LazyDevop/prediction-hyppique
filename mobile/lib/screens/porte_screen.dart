@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../providers/auth_provider.dart';
+import '../providers/palier_provider.dart';
+import '../providers/results_provider.dart';
 import '../widgets/auth_styles.dart';
 import 'appairage_screen.dart';
 import 'appareil_bloque_screen.dart';
@@ -48,7 +50,11 @@ class _PorteScreenState extends ConsumerState<PorteScreen> {
     super.initState();
     _cycleDeVie = AppLifecycleListener(
       onHide: () => ref.read(authProvider.notifier).passerEnArrierePlan(),
-      onShow: () => ref.read(authProvider.notifier).revenirAuPremierPlan(),
+      onShow: () {
+        ref.read(authProvider.notifier).revenirAuPremierPlan();
+        // Sans effet si la porte vient de se verrouiller.
+        ref.read(palierProvider.notifier).actualiser();
+      },
     );
   }
 
@@ -90,6 +96,10 @@ class _PorteScreenState extends ConsumerState<PorteScreen> {
   @override
   Widget build(BuildContext context) {
     final etat = ref.watch(authProvider);
+    // La porte est toujours visible : ces providers ne sont jamais en pause
+    // (écran recouvert, pile masquée) et suivent compte et droit en continu.
+    ref.listen(palierProvider, (_, _) {});
+    ref.listen(resultsProvider, (_, _) {});
     // Stockage illisible : on repart de Connexion plutôt que de bloquer.
     final porte = etat.hasError && !etat.hasValue ? Porte.aucuneSession : etat.value?.porte;
 

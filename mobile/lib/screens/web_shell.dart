@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../data/acces_paliers.dart';
 import '../models/course_summary.dart';
 import '../providers/api_provider.dart';
 import '../providers/auth_provider.dart';
 import '../providers/courses_suivies_provider.dart';
-import '../providers/paiement_provider.dart';
+import '../providers/palier_provider.dart';
 import '../providers/programme_provider.dart';
 import '../widgets/auth_styles.dart';
 import '../widgets/contour_focus.dart';
@@ -111,7 +112,6 @@ class _WebShellState extends ConsumerState<WebShell> {
   bool _chargement = false;
   bool _rafraichissement = false;
   int? _ouverteId;
-  String? _palier;
 
   static DateTime _jour(DateTime d) => DateTime(d.year, d.month, d.day);
 
@@ -119,18 +119,6 @@ class _WebShellState extends ConsumerState<WebShell> {
   void initState() {
     super.initState();
     _date = ref.read(dateProgrammeWebProvider) ?? _jour(ref.read(horlogeMuraleProvider)());
-    _chargerPalier();
-  }
-
-  Future<void> _chargerPalier() async {
-    if (!ref.read(compteDisponibleProvider)) return;
-    final api = ref.read(compteApiProvider);
-    try {
-      final profil = await api.lireProfil();
-      if (mounted) setState(() => _palier = profil.palier);
-    } catch (_) {
-      // Pastille absente : Profil dit l'erreur.
-    }
   }
 
   void _surRetourRacine() {
@@ -167,7 +155,7 @@ class _WebShellState extends ConsumerState<WebShell> {
   /// Configuration dans la colonne de droite, à la place de la course
   /// précédente. La course déjà ouverte : rien.
   Future<void> _ouvrirCourse(CourseSummary course) async {
-    if (_chargement || course.id == _ouverteId) return;
+    if (_chargement || (course.id == _ouverteId && ref.read(courseCouranteProvider)?.id == course.id)) return;
     if (_dessusOccupe()) return;
     final messenger = ScaffoldMessenger.of(context);
     setState(() => _chargement = true);
@@ -176,10 +164,7 @@ class _WebShellState extends ConsumerState<WebShell> {
       final nav = _cleDroite.currentState;
       if (!posee || !mounted || nav == null) return;
       nav.pushAndRemoveUntil(
-        MaterialPageRoute<void>(
-          settings: const RouteSettings(name: routeCourse),
-          builder: (_) => const RaceConfigScreen(),
-        ),
+        routeEcranCourse(),
         (route) => route.isFirst,
       );
       setState(() => _ouverteId = course.id);
@@ -207,11 +192,25 @@ class _WebShellState extends ConsumerState<WebShell> {
   }
 
   void _saisieManuelle() {
-    if (_chargement || _dessusOccupe()) return;
+    if (_chargement) return;
+    if (!ref.read(palierProvider).autorise(Fonction.saisieManuelle)) {
+      // Verrou au-dessus de la course ouverte, qui reste en place.
+      _pousser('saisie', const RaceConfigScreen(saisieManuelle: true));
+      return;
+    }
+    if (_dessusOccupe()) return;
     // Comme l'Accueil du téléphone : l'étoile de la course précédente ne
     // doit pas suivre (story 8.9).
     ref.read(courseCouranteProvider.notifier).effacer();
-    _remplacer(routeCourse, const RaceConfigScreen());
+    _remplacer(routeCourse, const RaceConfigScreen(saisieManuelle: true));
+  }
+
+  void _importer() {
+    if (!ref.read(palierProvider).autorise(Fonction.importPhoto)) {
+      _pousser('import', const ImportPhotoScreen());
+      return;
+    }
+    _remplacer('import', const ImportPhotoScreen());
   }
 
   /// Lien de l'en-tête : revient à [nom] s'il est déjà dans la colonne,
@@ -269,8 +268,8 @@ class _WebShellState extends ConsumerState<WebShell> {
 
   @override
   Widget build(BuildContext context) {
-    ref.listen(signalDroitProvider, (_, _) => _chargerPalier());
-    final palier = _palier;
+    // Pastille absente tant que le palier n'a pas été lu : Profil dit l'erreur.
+    final palier = ref.watch(palierProvider.select((e) => e.connu ? e.palier : null));
     final compte = ref.watch(compteDisponibleProvider);
 
     return Scaffold(
@@ -399,7 +398,7 @@ class _WebShellState extends ConsumerState<WebShell> {
                   child: IconButton(
                     icon: const Icon(Icons.document_scanner_outlined),
                     tooltip: 'Importer un programme par photo/PDF',
-                    onPressed: () => _remplacer('import', const ImportPhotoScreen()),
+                    onPressed: _importer,
                   ),
                 ),
               ],
@@ -413,7 +412,8 @@ class _WebShellState extends ConsumerState<WebShell> {
               onRafraichir: _rafraichir,
               onReessayer: () => ref.invalidate(programmeProvider(_date)),
               onSelect: _ouvrirCourse,
-              courseOuverteId: _ouverteId,
+              // Plus « Ouverte » si une saisie ou un import l'a remplacée.
+              courseOuverteId: ref.watch(courseCouranteProvider)?.id == _ouverteId ? _ouverteId : null,
               contourFocus: true,
             ),
           ),

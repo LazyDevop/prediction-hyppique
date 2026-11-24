@@ -8,6 +8,8 @@ import 'package:prediction_hippique/providers/results_provider.dart';
 import 'package:prediction_hippique/screens/results_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../paliers/paliers_test_helpers.dart';
+
 const _staleBanner = 'Recalcul nécessaire — les partants ont changé depuis ce calcul.';
 
 // Les cartes de classement sont loin dans la ListView (sous la grille de
@@ -23,7 +25,7 @@ Future<ProviderContainer> _pumpWithHorses(WidgetTester tester, List<String> name
   SharedPreferences.setMockInitialValues({});
   final prefs = await SharedPreferences.getInstance();
   final container = ProviderContainer(
-    overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+    overrides: [sharedPreferencesProvider.overrideWithValue(prefs), palierFixe()],
   );
   addTearDown(container.dispose);
 

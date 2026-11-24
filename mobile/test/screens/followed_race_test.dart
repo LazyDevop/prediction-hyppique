@@ -29,6 +29,8 @@ import 'package:prediction_hippique/screens/race_config_screen.dart';
 import 'package:prediction_hippique/screens/results_screen.dart';
 import 'package:prediction_hippique/widgets/auth_styles.dart';
 
+import '../paliers/paliers_test_helpers.dart';
+
 final _maintenant = DateTime(2026, 11, 23, 10);
 final _etoile = find.byKey(const Key('etoile-suivi-course'));
 final _section = find.byKey(const Key('section-courses-suivies'));
@@ -151,6 +153,7 @@ Future<ProviderContainer> _conteneur({
     estWebProvider.overrideWithValue(web),
     horlogeMuraleProvider.overrideWithValue(horloge ?? () => _maintenant),
     courseRepositoryProvider.overrideWithValue(repo ?? _FauxRepo(programme)),
+    palierFixe(),
   ]);
   addTearDown(container.dispose);
   return container;

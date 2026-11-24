@@ -15,6 +15,8 @@ import 'package:prediction_hippique/providers/results_provider.dart';
 import 'package:prediction_hippique/screens/import_photo_screen.dart';
 import 'package:prediction_hippique/screens/race_config_screen.dart';
 
+import '../paliers/paliers_test_helpers.dart';
+
 /// Faux `ExtractionApi` (jamais de mock Dio, convention établie par
 /// `CoursesApi`/spec-3-5) — piloté par un callback pour simuler un succès ou
 /// n'importe laquelle des 4 erreurs documentées.
@@ -56,6 +58,7 @@ Future<void> _pumpScreen(
 }) async {
   await tester.pumpWidget(
     ProviderScope(
+      overrides: [palierFixe()],
       child: MaterialApp(
         home: ImportPhotoScreen(api: api, pickFile: pickFile),
       ),
@@ -338,7 +341,7 @@ void main() {
     testWidgets(
       'confirm a populated result maps into raceConfigProvider/horsesProvider and navigates to RaceConfigScreen',
       (tester) async {
-        final container = ProviderContainer();
+        final container = ProviderContainer(overrides: [palierFixe()]);
         addTearDown(container.dispose);
 
         final extrait = ProgrammeExtrait.fromJson({
@@ -387,7 +390,7 @@ void main() {
     testWidgets('confirm avec hippo absent -> RaceConfig.hippodrome == "" (jamais null)', (tester) async {
       // verification-gap (revue de code) : aucun test n'exerçait la branche
       // `extrait.hippo ?? ''` de _toRaceConfig.
-      final container = ProviderContainer();
+      final container = ProviderContainer(overrides: [palierFixe()]);
       addTearDown(container.dispose);
 
       final extrait = ProgrammeExtrait.fromJson({
@@ -412,7 +415,7 @@ void main() {
       // alors même que des chevaux ont bien été détectés - se replier sur
       // leur nombre plutôt que de laisser un champ vide que l'extraction
       // avait les moyens de renseigner.
-      final container = ProviderContainer();
+      final container = ProviderContainer(overrides: [palierFixe()]);
       addTearDown(container.dispose);
 
       final extrait = ProgrammeExtrait.fromJson({
@@ -435,7 +438,7 @@ void main() {
     });
 
     testWidgets('nbPartantsCourse et chevaux tous deux absents -> reste null (sentinel "auto")', (tester) async {
-      final container = ProviderContainer();
+      final container = ProviderContainer(overrides: [palierFixe()]);
       addTearDown(container.dispose);
 
       final extrait = ProgrammeExtrait.fromJson({
@@ -456,7 +459,7 @@ void main() {
       // blind-hunter + edge-case-hunter (revue de code) : le bouton n'avait
       // aucune protection contre le double-tap, contrairement aux boutons
       // de sélection de fichier.
-      final container = ProviderContainer();
+      final container = ProviderContainer(overrides: [palierFixe()]);
       addTearDown(container.dispose);
 
       final extrait = ProgrammeExtrait.fromJson({
@@ -486,7 +489,7 @@ void main() {
     });
 
     testWidgets('confirm with a null name on one horse -> Horse.nom == "Cheval inconnu", not a crash', (tester) async {
-      final container = ProviderContainer();
+      final container = ProviderContainer(overrides: [palierFixe()]);
       addTearDown(container.dispose);
 
       final extrait = ProgrammeExtrait.fromJson({
@@ -511,7 +514,7 @@ void main() {
     });
 
     testWidgets('confirm with zero extracted horses -> horsesProvider becomes [], navigation still proceeds', (tester) async {
-      final container = ProviderContainer();
+      final container = ProviderContainer(overrides: [palierFixe()]);
       addTearDown(container.dispose);
       container.read(horsesProvider.notifier).add(Horse(nom: 'Ancien partant'));
 
@@ -536,7 +539,7 @@ void main() {
     });
 
     testWidgets('resultsProvider had a prior calculated result -> cleared (not marked stale) after confirm', (tester) async {
-      final container = ProviderContainer();
+      final container = ProviderContainer(overrides: [palierFixe()]);
       addTearDown(container.dispose);
       container.read(resultsProvider.notifier).state = _dummyResult();
       expect(container.read(resultsProvider), isNotNull);

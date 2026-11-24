@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../data/acces_paliers.dart';
 import '../models/engine_params.dart';
+import '../providers/palier_provider.dart';
 import '../providers/params_provider.dart';
+import '../widgets/locked_feature.dart';
 import '../widgets/option_lists.dart';
 
 /// Réglages du moteur — mêmes défauts que backend/app/engine/constants.py
@@ -65,26 +68,44 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     ref.read(engineParamsProvider.notifier).update(f(ref.read(engineParamsProvider)));
   }
 
+  /// Réinitialise seulement ce que le palier permet de régler : les
+  /// coefficients enregistrés d'un ancien droit Expert sont conservés.
   Future<void> _confirmReset() async {
+    final complet = ref.read(palierProvider).autorise(Fonction.coefficientsMoteur);
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: const Text('Réinitialiser les réglages ?'),
-        content: const Text('Tous les paramètres du moteur reviendront à leurs valeurs par défaut.'),
+        content: Text(
+          complet
+              ? 'Tous les paramètres du moteur reviendront à leurs valeurs par défaut.'
+              : 'La bankroll et la fraction de Kelly reviendront à leurs valeurs par défaut.',
+        ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('Annuler')),
           TextButton(onPressed: () => Navigator.pop(dialogContext, true), child: const Text('Réinitialiser')),
         ],
       ),
     );
-    if (confirmed == true) {
-      ref.read(engineParamsProvider.notifier).reset();
+    if (confirmed != true || !mounted) return;
+    // Palier relu : il a pu changer pendant la confirmation.
+    final palier = ref.read(palierProvider);
+    final notifier = ref.read(engineParamsProvider.notifier);
+    if (complet && palier.autorise(Fonction.coefficientsMoteur)) {
+      notifier.reset();
+    } else if (palier.autorise(Fonction.bankrollEtKelly)) {
+      const defauts = EngineParams();
+      notifier.update(
+        ref.read(engineParamsProvider).copyWith(bankroll: defauts.bankroll, fractionKelly: defauts.fractionKelly),
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final params = ref.watch(engineParamsProvider);
+    final palier = ref.watch(palierProvider);
+    final mise = palier.autorise(Fonction.bankrollEtKelly);
     // Resynchronise les champs texte après un changement externe (reset, ou
     // tout futur appel à update() hors de cet écran) — les TextField eux-
     // mêmes ne réagissent pas automatiquement aux changements de provider.
@@ -94,16 +115,30 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       appBar: AppBar(
         title: const Text('Paramètres du moteur'),
         actions: [
-          IconButton(
+          if (mise) IconButton(
             icon: const Icon(Icons.restore),
             tooltip: 'Réinitialiser aux valeurs par défaut',
             onPressed: _confirmReset,
           ),
         ],
       ),
-      body: ListView(
+      body: palier.enChargement ? const ChargementPalier() : ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          const AvisPalier(),
+          if (!mise)
+            const LockedFeature(Fonction.bankrollEtKelly)
+          else ..._champsMise(params),
+          const SizedBox(height: 12),
+          if (!palier.autorise(Fonction.coefficientsMoteur))
+            const LockedFeature(Fonction.coefficientsMoteur)
+          else ..._champsMoteur(params),
+        ],
+      ),
+    );
+  }
+
+  List<Widget> _champsMise(EngineParams params) => [
           TextField(
             controller: _bankCtrl,
             keyboardType: TextInputType.number,
@@ -121,7 +156,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             ],
             onChanged: (v) => _update((p) => p.copyWith(fractionKelly: v)),
           ),
-          const SizedBox(height: 12),
+        ];
+
+  List<Widget> _champsMoteur(EngineParams params) => [
           DropdownButtonFormField<String>(
             initialValue: params.modeRecence,
             decoration: const InputDecoration(labelText: 'Pondération récence'),
@@ -185,8 +222,5 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             decoration: const InputDecoration(labelText: 'Intensité malus incident'),
             onChanged: (v) => _update((p) => p.copyWith(malusIncident: double.tryParse(v))),
           ),
-        ],
-      ),
-    );
-  }
+        ];
 }

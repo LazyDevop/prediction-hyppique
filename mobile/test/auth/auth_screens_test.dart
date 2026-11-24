@@ -213,7 +213,7 @@ void main() {
   testWidgets('démarrage à froid avec PIN : Déverrouillage, bon PIN → Accueil', (tester) async {
     await _pumpApp(tester, store: await storeAvecSession(pin: '4821'));
     expect(find.text('Saisissez votre code PIN'), findsOneWidget);
-    expect(find.text('Compte +237 6 •• •• •• 56'), findsOneWidget);
+    expect(find.text('Compte +237 6 •• •• •• 00'), findsOneWidget);
     expect(find.text('0 chiffre saisi sur 4'), findsOneWidget);
     await _taperPin(tester, '4821');
     expect(find.text('ACCUEIL'), findsOneWidget);

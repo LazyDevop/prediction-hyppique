@@ -4,11 +4,14 @@ import 'dart:developer' as developer;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../data/acces_paliers.dart';
 import '../engine/combinatoire.dart';
 import '../engine/scoring.dart';
 import '../models/engine_params.dart';
 import '../models/horse.dart';
+import 'courses_suivies_provider.dart';
 import 'horses_provider.dart';
+import 'palier_provider.dart';
 import 'params_provider.dart';
 import 'pronostic_provider.dart';
 import 'race_provider.dart';
@@ -16,7 +19,9 @@ import 'race_provider.dart';
 class AnalyseResult {
   final List<Horse> resultats;
   final int nbReels;
-  final Combinaisons combinaisons;
+
+  /// Nul sous le palier Expert : les combinaisons ne sont pas calculées.
+  final Combinaisons? combinaisons;
   final bool isStale;
 
   AnalyseResult(this.resultats, this.nbReels, this.combinaisons, {this.isStale = false});
@@ -24,23 +29,86 @@ class AnalyseResult {
 
 class ResultsNotifier extends Notifier<AnalyseResult?> {
   @override
-  AnalyseResult? build() => null;
+  AnalyseResult? build() {
+    ref.listen(palierProvider, _surPalier);
+    return null;
+  }
 
+  /// Écrans Résultats ouverts (deux pendant une bascule web large/étroit).
+  int _ecransOuverts = 0;
+  void ecranOuvert() => _ecransOuverts++;
+  void ecranFerme() => _ecransOuverts--;
+
+  /// Dernier palier établi (ni chargement ni vérification).
+  EtatPalier? _etabli;
+
+  /// Changement de compte : plus rien du compte précédent. Palier modifié :
+  /// un résultat au-dessus du palier disparaît ; un résultat à jour (ou
+  /// l'écran Résultats ouvert sans résultat) est recalculé localement avec
+  /// ce que le palier permet. Un résultat périmé le reste. Jamais d'envoi :
+  /// seule une action de l'utilisateur transmet un pronostic.
+  void _surPalier(EtatPalier? avant, EtatPalier apres) {
+    if (avant != null && avant.session != apres.session) {
+      _etabli = null;
+      // Vide aussi ce résultat et le contexte du pronostic.
+      ref.read(horsesProvider.notifier).clear();
+      ref.read(raceConfigProvider.notifier).reinitialiser();
+      ref.read(courseCouranteProvider.notifier).effacer();
+      return;
+    }
+    // Vérification : résultat conservé, l'écran ne le montre pas.
+    if (apres.enChargement) return;
+    final precedent = _etabli ?? (avant != null && !avant.enChargement ? avant : null);
+    _etabli = apres;
+    if (!apres.autorise(Fonction.calculLocal)) {
+      if (state != null) state = null;
+      return;
+    }
+    if (precedent == null || precedent.rang == apres.rang) return;
+    final actuel = state;
+    if (actuel == null && _ecransOuverts <= 0) return;
+    if (actuel != null && actuel.isStale) {
+      if (!apres.autorise(Fonction.combinaisons) && actuel.combinaisons != null) {
+        state = AnalyseResult(actuel.resultats, actuel.nbReels, null, isStale: true);
+      }
+      return;
+    }
+    if (ref.read(horsesProvider).isNotEmpty) _calculerLocalement(apres);
+  }
+
+  /// Réglages que [palier] permet : sous Expert, les coefficients du moteur
+  /// sont ceux par défaut (les valeurs enregistrées sont conservées).
+  EngineParams _parametresPermis(EtatPalier palier) {
+    final params = ref.read(engineParamsProvider);
+    if (palier.autorise(Fonction.coefficientsMoteur)) return params;
+    return EngineParams(bankroll: params.bankroll, fractionKelly: params.fractionKelly);
+  }
+
+  /// « Calculer » / « Recalculer » : calcule puis transmet le pronostic.
+  /// Sans effet si le palier (ou son chargement) n'autorise pas le calcul.
   void calculer() {
+    final palier = ref.read(palierProvider);
+    if (!palier.autorise(Fonction.calculLocal)) return;
+    _etabli = palier;
+    final params = _parametresPermis(palier);
+    final resultat = _calculerLocalement(palier);
+    _envoyerPronostic(resultat.resultats, resultat.combinaisons, ref.read(raceConfigProvider).terrain, params);
+  }
+
+  /// Calcul seul, avec ce que [palier] permet ; rien n'est transmis.
+  AnalyseResult _calculerLocalement(EtatPalier palier) {
     final horses = ref.read(horsesProvider);
     final target = ref.read(raceConfigProvider);
-    final params = ref.read(engineParamsProvider);
-
-    final resultats = analyseCourse(horses, target, params: params);
-    final combinaisons = buildCombinaisons(resultats, horses.length);
-    state = AnalyseResult(resultats, horses.length, combinaisons, isStale: false);
-    _envoyerPronostic(resultats, combinaisons, target.terrain, params);
+    final resultats = analyseCourse(horses, target, params: _parametresPermis(palier));
+    final combinaisons =
+        palier.autorise(Fonction.combinaisons) ? buildCombinaisons(resultats, horses.length) : null;
+    return state = AnalyseResult(resultats, horses.length, combinaisons, isStale: false);
   }
 
   /// Transmis au backend pour être comparé à l'arrivée officielle (tableau
   /// de bord). En arrière-plan : un échec réseau ou un refus (course déjà
   /// partie) ne doit jamais gêner l'utilisateur.
-  void _envoyerPronostic(List<Horse> resultats, Combinaisons combinaisons, double? terrain, EngineParams params) {
+  void _envoyerPronostic(List<Horse> resultats, Combinaisons? combinaisons, double? terrain, EngineParams params) {
     final contexte = ref.read(pronosticContextProvider);
     final courseId = contexte.courseId;
     if (courseId == null) return;
@@ -62,7 +130,7 @@ class ResultsNotifier extends Notifier<AnalyseResult?> {
               'mise': h.mise,
             },
       ],
-      'combinaisons': _dossardsDesCombinaisons(combinaisons),
+      if (combinaisons != null) 'combinaisons': _dossardsDesCombinaisons(combinaisons),
       'parametres': params.toJson(),
       'reglages_par_defaut': _reglagesMoteur(params) == _reglagesMoteur(const EngineParams()),
       'donnees_modifiees': contexte.donneesModifiees,

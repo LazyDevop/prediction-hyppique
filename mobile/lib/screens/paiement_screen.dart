@@ -46,7 +46,16 @@ class PaiementScreen extends ConsumerStatefulWidget {
   /// Rouvert depuis Offres pour suivre le paiement en cours de [offre].
   final bool suivre;
 
-  const PaiementScreen({super.key, required this.offre, required this.palier, this.suivre = false});
+  /// Libellé du retour à l'écran qui a ouvert Offres.
+  final String libelleRetour;
+
+  const PaiementScreen({
+    super.key,
+    required this.offre,
+    required this.palier,
+    this.suivre = false,
+    this.libelleRetour = libelleRetourProfil,
+  });
 
   @override
   ConsumerState<PaiementScreen> createState() => _PaiementScreenState();
@@ -401,10 +410,10 @@ class _PaiementScreenState extends ConsumerState<PaiementScreen> {
       case EtapePaiement.enAttente:
         return [
           const CtaPrimaire(texte: 'Paiement en cours…'),
-          CtaFantome(texte: 'Revenir au profil', onPressed: _revenirAuProfil),
+          CtaFantome(texte: widget.libelleRetour, onPressed: _revenirAuProfil),
         ];
       case EtapePaiement.confirme:
-        return [CtaPrimaire(texte: 'Revenir au profil', onPressed: _revenirAuProfil)];
+        return [CtaPrimaire(texte: widget.libelleRetour, onPressed: _revenirAuProfil)];
       case EtapePaiement.echoue:
       case EtapePaiement.introuvable:
         final p = suivi!;

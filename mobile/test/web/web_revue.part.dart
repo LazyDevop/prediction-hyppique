@@ -87,7 +87,7 @@ Future<void> _ouvrirPartants(WidgetTester tester) async {
 
 void _testsRevuePorte() {
   testWidgets('W1 : session effacée → appairage avec message ; la saisie SMS ne revient pas au QR', (tester) async {
-    await _pump(tester, store: await storeAvecSession());
+    await _pump(tester, store: await storeExpert());
     _conteneurDe(tester).read(authProvider.notifier).quitterAppareilBloque(message: messageSessionEffacee);
     await _attendre(tester);
     expect(_qr, findsOneWidget);
@@ -203,7 +203,7 @@ void _testsRevuePorte() {
 
 void _testsRevueLarge() {
   testWidgets('W2 : 1280 → 800 → 1280, course et écrans gardés sans rechargement', (tester) async {
-    final env = await _pump(tester, store: await storeAvecSession());
+    final env = await _pump(tester, store: await storeExpert());
     await _ouvrirPartants(tester);
     expect(find.text('Calculer'), findsOneWidget);
 
@@ -230,7 +230,7 @@ void _testsRevueLarge() {
   });
 
   testWidgets('W2 : course ouverte en étroit, puis fenêtre élargie', (tester) async {
-    final env = await _pump(tester, taille: _etroit, store: await storeAvecSession());
+    final env = await _pump(tester, taille: _etroit, store: await storeExpert());
     await _ouvrirPartants(tester);
     await _redimensionner(tester, 1280);
     expect(find.descendant(of: _droite, matching: find.text('Calculer')), findsOneWidget);
@@ -239,7 +239,7 @@ void _testsRevueLarge() {
   });
 
   testWidgets('W2 : seuils 1023 / 1024, retour sous 960 seulement', (tester) async {
-    await _pump(tester, taille: const Size(1023, 800), store: await storeAvecSession());
+    await _pump(tester, taille: const Size(1023, 800), store: await storeExpert());
     expect(_shell, findsNothing);
     await _redimensionner(tester, 1024);
     expect(_shell, findsOneWidget);
@@ -254,7 +254,7 @@ void _testsRevueLarge() {
   });
 
   testWidgets('W2 : date choisie gardée à la bascule', (tester) async {
-    await _pump(tester, store: await storeAvecSession());
+    await _pump(tester, store: await storeExpert());
     await tester.tap(find.byTooltip('Choisir la date'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('18'));
@@ -268,7 +268,7 @@ void _testsRevueLarge() {
   });
 
   testWidgets('W3 : écran occupé gardé, snackbar, aucune course chargée', (tester) async {
-    final env = await _pump(tester, store: await storeAvecSession());
+    final env = await _pump(tester, store: await storeExpert());
     _pousserOccupe(tester);
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('course-9')));
@@ -285,7 +285,7 @@ void _testsRevueLarge() {
   });
 
   testWidgets('W3 : écran devenu occupé pendant le chargement → données non remplacées', (tester) async {
-    final env = await _pump(tester, store: await storeAvecSession());
+    final env = await _pump(tester, store: await storeExpert());
     env.repo.attente = Completer<void>();
     await tester.tap(find.byKey(const ValueKey('course-9')));
     await tester.pump();
@@ -298,7 +298,7 @@ void _testsRevueLarge() {
   });
 
   testWidgets('W3 : cliquer la course déjà ouverte ne fait rien', (tester) async {
-    final env = await _pump(tester, store: await storeAvecSession());
+    final env = await _pump(tester, store: await storeExpert());
     await _ouvrirPartants(tester);
     await tester.tap(find.byKey(const ValueKey('course-9')));
     await tester.pumpAndSettle();
@@ -307,10 +307,12 @@ void _testsRevueLarge() {
   });
 
   testWidgets('W4 : Profil → Mes appareils → Profil ; Réglages garde la course dessous', (tester) async {
-    await _pump(tester, store: await storeAvecSession());
+    await _pump(tester, store: await storeExpert());
     await tester.tap(find.byKey(const ValueKey('course-9')));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Profil'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Mes appareils'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Mes appareils'));
     await tester.pumpAndSettle();
@@ -332,7 +334,7 @@ void _testsRevueLarge() {
   });
 
   testWidgets('W8 : saisie manuelle et import dans la colonne de droite', (tester) async {
-    await _pump(tester, store: await storeAvecSession());
+    await _pump(tester, store: await storeExpert());
     await tester.tap(find.byKey(const ValueKey('course-9')));
     await tester.pumpAndSettle();
     final c = _conteneurDe(tester);
@@ -351,7 +353,7 @@ void _testsRevueLarge() {
   });
 
   testWidgets('W9, W11 : ligne « sélectionnée », arbre stable, contour intérieur', (tester) async {
-    await _pump(tester, store: await storeAvecSession());
+    await _pump(tester, store: await storeExpert());
     bool? choisie(int id) => tester
         .widget<Semantics>(
           find.ancestor(of: find.byKey(ValueKey('course-$id')), matching: find.byType(Semantics)).first,
@@ -379,7 +381,7 @@ void _testsRevueLarge() {
   });
 
   testWidgets('W10 : aucun or à gauche sans focus (liste, chargement, vide, erreur)', (tester) async {
-    final env = await _pump(tester, store: await storeAvecSession());
+    final env = await _pump(tester, store: await storeExpert());
     void sansOr(String cas) {
       final couleurs = _couleurs(tester, _gauche);
       expect(couleurs, isNotEmpty, reason: cas);
@@ -407,7 +409,7 @@ void _testsRevueLarge() {
   });
 
   testWidgets('W10 : aucun or à gauche, programme en erreur', (tester) async {
-    await _pump(tester, store: await storeAvecSession(), programmeEnEchec: true);
+    await _pump(tester, store: await storeExpert(), programmeEnEchec: true);
     expect(find.text('Réessayer'), findsOneWidget);
     expect(_couleurs(tester, _gauche), isNot(contains(JetonsAuth.gold)));
   });

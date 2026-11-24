@@ -3,11 +3,13 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../data/acces_paliers.dart';
 import '../models/course_suivie.dart';
 import '../models/course_summary.dart';
 import '../providers/api_provider.dart';
 import '../providers/auth_provider.dart';
 import '../providers/courses_suivies_provider.dart';
+import '../providers/palier_provider.dart';
 import '../providers/programme_provider.dart';
 import '../repository/course_repository.dart';
 import '../widgets/followed_race.dart';
@@ -120,10 +122,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
       if (!mounted) return;
       Navigator.push(
         context,
-        MaterialPageRoute(
-          settings: const RouteSettings(name: routeCourse),
-          builder: (_) => const RaceConfigScreen(),
-        ),
+        routeEcranCourse(),
       );
     } catch (e) {
       if (!mounted) return;
@@ -297,13 +296,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
           // Saisie manuelle : l'étoile de la course précédente ne doit pas
-          // suivre (story 8.9).
-          ref.read(courseCouranteProvider.notifier).effacer();
+          // suivre (story 8.9). Verrouillée : la course reste en place.
+          if (ref.read(palierProvider).autorise(Fonction.saisieManuelle)) {
+            ref.read(courseCouranteProvider.notifier).effacer();
+          }
           Navigator.push(
             context,
             MaterialPageRoute(
               settings: const RouteSettings(name: routeCourse),
-              builder: (_) => const RaceConfigScreen(),
+              builder: (_) => const RaceConfigScreen(saisieManuelle: true),
             ),
           );
         },

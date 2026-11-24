@@ -6,13 +6,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../data/acces_paliers.dart';
 import '../data/remote/api_client.dart';
 import '../models/horse.dart';
 import '../models/programme_extrait.dart';
 import '../models/race_config.dart';
 import '../providers/api_provider.dart';
+import '../providers/courses_suivies_provider.dart';
 import '../providers/horses_provider.dart';
+import '../providers/palier_provider.dart';
 import '../providers/race_provider.dart';
+import '../widgets/locked_feature.dart';
 import 'race_config_screen.dart';
 
 /// Fichier choisi par l'utilisateur (photo ou PDF), normalisé pour l'appel
@@ -144,6 +148,11 @@ class _ImportPhotoScreenState extends ConsumerState<ImportPhotoScreen> {
   /// réseau.
   Future<void> _handlePicked(PickedUpload upload) async {
     if (!mounted) return;
+    // Palier perdu pendant le choix du fichier : aucun appel d'extraction.
+    if (!ref.read(palierProvider).autorise(Fonction.importPhoto)) {
+      setState(() => _loading = false);
+      return;
+    }
     try {
       final extrait = await _api().extractProgramme(
         bytes: upload.bytes,
@@ -182,7 +191,13 @@ class _ImportPhotoScreenState extends ConsumerState<ImportPhotoScreen> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => PageSelonPalier(
+    fonction: Fonction.importPhoto,
+    titre: 'Import photo / PDF — programme',
+    contenu: _contenu,
+  );
+
+  Widget _contenu(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Import photo / PDF — programme')),
       body: ListView(
@@ -298,8 +313,10 @@ class _ImportPhotoScreenState extends ConsumerState<ImportPhotoScreen> {
   /// code). `_confirming` évite un double appui de déclencher deux
   /// `Navigator.pushReplacement` (blind-hunter + edge-case-hunter).
   void _confirmImport(ProgrammeExtrait extrait) {
-    if (_confirming) return;
+    if (_confirming || !ref.read(palierProvider).autorise(Fonction.importPhoto)) return;
     _confirming = true;
+    // Plus une course du programme : ni étoile ni verrou « Configuration ».
+    ref.read(courseCouranteProvider.notifier).effacer();
     ref.read(horsesProvider.notifier).setAll(extrait.horses.map(_toHorse).toList());
     ref.read(raceConfigProvider.notifier).update(_toRaceConfig(extrait));
     Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const RaceConfigScreen()));

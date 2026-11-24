@@ -5,10 +5,12 @@ import 'transparency_label.dart';
 
 class HorseCard extends StatelessWidget {
   final Horse horse;
-  final VoidCallback onTap;
-  final VoidCallback onDelete;
 
-  const HorseCard({super.key, required this.horse, required this.onTap, required this.onDelete});
+  /// Nuls : lecture seule (palier Gratuit).
+  final VoidCallback? onTap;
+  final VoidCallback? onDelete;
+
+  const HorseCard({super.key, required this.horse, this.onTap, this.onDelete});
 
   @override
   Widget build(BuildContext context) {
@@ -26,7 +28,7 @@ class HorseCard extends StatelessWidget {
         subtitle: Text(
           '${horse.age ?? '—'} ans · ${horse.poids ?? '—'} kg · ${horse.cote != null ? 'cote ${horse.cote}' : 'cote —'} · $sousTitre',
         ),
-        trailing: IconButton(icon: const Icon(Icons.delete_outline), onPressed: onDelete),
+        trailing: onDelete == null ? null : IconButton(icon: const Icon(Icons.delete_outline), onPressed: onDelete),
       ),
     );
   }

@@ -291,8 +291,10 @@ class AuthNotifier extends AsyncNotifier<EtatAuth> {
   /// empreinte du PIN) et ouvre Connexion. Pas d'appel serveur tant que la
   /// révocation (story 8.2) n'existe pas.
   Future<void> seDeconnecter() async {
-    _fauxCompte?.deconnecter();
     await _store.effacer();
+    // Après l'effacement, sans attente avant le changement de porte :
+    // aucune lecture ne part sans compte.
+    _fauxCompte?.deconnecter();
     state = const AsyncData(EtatAuth(Porte.aucuneSession));
   }
 

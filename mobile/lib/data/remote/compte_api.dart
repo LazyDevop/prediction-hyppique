@@ -10,6 +10,9 @@ const LIMITE_APPAREILS_PROVISOIRE = 2;
 /// `palier_actif` provisoire (`PALIER_PAR_DEFAUT`) jusqu'à la story 9.1.
 const palierGratuit = 'Gratuit';
 
+// Même valeur que `palierExpert` (offres_api.dart, qui importe ce fichier).
+const _palierExpertDemo = 'Expert';
+
 enum TypeAppareil { telephone, navigateur }
 
 class Appareil {
@@ -46,6 +49,13 @@ class ListeAppareils {
   const ListeAppareils({required this.appareils, required this.limite, required this.palier});
 }
 
+/// Droit payant arrivé à son terme.
+class DroitTermine {
+  final String palier;
+  final DateTime fin;
+  const DroitTermine(this.palier, this.fin);
+}
+
 class ProfilCompte {
   /// Email de secours (vérifié ou non), null si non renseigné.
   final String? email;
@@ -59,6 +69,9 @@ class ProfilCompte {
   final int nbAppareils;
   final int limiteAppareils;
 
+  /// Dernier droit payant, une fois terminé (« Droit Turfiste terminé le … »).
+  final DroitTermine? droitTermine;
+
   const ProfilCompte({
     required this.email,
     required this.emailVerifie,
@@ -68,7 +81,25 @@ class ProfilCompte {
     required this.cguAccepteeLe,
     required this.nbAppareils,
     required this.limiteAppareils,
+    this.droitTermine,
   });
+
+  /// Profil à [maintenant] : un droit arrivé à son terme redevient Gratuit.
+  ProfilCompte effectif(DateTime maintenant) {
+    final fin = finDroit;
+    if (!palierPayant || fin == null || fin.isAfter(maintenant)) return this;
+    return ProfilCompte(
+      email: email,
+      emailVerifie: emailVerifie,
+      palier: palierGratuit,
+      finDroit: null,
+      cguVersion: cguVersion,
+      cguAccepteeLe: cguAccepteeLe,
+      nbAppareils: nbAppareils,
+      limiteAppareils: limiteAppareils,
+      droitTermine: DroitTermine(palier, fin),
+    );
+  }
 
   bool get palierPayant => palier != palierGratuit;
 }
@@ -179,6 +210,12 @@ class _CompteDemo {
   _CompteDemo({required this.appareils, required this.cguVersion, required this.cguAccepteeLe})
     : emailVerifie = false,
       palier = palierGratuit;
+
+  /// Palier à [maintenant] : un droit arrivé à son terme redevient Gratuit.
+  String palierEffectif(DateTime maintenant) {
+    final fin = finDroit;
+    return fin != null && !fin.isAfter(maintenant) ? palierGratuit : palier;
+  }
 }
 
 class _CodeEmail {
@@ -203,6 +240,12 @@ class FauxCompteApi implements CompteApi, RattachementDemo {
   static const numeroBloque = '+237699999999';
   static const idCourant = 'cet-appareil';
 
+  /// Compte de démonstration Expert (décision du 2026-11-24) ; les autres
+  /// numéros sont Gratuit jusqu'au premier paiement. Reconnu par son numéro
+  /// complet à la connexion ; une session restaurée n'a que le masque.
+  static const numeroExpert = '+237677123456';
+  static const dureeDroitExpertDemo = Duration(days: 30);
+
   final DateTime Function() _horloge;
   final Random _aleatoire = Random.secure();
   final TypeAppareil _typeCourant;
@@ -212,10 +255,16 @@ class FauxCompteApi implements CompteApi, RattachementDemo {
   /// la session locale ne garde que cette forme, ce qui permet de retrouver
   /// le compte au redémarrage. Démo seulement (deux numéros de même masque
   /// partagent un compte).
+  ///
+  /// Un numéro connecté qui partage ce masque avec un autre a pour clé son
+  /// numéro complet.
   final Map<String, _CompteDemo> _comptes = {};
 
+  /// Dernière clé connectée, par masque (session restaurée).
+  final Map<String, String> _clesParMasque = {};
+
   /// Modèle du compte d'une session restaurée (constructeur).
-  final String _palierSession;
+  final String? _palierSession;
   final DateTime? _finDroitSession;
   final String? _emailSession;
   final bool _emailVerifieSession;
@@ -229,11 +278,12 @@ class FauxCompteApi implements CompteApi, RattachementDemo {
   void Function()? regularisation;
 
   /// [palier], [email], [emailVerifie] : compte de la session déjà ouverte
-  /// au lancement (aucun numéro connu du faux serveur).
+  /// au lancement (aucun numéro connu du faux serveur). Sans [palier] :
+  /// Expert pour [numeroExpert], Gratuit sinon.
   FauxCompteApi({
     DateTime Function()? horloge,
     bool web = false,
-    String palier = palierGratuit,
+    String? palier,
     DateTime? finDroit,
     String? email,
     bool emailVerifie = false,
@@ -265,15 +315,20 @@ class FauxCompteApi implements CompteApi, RattachementDemo {
           rattacheLe: maintenant.subtract(const Duration(days: 10)),
         ),
       ],
-    );
+    )..numero = numeroBloque;
   }
 
   /// Compte d'une session ouverte avant ce lancement : modèle du constructeur.
-  _CompteDemo _compteSession() {
+  _CompteDemo _compteSession(String cle) {
     final maintenant = _horloge();
-    return _nouveauCompte(maintenant)
-      ..palier = _palierSession
-      ..finDroit = _finDroitSession
+    final compte = _nouveauCompte(maintenant, expert: cle == masquerNumero(numeroExpert));
+    final palier = _palierSession;
+    if (palier != null) {
+      compte
+        ..palier = palier
+        ..finDroit = _finDroitSession;
+    }
+    return compte
       ..email = _emailSession
       ..emailVerifie = _emailVerifieSession
       ..appareils.add(_appareilCourant(maintenant));
@@ -282,9 +337,10 @@ class FauxCompteApi implements CompteApi, RattachementDemo {
   /// Démarrage avec une session déjà enregistrée : le compte courant est
   /// celui du numéro masqué de la session.
   void restaurerSession(String numeroMasque) {
-    _numeroCourant = numeroMasque;
+    final cle = _clesParMasque[numeroMasque] ?? numeroMasque;
+    _numeroCourant = cle;
     _codeEmail = null;
-    final compte = _comptes.putIfAbsent(numeroMasque, _compteSession);
+    final compte = _compteDe(cle);
     if (!compte.appareils.any((a) => a.id == idCourant)) compte.appareils.add(_appareilCourant(_horloge()));
   }
 
@@ -294,21 +350,29 @@ class FauxCompteApi implements CompteApi, RattachementDemo {
     _codeEmail = null;
   }
 
-  _CompteDemo _nouveauCompte(DateTime maintenant) => _CompteDemo(
-    cguVersion: CGU_VERSION_PROVISOIRE,
-    cguAccepteeLe: maintenant,
-    appareils: [
-      // Rattaché il y a 2 h : montre « Nouveau » et son bandeau.
-      Appareil(
-        id: 'chrome-windows',
-        type: TypeAppareil.navigateur,
-        nom: 'Chrome sur Windows',
-        derniereActivite: maintenant.subtract(const Duration(hours: 1)),
-        rattacheLe: maintenant.subtract(const Duration(hours: 2)),
-        nouveau: true,
-      ),
-    ],
-  );
+  _CompteDemo _nouveauCompte(DateTime maintenant, {required bool expert}) {
+    final compte = _CompteDemo(
+      cguVersion: CGU_VERSION_PROVISOIRE,
+      cguAccepteeLe: maintenant,
+      appareils: [
+        // Rattaché il y a 2 h : montre « Nouveau » et son bandeau.
+        Appareil(
+          id: 'chrome-windows',
+          type: TypeAppareil.navigateur,
+          nom: 'Chrome sur Windows',
+          derniereActivite: maintenant.subtract(const Duration(hours: 1)),
+          rattacheLe: maintenant.subtract(const Duration(hours: 2)),
+          nouveau: true,
+        ),
+      ],
+    );
+    if (expert) {
+      compte
+        ..palier = _palierExpertDemo
+        ..finDroit = maintenant.toUtc().add(dureeDroitExpertDemo);
+    }
+    return compte;
+  }
 
   Appareil _appareilCourant(DateTime maintenant) => Appareil(
     id: idCourant,
@@ -319,13 +383,25 @@ class FauxCompteApi implements CompteApi, RattachementDemo {
     estCourant: true,
   );
 
-  _CompteDemo get _compte => _comptes.putIfAbsent(_numeroCourant ?? '', _compteSession);
+  _CompteDemo get _compte => _compteDe(_numeroCourant ?? '');
+
+  _CompteDemo _compteDe(String cle) => _comptes.putIfAbsent(cle, () => _compteSession(cle));
+
+  /// Clé du compte de [numero] : son masque, sauf s'il désigne déjà un
+  /// autre numéro (ou la session Expert restaurée, pour un autre numéro).
+  String _cleDe(String numero) {
+    final masque = masquerNumero(numero);
+    final occupant = _comptes[masque];
+    if (occupant == null || occupant.numero == numero) return masque;
+    if (occupant.numero != null) return numero;
+    return masque == masquerNumero(numeroExpert) && numero != numeroExpert ? numero : masque;
+  }
 
   @override
   AppareilBloque? rattacher(String numero, {required String cguVersion}) {
     final maintenant = _horloge();
-    final cle = masquerNumero(numero);
-    final compte = _comptes.putIfAbsent(cle, () => _nouveauCompte(maintenant));
+    final cle = _cleDe(numero);
+    final compte = _comptes.putIfAbsent(cle, () => _nouveauCompte(maintenant, expert: numero == numeroExpert));
     final autres = compte.appareils.where((a) => a.id != idCourant).length;
     if (autres >= LIMITE_APPAREILS_PROVISOIRE) {
       final valeur = 'demo-gestion-${_jeton()}';
@@ -334,7 +410,7 @@ class FauxCompteApi implements CompteApi, RattachementDemo {
       return AppareilBloque(
         jeton: JetonGestionAppareils(valeur: valeur, expireLe: expireLe),
         limite: LIMITE_APPAREILS_PROVISOIRE,
-        palier: compte.palier,
+        palier: compte.palierEffectif(maintenant),
       );
     }
     compte.appareils
@@ -344,6 +420,7 @@ class FauxCompteApi implements CompteApi, RattachementDemo {
     compte.cguAccepteeLe = maintenant;
     compte.numero = numero;
     _numeroCourant = cle;
+    _clesParMasque[masquerNumero(numero)] = cle;
     _codeEmail = null;
     return null;
   }
@@ -363,7 +440,7 @@ class FauxCompteApi implements CompteApi, RattachementDemo {
   /// Paiement confirmé (faux serveur de paiement) : nouveau palier et fin
   /// du droit du compte [cle].
   void activerPass(String cle, {required String palier, required DateTime finDroit}) {
-    _comptes.putIfAbsent(cle, _compteSession)
+    _compteDe(cle)
       ..palier = palier
       ..finDroit = finDroit;
   }
@@ -381,7 +458,7 @@ class FauxCompteApi implements CompteApi, RattachementDemo {
       cguAccepteeLe: c.cguAccepteeLe,
       nbAppareils: c.appareils.length,
       limiteAppareils: LIMITE_APPAREILS_PROVISOIRE,
-    );
+    ).effectif(_horloge());
   }
 
   @override
@@ -420,7 +497,7 @@ class FauxCompteApi implements CompteApi, RattachementDemo {
         if (a.estCourant != b.estCourant) return a.estCourant ? -1 : 1;
         return b.derniereActivite.compareTo(a.derniereActivite);
       });
-    return ListeAppareils(appareils: tries, limite: LIMITE_APPAREILS_PROVISOIRE, palier: c.palier);
+    return ListeAppareils(appareils: tries, limite: LIMITE_APPAREILS_PROVISOIRE, palier: c.palierEffectif(_horloge()));
   }
 
   @override
