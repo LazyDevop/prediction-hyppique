@@ -45,6 +45,7 @@ List<Override> overridesAuth({
   PinHasher? hasher,
   bool web = false,
   Horloge? horloge,
+  bool appairage = false,
 }) {
   final faux = compte ?? FauxCompteApi(horloge: horloge?.call, web: web);
   return [
@@ -58,6 +59,9 @@ List<Override> overridesAuth({
     ),
     pinHasherProvider.overrideWithValue(hasher ?? pinHasherRapide()),
     estWebProvider.overrideWithValue(web),
+    // Appairage par QR code (story 8.7) : désactivé par défaut, ces tests
+    // visent la Connexion par code SMS ; test/web/ l'active.
+    appairageDisponibleProvider.overrideWithValue(appairage),
     if (horloge != null) horlogeMonotoneProvider.overrideWithValue(horloge.monotone),
     if (horloge != null) horlogeMuraleProvider.overrideWithValue(horloge.call),
   ];

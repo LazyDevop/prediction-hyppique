@@ -85,7 +85,7 @@ context:
 
 ## Notes
 
-- 2026-11-17 (dev, after review patch): `flutter analyze` no issues; `flutter test` 224 passed (201 before review). Three review layers; 12 patch groups applied (release demo flags, Profil icon hidden without a CompteApi, restricted removal outcome applied by the notifier, double-tap guards, token expiry timer, shared kept-alive fakes, fake reset on logout, email back/normalisation, local dates with year, Profil reload notice, tests). Owner kept « Se connecter avec un autre numéro » and « Sans date de fin ».
+- 2026-11-17 (dev, after review patch): `flutter analyze` no issues; `flutter test` 224 passed (201 before review). Three review layers; 12 patch groups applied (release demo flags, Profil icon hidden without a CompteApi, restricted removal outcome applied by the notifier, double-tap guards, token expiry timer, shared kept-alive fakes, fake reset on logout, email back/normalisation, local dates with year, Profil reload notice, tests). « Se connecter avec un autre numéro » and « Sans date de fin » were added by the dev, not in the mockup; shown to the owner, not explicitly confirmed.
 - Demo limitation: the CGU acceptance date shown after a cold start is the fake's start time (real server will return it).
 
 ## Suggested Review Order

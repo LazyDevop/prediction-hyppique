@@ -3,6 +3,7 @@
 // version exige de fermer puis rouvrir la même base, ce qu'une base
 // `:memory:` ne permet pas.
 
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -49,6 +50,18 @@ CourseSuivie _suivie(String cle, DateTime date, {bool suivie = true}) => CourseS
       heureDepart: DateTime.utc(2026, 11, 23, 14, 5),
       hippodrome: 'VINCENNES',
     );
+
+/// Attend la fin de la lecture du cache : SQLite (ffi) répond depuis un
+/// autre isolat, après un délai réel qu'aucun nombre fixe de tours de la
+/// file d'événements ne garantit.
+Future<void> _cacheLu(ProviderContainer container) async {
+  final lu = Completer<void>();
+  final abonnement = container.listen(coursesSuiviesProvider, (_, etat) {
+    if (etat.charge && !lu.isCompleted) lu.complete();
+  }, fireImmediately: true);
+  await lu.future.timeout(const Duration(seconds: 20));
+  abonnement.close();
+}
 
 void main() {
   sqfliteFfiInit();
@@ -236,8 +249,7 @@ void main() {
     final db = await databaseFactory.openDatabase(chemin, options: DatabaseHelper.optionsOuverture());
     DatabaseHelper.instance.setDatabaseForTesting(db);
     final avant = ProviderContainer(overrides: overrides);
-    avant.read(coursesSuiviesProvider);
-    await pumpEventQueue(); // lecture du cache terminée : l'étoile est active
+    await _cacheLu(avant); // l'étoile est active
     avant.read(coursesSuiviesProvider.notifier).basculerCourse(course);
     await avant.read(coursesSuiviesProvider.notifier).ecrituresTerminees();
     avant.dispose();
@@ -248,10 +260,7 @@ void main() {
     DatabaseHelper.instance.setDatabaseForTesting(rouverte);
     final apres = ProviderContainer(overrides: overrides);
     addTearDown(apres.dispose);
-    apres.read(coursesSuiviesProvider);
-    await Future<void>.delayed(Duration.zero);
-    await apres.read(coursesSuiviesProvider.notifier).ecrituresTerminees();
-    await pumpEventQueue();
+    await _cacheLu(apres);
 
     final etat = apres.read(coursesSuiviesProvider);
     expect(etat['20261123-R1-C4']?.suivie, isTrue);

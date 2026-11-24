@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'providers/params_provider.dart';
-import 'screens/home_screen.dart';
+import 'screens/web_shell.dart';
 import 'screens/porte_screen.dart';
 
 void main() async {
@@ -52,7 +52,8 @@ class PredictionHippiqueApp extends StatelessWidget {
       // Portes Connexion / Déverrouillage au-dessus de la pile (story 8.1/8.3).
       navigatorKey: cleNavigateur,
       builder: (context, navigateur) => PorteScreen(application: navigateur!, navigatorKey: cleNavigateur),
-      home: const HomeScreen(),
+      // Web large : deux colonnes (story 8.7) ; sinon l'Accueil du téléphone.
+      home: const AccueilRacine(),
     );
   }
 }

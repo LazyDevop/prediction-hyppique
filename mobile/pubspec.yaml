@@ -47,6 +47,7 @@ dependencies:
   # une montée de version doit être relue (format de stockage, options Keystore).
   flutter_secure_storage: 10.3.4
   cryptography: ^2.9.0
+  qr_flutter: ^4.1.0
 
 dev_dependencies:
   flutter_test:

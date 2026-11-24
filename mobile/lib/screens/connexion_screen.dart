@@ -62,7 +62,11 @@ enum _Etape { numero, code }
 /// du PIN) est [ChoixPinScreen], ouverte par la porte une fois la session
 /// enregistrée.
 class ConnexionScreen extends ConsumerStatefulWidget {
-  const ConnexionScreen({super.key});
+  /// Web (story 8.7) : retour à l'écran d'appairage par QR code ; absent
+  /// sur le téléphone.
+  final VoidCallback? onAppairage;
+
+  const ConnexionScreen({super.key, this.onAppairage});
 
   @override
   ConsumerState<ConnexionScreen> createState() => _ConnexionScreenState();
@@ -98,10 +102,16 @@ class _ConnexionScreenState extends ConsumerState<ConnexionScreen> with RetourPo
     super.dispose();
   }
 
-  /// Retour système : étape 2 → étape 1 ; étape 1 → rien (pas de pile).
+  /// Retour système : étape 2 → étape 1 ; étape 1 → QR code (web) ou rien
+  /// (pas de pile).
   @override
   void surRetour() {
-    if (_etape == _Etape.code && !_enCours) setState(_retourNumero);
+    if (_enCours) return;
+    if (_etape == _Etape.code) {
+      setState(_retourNumero);
+    } else {
+      widget.onAppairage?.call();
+    }
   }
 
   void _surNumero() {
@@ -297,6 +307,10 @@ class _ConnexionScreenState extends ConsumerState<ConnexionScreen> with RetourPo
         const Spacer(),
         const SizedBox(height: 16),
         CtaPrimaire(texte: 'Recevoir le code par SMS', onPressed: peutDemander ? _demanderCode : null),
+        if (widget.onAppairage != null) ...[
+          const SizedBox(height: 4),
+          LienAuth(texte: 'Se connecter avec un QR code', onPressed: _enCours ? null : widget.onAppairage),
+        ],
         const SizedBox(height: 14),
         const Divider(height: 1, color: JetonsAuth.lineDisclaimer),
         const SizedBox(height: 10),

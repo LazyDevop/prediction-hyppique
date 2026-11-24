@@ -3,21 +3,18 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../engine/constants.dart';
 import '../models/course_suivie.dart';
 import '../models/course_summary.dart';
-import '../models/race_config.dart';
 import '../providers/api_provider.dart';
 import '../providers/auth_provider.dart';
 import '../providers/courses_suivies_provider.dart';
-import '../providers/horses_provider.dart';
 import '../providers/programme_provider.dart';
-import '../providers/pronostic_provider.dart';
-import '../providers/race_provider.dart';
 import '../repository/course_repository.dart';
 import '../widgets/followed_race.dart';
+import '../widgets/liste_programme.dart';
 import 'import_photo_screen.dart';
 import 'profil_screen.dart';
+import 'ouverture_course.dart';
 import 'race_config_screen.dart';
 
 /// Programme du jour (section 7.1 du document mobile). Sélectionner une
@@ -49,7 +46,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
   @override
   void initState() {
     super.initState();
-    _date = _jour(ref.read(horlogeMuraleProvider)());
+    _date = ref.read(dateProgrammeWebProvider) ?? _jour(ref.read(horlogeMuraleProvider)());
     WidgetsBinding.instance.addObserver(this);
     _programmerMinuit();
   }
@@ -110,28 +107,24 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
       firstDate: DateTime(2018),
       lastDate: DateTime(2100),
     );
-    if (picked != null) setState(() => _date = _jour(picked));
+    if (picked == null || !mounted) return;
+    setState(() => _date = _jour(picked));
+    ref.read(dateProgrammeWebProvider.notifier).choisir(_date);
   }
 
   Future<void> _selectCourse(CourseSummary course) async {
     setState(() => _loadingPartants = true);
     try {
-      final horses = await ref.read(courseRepositoryProvider).partants(course.id);
-
-      ref.read(horsesProvider.notifier).setAll(horses);
-      ref.read(pronosticContextProvider.notifier).courseChargee(course.id);
-      ref.read(courseCouranteProvider.notifier).definir(course);
-      ref.read(coursesSuiviesProvider.notifier).actualiserInstantanes([course]);
-      ref.read(raceConfigProvider.notifier).update(RaceConfig(
-            hippodrome: course.hippodrome,
-            distance: course.distance,
-            terrain: terrainCoefficient(course.terrain),
-            niveau: null,
-            nbPartantsCourse: course.nbPartants,
-          ));
+      await chargerCourse(ref, course, encoreValide: () => mounted);
 
       if (!mounted) return;
-      Navigator.push(context, MaterialPageRoute(builder: (_) => const RaceConfigScreen()));
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          settings: const RouteSettings(name: routeCourse),
+          builder: (_) => const RaceConfigScreen(),
+        ),
+      );
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -290,94 +283,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
             ),
           ),
           Expanded(
-            child: programmeAsync.when(
-                    data: (result) {
-                      if (result.courses.isEmpty) {
-                        return Center(
-                          child: Padding(
-                            padding: const EdgeInsets.all(24),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Text(
-                                  'Aucune course chargée — rafraîchissez ou ajoutez une course manuellement.',
-                                  textAlign: TextAlign.center,
-                                ),
-                                const SizedBox(height: 12),
-                                ElevatedButton.icon(
-                                  onPressed: _refreshing ? null : _refresh,
-                                  icon: const Icon(Icons.refresh),
-                                  label: const Text('Rafraîchir'),
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      }
-                      final parReunion = <String, List<CourseSummary>>{};
-                      for (final c in result.courses) {
-                        parReunion.putIfAbsent(c.hippodrome, () => []).add(c);
-                      }
-                      for (final list in parReunion.values) {
-                        list.sort((a, b) {
-                          if (a.heureDepart == null || b.heureDepart == null) return 0;
-                          return a.heureDepart!.compareTo(b.heureDepart!);
-                        });
-                      }
-                      return ListView(
-                        children: parReunion.entries.map((entry) {
-                          return ExpansionTile(
-                            title: Text(entry.key, style: const TextStyle(fontWeight: FontWeight.bold)),
-                            initiallyExpanded: parReunion.length == 1,
-                            children: entry.value.map((c) {
-                              final heure = c.heureDepart?.toLocal();
-                              final heureLabel = heure == null
-                                  ? '—:—'
-                                  : '${heure.hour.toString().padLeft(2, '0')}:'
-                                      '${heure.minute.toString().padLeft(2, '0')}';
-                              return ListTile(
-                                leading: SizedBox(
-                                  width: 44,
-                                  child: Text(heureLabel, style: const TextStyle(fontWeight: FontWeight.bold)),
-                                ),
-                                title: Text('${c.discipline} · ${c.distance?.toStringAsFixed(0) ?? '—'} m'),
-                                subtitle: Text(
-                                  '${c.nbPartants ?? '—'} partants'
-                                  '${c.finalisee ? ' · Résultat connu' : ''}',
-                                ),
-                                trailing: _loadingPartants
-                                    ? const SizedBox(
-                                        width: 20,
-                                        height: 20,
-                                        child: CircularProgressIndicator(strokeWidth: 2))
-                                    : const Icon(Icons.chevron_right),
-                                onTap: _loadingPartants ? null : () => _selectCourse(c),
-                              );
-                            }).toList(),
-                          );
-                        }).toList(),
-                      );
-                    },
-                    loading: () => const Center(child: CircularProgressIndicator()),
-                    error: (err, _) => Center(
-                      child: Padding(
-                        padding: const EdgeInsets.all(24),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(Icons.wifi_off, size: 40, color: Colors.grey),
-                            const SizedBox(height: 8),
-                            Text('Connexion au backend impossible.\n$err', textAlign: TextAlign.center),
-                            const SizedBox(height: 12),
-                            ElevatedButton(
-                              onPressed: () => ref.invalidate(programmeProvider(_date)),
-                              child: const Text('Réessayer'),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
+            child: ListeProgramme(
+              programme: programmeAsync,
+              chargement: _loadingPartants,
+              rafraichissement: _refreshing,
+              onRafraichir: _refresh,
+              onReessayer: () => ref.invalidate(programmeProvider(_date)),
+              onSelect: _selectCourse,
+            ),
           ),
         ],
       ),
@@ -386,7 +299,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with WidgetsBindingObse
           // Saisie manuelle : l'étoile de la course précédente ne doit pas
           // suivre (story 8.9).
           ref.read(courseCouranteProvider.notifier).effacer();
-          Navigator.push(context, MaterialPageRoute(builder: (_) => const RaceConfigScreen()));
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              settings: const RouteSettings(name: routeCourse),
+              builder: (_) => const RaceConfigScreen(),
+            ),
+          );
         },
         icon: const Icon(Icons.edit),
         label: const Text('Saisie manuelle'),

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../auth/pin_hash.dart';
 import '../data/local/session_store.dart';
+import '../data/remote/appairage_api.dart';
 import '../data/remote/auth_api.dart';
 import '../data/remote/compte_api.dart';
 import '../data/remote/offres_api.dart';
@@ -30,14 +31,20 @@ final demoAutoriseeProvider = Provider<bool>((ref) => _demoAutorisee);
 /// Horloge murale : dates du faux serveur et « dernière activité ».
 final horlogeMuraleProvider = Provider<DateTime Function()>((ref) => DateTime.now);
 
-/// Les trois faux serveurs liés (la limite d'appareils du faux compte
-/// décide du blocage à la connexion ; un paiement confirmé change son
-/// palier), construits UNE fois : `ref.read` pour ne jamais être
-/// reconstruits, ce qui effacerait leur état.
-final _fauxServeursProvider = Provider<(FauxAuthApi, FauxCompteApi, FauxOffresApi)>((ref) {
+/// Les faux serveurs liés (la limite d'appareils du faux compte décide du
+/// blocage à la connexion ; un paiement confirmé change son palier ; une
+/// approbation d'appairage rattache ce navigateur au faux compte),
+/// construits UNE fois : `ref.read` pour ne jamais être reconstruits, ce
+/// qui effacerait leur état.
+final _fauxServeursProvider = Provider<(FauxAuthApi, FauxCompteApi, FauxOffresApi, FauxAppairageApi)>((ref) {
   final horloge = ref.read(horlogeMuraleProvider);
   final compte = FauxCompteApi(horloge: horloge, web: ref.read(estWebProvider));
-  return (FauxAuthApi(rattachement: compte), compte, FauxOffresApi(compte: compte, horloge: horloge));
+  return (
+    FauxAuthApi(rattachement: compte),
+    compte,
+    FauxOffresApi(compte: compte, horloge: horloge),
+    FauxAppairageApi(horloge: horloge, rattachement: compte),
+  );
 });
 
 /// FauxAuthApi seulement selon [demoAutoriseeProvider] : un build release
@@ -60,6 +67,23 @@ final offresApiProvider = Provider<OffresApi>((ref) {
   if (ref.watch(demoAutoriseeProvider)) return ref.watch(_fauxServeursProvider).$3;
   throw StateError('aucune OffresApi réelle — stories 9.4 et 9.5 serveur');
 });
+
+/// Même règle que [authApiProvider]. Aucune route serveur d'appairage
+/// tant que la story 8.7 serveur n'existe pas.
+final appairageApiProvider = Provider<AppairageApi>((ref) {
+  if (ref.watch(demoAutoriseeProvider)) return ref.watch(_fauxServeursProvider).$4;
+  throw StateError('aucune AppairageApi réelle — story 8.7 serveur');
+});
+
+/// Vrai quand une AppairageApi existe : sinon la porte web propose
+/// directement Connexion (code SMS).
+final appairageDisponibleProvider = Provider<bool>((ref) => ref.watch(demoAutoriseeProvider));
+
+/// Vrai quand le faux serveur d'appairage est actif (« Mode démo : simuler
+/// l'approbation du téléphone »). Lit d'abord la règle de démo.
+final modeDemoAppairageProvider = Provider<bool>(
+  (ref) => ref.watch(demoAutoriseeProvider) && ref.watch(appairageApiProvider) is FauxAppairageApi,
+);
 
 /// Vrai quand une OffresApi existe (ligne « Offres » de Profil).
 final offresDisponiblesProvider = Provider<bool>((ref) => ref.watch(demoAutoriseeProvider));
@@ -188,18 +212,35 @@ class AuthNotifier extends AsyncNotifier<EtatAuth> {
   Future<VerificationResultat> verifierCode(String numero, String code) async {
     final resultat = await ref.read(authApiProvider).verifierCode(numero, code);
     if (resultat is SessionOuverte) {
-      await _store.enregistrerSession(
-        accessToken: resultat.accessToken,
-        refreshToken: resultat.refreshToken,
-        numeroMasque: resultat.numeroMasque,
-      );
-      final session = await _lireObligatoire();
-      state = AsyncData(EtatAuth(_estWeb ? Porte.ouverte : Porte.choixPin, numeroMasque: session.numeroMasque));
+      await _ouvrirSession(resultat);
     } else if (resultat is AppareilBloque) {
       // Rien n'est enregistré : pas de session sur un appareil bloqué.
       state = AsyncData(EtatAuth(Porte.appareilBloque, blocage: resultat));
     }
     return resultat;
+  }
+
+  /// Appairage approuvé par le téléphone (story 8.7) : même ouverture de
+  /// session qu'un code SMS vérifié. Lève une erreur si la session ne peut
+  /// pas être relue après écriture.
+  Future<void> ouvrirSessionAppairee(SessionOuverte session) => _ouvrirSession(session);
+
+  /// Appairage approuvé mais limite d'appareils atteinte : même porte
+  /// Appareil bloqué que par code SMS ; rien n'est enregistré.
+  /// Sans effet si une session s'est ouverte entre-temps (code SMS).
+  void bloquerAppairage(AppareilBloque blocage) {
+    if (!ref.mounted || state.value?.porte != Porte.aucuneSession) return;
+    state = AsyncData(EtatAuth(Porte.appareilBloque, blocage: blocage));
+  }
+
+  Future<void> _ouvrirSession(SessionOuverte resultat) async {
+    await _store.enregistrerSession(
+      accessToken: resultat.accessToken,
+      refreshToken: resultat.refreshToken,
+      numeroMasque: resultat.numeroMasque,
+    );
+    final session = await _lireObligatoire();
+    state = AsyncData(EtatAuth(_estWeb ? Porte.ouverte : Porte.choixPin, numeroMasque: session.numeroMasque));
   }
 
   Future<void> definirPin(String pin) async {

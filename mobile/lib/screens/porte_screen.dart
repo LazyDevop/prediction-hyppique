@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../providers/auth_provider.dart';
 import '../widgets/auth_styles.dart';
+import 'appairage_screen.dart';
 import 'appareil_bloque_screen.dart';
 import 'connexion_screen.dart';
 import 'deverrouillage_screen.dart';
@@ -38,6 +39,9 @@ class _PorteScreenState extends ConsumerState<PorteScreen> {
   bool _applicationConstruite = false;
   final _blocage = _BlocageRetour();
   ModalRoute<Object?>? _routeBloquee;
+
+  /// Web : Connexion par code SMS choisie à la place du QR code.
+  bool _parSms = false;
 
   @override
   void initState() {
@@ -94,9 +98,25 @@ class _PorteScreenState extends ConsumerState<PorteScreen> {
       _applicationConstruite = false;
     }
 
+    // Web (story 8.7) : appairage par QR code d'abord, Connexion par code
+    // SMS en repli. Le choix vient de l'utilisateur seulement (jamais du
+    // message de la porte, effacé pendant la saisie) ; un message (session
+    // effacée, accès limité terminé) s'affiche sur l'écran d'appairage.
+    if (porte != Porte.aucuneSession) _parSms = false;
+    final appairagePossible = ref.watch(estWebProvider) && ref.watch(appairageDisponibleProvider);
+    final parQr = appairagePossible && !_parSms;
+
     final Widget? ecranPorte = switch (porte) {
       null => const Scaffold(backgroundColor: JetonsAuth.bg),
-      Porte.aucuneSession => const ConnexionScreen(),
+      Porte.aucuneSession when parQr => AppairageScreen(onCodeSms: () => setState(() => _parSms = true)),
+      Porte.aucuneSession => ConnexionScreen(
+          onAppairage: appairagePossible
+              ? () {
+                  ref.read(authProvider.notifier).effacerMessage();
+                  setState(() => _parSms = false);
+                }
+              : null,
+        ),
       Porte.choixPin => const ChoixPinScreen(),
       Porte.verrouillee => const DeverrouillageScreen(),
       Porte.appareilBloque => const AppareilBloqueScreen(),

@@ -278,3 +278,6 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-9-4-9-5-ecrans-offres-paiement.md`
   summary: Real payment server rules: idempotency key on POST /paiements, polling ceiling/backoff, entitlement stacking (extend same tier, upgrade, refuse lower), Mobile Money number from the account (not only after a fresh login).
   evidence: Review of Offres/Paiement: these rules live in FauxOffresApi for now (real stories 9.1, 9.5).
+- source_spec: `_bmad-output/implementation-artifacts/spec-web-compagnon-8-7.md`
+  summary: Gold focus outline inside the existing screens shown in the right column; web wording of the logout dialog; current nav entry when Réglages is open; unsaved form text lost when the window crosses the layout threshold.
+  evidence: Review of the web companion: existing screens keep the Material focus highlight and rebuild from providers.
